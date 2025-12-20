@@ -1,0 +1,76 @@
+<div data-cdn-widget="popup-criar-lead">
+  <div class="wrap" role="region" aria-label="Criar novo lead">
+    <div class="header">
+      <div>
+        <h2 class="title" id="ttl">Novo lead</h2>
+        <p class="subtitle" id="subttl">Preencha os dados para criar um novo lead.</p>
+      </div>
+      <div class="header-right">
+        <div class="pill" id="pill">etapa: novo lead</div>
+        <button class="icon-btn" type="button" id="btn-cancelar" aria-label="Cancelar e fechar">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M18.3 5.71a1 1 0 0 0-1.41 0L12 10.59 7.11 5.7A1 1 0 0 0 5.7 7.11L10.59 12 5.7 16.89a1 1 0 1 0 1.41 1.41L12 13.41l4.89 4.89a1 1 0 0 0 1.41-1.41L13.41 12l4.89-4.89a1 1 0 0 0 0-1.4Z" fill="currentColor"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="body">
+      <div class="grid" aria-label="Campos do lead">
+        <div class="field" style="grid-column: 1 / -1;">
+          <label for="in-nome">Nome *</label>
+          <input id="in-nome" type="text" autocomplete="name" placeholder="Ex.: Maria Silva" />
+          <div class="hint">Como vai aparecer no card.</div>
+        </div>
+
+        <div class="field">
+          <label for="in-telefone">Telefone (WhatsApp) *</label>
+          <input id="in-telefone" type="tel" inputmode="tel" autocomplete="tel" placeholder="Ex.: +55 11 99999-9999" />
+          <div class="hint">Salvamos só números (DDI + DDD).</div>
+        </div>
+
+        <div class="field">
+          <label for="in-email">E-mail</label>
+          <input id="in-email" type="email" autocomplete="email" placeholder="Ex.: maria@empresa.com" />
+        </div>
+
+        <div class="field">
+          <label for="in-empresa">Empresa</label>
+          <input id="in-empresa" type="text" placeholder="Ex.: Acelerai" />
+        </div>
+
+        <div class="field">
+          <label for="in-canal">Canal de contato</label>
+          <select id="in-canal" aria-label="Canal de contato">
+            <option value="WhatsApp" selected>WhatsApp</option>
+            <option value="Instagram">Instagram</option>
+            <option value="Facebook">Facebook</option>
+            <option value="Indicação">Indicação</option>
+            <option value="Site">Site</option>
+            <option value="">(vazio)</option>
+          </select>
+        </div>
+
+        <div class="field" style="grid-column: 1 / -1;">
+          <label for="in-anotacoes">Anotações</label>
+          <textarea id="in-anotacoes" placeholder="Notas internas (opcional)"></textarea>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="status" id="status" role="status" aria-live="polite" hidden>
+          <span class="dot" aria-hidden="true"></span>
+          <span class="msg"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <button class="btn ghost" type="button" id="btn-limpar">Limpar</button>
+      <button class="btn primary" type="button" id="btn-criar">Criar lead</button>
+    </div>
+  </div>
+</div>
+
+
+

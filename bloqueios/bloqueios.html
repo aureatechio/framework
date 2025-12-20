@@ -1,0 +1,2085 @@
+<div id="crm-bloqueios-celebs-v1">
+  <style>
+    /* --- IMPORT DE FONTES & ÍCONES --- */
+    @import url("https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@400;500;700&display=swap");
+    @import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200");
+
+    /* --- CONFIGURAÇÃO DE DESIGN (TOKENS) --- */
+    #crm-bloqueios-celebs-v1 {
+      --color-google-blue: #4285f4;
+      --color-google-red: #ea4335;
+      --color-google-yellow: #fbbc05;
+      --color-google-green: #34a853;
+
+      --color-primary: #1a73e8;
+      --color-primary-variant: #174ea6;
+      --color-background: #f0f2f5;
+      --color-surface: #ffffff;
+      --color-surface-alt: #f8fafd;
+      --color-outline: #e0e2e7;
+      --color-text: #1f1f1f;
+      --color-text-2: #444746;
+      --color-text-3: #757575;
+
+      --radius-xl: 16px;
+      --radius-l: 12px;
+      --radius-m: 10px;
+      --radius-pill: 999px;
+
+      --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.06);
+      --shadow-2: 0 8px 24px rgba(0, 0, 0, 0.14);
+
+      --space-xs: 6px;
+      --space-s: 10px;
+      --space-m: 14px;
+      --space-l: 18px;
+      --space-xl: 24px;
+
+      --header-height: 72px;
+      --row-height: 52px;
+      --focus-ring: 0 0 0 3px rgba(11, 87, 208, 0.18);
+
+      width: 100%;
+      height: 100vh;
+      max-height: 100vh;
+      min-height: 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      background: var(--color-background);
+      font-family: "Roboto", sans-serif;
+      color: var(--color-text);
+      border-radius: var(--radius-l);
+      overscroll-behavior: contain;
+      position: relative;
+    }
+
+    #crm-bloqueios-celebs-v1 * { box-sizing: border-box; }
+
+    #crm-bloqueios-celebs-v1 ::-webkit-scrollbar { width: 6px; height: 6px; }
+    #crm-bloqueios-celebs-v1 ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 8px; }
+    #crm-bloqueios-celebs-v1 ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.22); }
+    #crm-bloqueios-celebs-v1 * { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.12) transparent; }
+
+    /* --- HEADER --- */
+    #crm-bloqueios-celebs-v1 .app-header {
+      height: var(--header-height);
+      padding: 0 24px;
+      background: var(--color-surface);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: var(--shadow-1);
+      border-bottom: 1px solid var(--color-outline);
+      z-index: 20;
+      flex-shrink: 0;
+      gap: 16px;
+    }
+
+    #crm-bloqueios-celebs-v1 .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 220px;
+    }
+    #crm-bloqueios-celebs-v1 .brand .mark {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(66,133,244,0.18), rgba(52,168,83,0.10));
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(66,133,244,0.18);
+    }
+    #crm-bloqueios-celebs-v1 .brand .mark .material-symbols-rounded {
+      font-variation-settings: "FILL" 1, "wght" 600, "GRAD" 0, "opsz" 24;
+      color: var(--color-primary);
+      font-size: 22px;
+    }
+    #crm-bloqueios-celebs-v1 .brand .title {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.1;
+      gap: 2px;
+    }
+    #crm-bloqueios-celebs-v1 .brand .title .h1 {
+      font-family: "Google Sans", sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.2px;
+    }
+    #crm-bloqueios-celebs-v1 .brand .title .h2 {
+      font-size: 12px;
+      color: var(--color-text-3);
+      font-weight: 500;
+    }
+
+    #crm-bloqueios-celebs-v1 .header-center {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    #crm-bloqueios-celebs-v1 .search-wrap {
+      flex: 1;
+      max-width: 620px;
+      min-width: 240px;
+    }
+    #crm-bloqueios-celebs-v1 .search {
+      width: 100%;
+      height: 44px;
+      background: #eff1f5;
+      border-radius: var(--radius-pill);
+      padding: 0 16px;
+      border: 1px solid transparent;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: background 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+    }
+    #crm-bloqueios-celebs-v1 .search:focus-within {
+      background: #ffffff;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+      border-color: var(--color-outline);
+    }
+    #crm-bloqueios-celebs-v1 .search .material-symbols-rounded {
+      font-size: 20px;
+      color: var(--color-text-3);
+    }
+    #crm-bloqueios-celebs-v1 .search input {
+      border: none;
+      outline: none;
+      background: transparent;
+      width: 100%;
+      font-size: 15px;
+      color: var(--color-text);
+      font-family: "Roboto", sans-serif;
+    }
+    #crm-bloqueios-celebs-v1 .search input::placeholder { color: #80868b; }
+
+    #crm-bloqueios-celebs-v1 .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      justify-content: flex-end;
+      min-width: 340px;
+    }
+
+    #crm-bloqueios-celebs-v1 .pill-btn {
+      height: 44px;
+      border-radius: var(--radius-pill);
+      padding: 0 14px;
+      border: 1px solid transparent;
+      background: #eff1f5;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      user-select: none;
+      font-family: "Google Sans", sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--color-text-2);
+      transition: background 180ms ease, border-color 180ms ease, box-shadow 180ms ease, transform 120ms ease;
+      white-space: nowrap;
+    }
+    #crm-bloqueios-celebs-v1 .pill-btn:hover {
+      background: #f8fafd;
+      border-color: #d0d7de;
+    }
+    #crm-bloqueios-celebs-v1 .pill-btn:active { transform: translateY(1px); }
+    #crm-bloqueios-celebs-v1 .pill-btn:focus { outline: none; box-shadow: var(--focus-ring); }
+    #crm-bloqueios-celebs-v1 .pill-btn .material-symbols-rounded { font-size: 20px; color: var(--color-text-3); }
+
+    #crm-bloqueios-celebs-v1 .primary-btn {
+      height: 44px;
+      border-radius: var(--radius-pill);
+      padding: 0 16px;
+      border: 1px solid rgba(26,115,232,0.18);
+      background: rgba(26,115,232,0.10);
+      color: var(--color-primary-variant);
+      font-family: "Google Sans", sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: background 180ms ease, border-color 180ms ease, box-shadow 180ms ease, transform 120ms ease;
+    }
+    #crm-bloqueios-celebs-v1 .primary-btn:hover {
+      background: rgba(26,115,232,0.14);
+      border-color: rgba(26,115,232,0.24);
+    }
+    #crm-bloqueios-celebs-v1 .primary-btn:active { transform: translateY(1px); }
+    #crm-bloqueios-celebs-v1 .primary-btn:focus { outline: none; box-shadow: var(--focus-ring); }
+    #crm-bloqueios-celebs-v1 .primary-btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.65;
+      filter: grayscale(0.2);
+    }
+
+    #crm-bloqueios-celebs-v1 .kpi {
+      min-width: 140px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+    }
+    #crm-bloqueios-celebs-v1 .kpi .count {
+      font-family: "Google Sans", sans-serif;
+      font-weight: 800;
+      font-size: 14px;
+      color: var(--color-text);
+    }
+    #crm-bloqueios-celebs-v1 .kpi .status {
+      font-size: 12px;
+      color: var(--color-text-3);
+      font-weight: 500;
+    }
+
+    /* --- BODY LAYOUT --- */
+    #crm-bloqueios-celebs-v1 .app-body {
+      flex: 1;
+      min-height: 0;
+      padding: 18px 24px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    #crm-bloqueios-celebs-v1 .panel {
+      background: var(--color-surface);
+      border: 1px solid var(--color-outline);
+      border-radius: var(--radius-xl);
+      box-shadow: 0 1px 0 rgba(0,0,0,0.02);
+      overflow: hidden;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #crm-bloqueios-celebs-v1 .table-head {
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--color-outline);
+      background: linear-gradient(180deg, #fff, #fff 65%, #fafbff);
+      gap: 12px;
+    }
+    #crm-bloqueios-celebs-v1 .table-head .hint {
+      font-size: 12px;
+      color: var(--color-text-3);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+    #crm-bloqueios-celebs-v1 .table-head .hint .material-symbols-rounded {
+      font-size: 18px;
+      color: #9aa0a6;
+    }
+    #crm-bloqueios-celebs-v1 .table-head .hint span {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #crm-bloqueios-celebs-v1 .pager {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    #crm-bloqueios-celebs-v1 .pager .mini-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+      border: 1px solid transparent;
+      background: #f1f3f4;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      transition: background 160ms ease, transform 120ms ease, box-shadow 160ms ease, border-color 160ms ease;
+    }
+    #crm-bloqueios-celebs-v1 .pager .mini-btn:hover { background: #e8f0fe; border-color: rgba(26,115,232,0.16); }
+    #crm-bloqueios-celebs-v1 .pager .mini-btn:active { transform: translateY(1px); }
+    #crm-bloqueios-celebs-v1 .pager .mini-btn:focus { outline: none; box-shadow: var(--focus-ring); }
+    #crm-bloqueios-celebs-v1 .pager .mini-btn:disabled { opacity: 0.45; cursor: not-allowed; background: #f1f3f4; border-color: transparent; }
+    #crm-bloqueios-celebs-v1 .pager .mini-btn .material-symbols-rounded { font-size: 18px; color: var(--color-text-2); }
+    #crm-bloqueios-celebs-v1 .pager .page-label { font-size: 12px; color: var(--color-text-3); min-width: 140px; text-align: right; }
+
+    #crm-bloqueios-celebs-v1 .table-foot {
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      border-top: 1px solid var(--color-outline);
+      background: linear-gradient(180deg, #fafbff, #fff);
+    }
+
+    #crm-bloqueios-celebs-v1 .table-wrap {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      position: relative;
+    }
+
+    #crm-bloqueios-celebs-v1 .grid {
+      display: grid;
+      grid-template-columns: 150px 220px 180px 230px 260px 220px 1fr;
+      gap: 0;
+      min-width: 1060px;
+    }
+    #crm-bloqueios-celebs-v1 .thead {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      background: #fff;
+      border-bottom: 1px solid var(--color-outline);
+    }
+    #crm-bloqueios-celebs-v1 .th,
+    #crm-bloqueios-celebs-v1 .td {
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+    #crm-bloqueios-celebs-v1 .th {
+      height: 44px;
+      font-size: 12px;
+      color: var(--color-text-3);
+      font-weight: 800;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      user-select: none;
+    }
+    #crm-bloqueios-celebs-v1 .th.sortable {
+      cursor: pointer;
+      border-radius: 10px;
+      transition: background 140ms ease;
+    }
+    #crm-bloqueios-celebs-v1 .th.sortable:hover { background: #f1f3f4; }
+    #crm-bloqueios-celebs-v1 .th .material-symbols-rounded {
+      font-size: 18px;
+      color: #9aa0a6;
+      font-variation-settings: "FILL" 1, "wght" 500, "GRAD" 0, "opsz" 24;
+    }
+
+    #crm-bloqueios-celebs-v1 .tbody .tr {
+      border-bottom: 1px solid rgba(224,226,231,0.7);
+      background: #fff;
+      height: var(--row-height);
+      cursor: pointer;
+      transition: background 140ms ease, transform 120ms ease, opacity 140ms ease;
+      position: relative;
+    }
+    #crm-bloqueios-celebs-v1 .tbody .tr:hover { background: #f8fafd; }
+    #crm-bloqueios-celebs-v1 .tbody .tr:active { transform: translateY(1px); }
+    #crm-bloqueios-celebs-v1 .tbody.dim-others .tr { opacity: 0.35; }
+    #crm-bloqueios-celebs-v1 .tbody.dim-others .tr.is-selected {
+      opacity: 1;
+      background: #e8f0fe;
+      box-shadow: inset 0 0 0 2px rgba(11, 87, 208, 0.18);
+      border-bottom-color: rgba(11, 87, 208, 0.10);
+    }
+
+    #crm-bloqueios-celebs-v1 .td .ellipsis {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    #crm-bloqueios-celebs-v1 .td.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 12px; color: #3c4043; }
+    #crm-bloqueios-celebs-v1 .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      height: 28px;
+      border-radius: 999px;
+      padding: 0 10px;
+      background: #f1f3f4;
+      color: #3c4043;
+      font-size: 12px;
+      font-weight: 700;
+      border: 1px solid rgba(0,0,0,0.06);
+      max-width: 100%;
+    }
+
+    /* Chips com tons Google */
+    #crm-bloqueios-celebs-v1 .chip.tone-blue   { background: rgba(66,133,244,0.14); border-color: rgba(66,133,244,0.26); color: #174ea6; }
+    #crm-bloqueios-celebs-v1 .chip.tone-red    { background: rgba(234,67,53,0.12);  border-color: rgba(234,67,53,0.26);  color: #b3261e; }
+    #crm-bloqueios-celebs-v1 .chip.tone-yellow { background: rgba(251,188,5,0.16);  border-color: rgba(251,188,5,0.30);  color: #7a4f00; }
+    #crm-bloqueios-celebs-v1 .chip.tone-green  { background: rgba(52,168,83,0.14);  border-color: rgba(52,168,83,0.26);  color: #0d652d; }
+
+    /* --- EMPTY / ERROR --- */
+    #crm-bloqueios-celebs-v1 .state {
+      padding: 28px 18px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      color: var(--color-text-2);
+      gap: 10px;
+      flex-direction: column;
+    }
+    #crm-bloqueios-celebs-v1 .state.active { display: flex; }
+    #crm-bloqueios-celebs-v1 .state .icon {
+      width: 58px; height: 58px;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      background: #f1f3f4;
+      border: 1px solid rgba(0,0,0,0.06);
+    }
+    #crm-bloqueios-celebs-v1 .state .icon .material-symbols-rounded {
+      font-size: 26px;
+      color: #5f6368;
+      font-variation-settings: "FILL" 1, "wght" 600, "GRAD" 0, "opsz" 24;
+    }
+    #crm-bloqueios-celebs-v1 .state .title {
+      font-family: "Google Sans", sans-serif;
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--color-text);
+    }
+    #crm-bloqueios-celebs-v1 .state .desc {
+      font-size: 13px;
+      color: var(--color-text-3);
+      max-width: 520px;
+      line-height: 1.4;
+    }
+    #crm-bloqueios-celebs-v1 .state .retry {
+      margin-top: 8px;
+    }
+
+    /* --- MODAL (Filtros) --- */
+    #crm-bloqueios-celebs-v1 .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(32, 33, 36, 0.42);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      padding: 18px;
+    }
+    #crm-bloqueios-celebs-v1 .modal-overlay.active { display: flex; }
+    #crm-bloqueios-celebs-v1 .modal {
+      width: min(980px, 100%);
+      max-height: min(78vh, 720px);
+      background: #fff;
+      border-radius: 18px;
+      border: 1px solid var(--color-outline);
+      box-shadow: var(--shadow-2);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    #crm-bloqueios-celebs-v1 .modal-head {
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--color-outline);
+      background: linear-gradient(180deg, #fff, #fbfcff);
+    }
+    #crm-bloqueios-celebs-v1 .modal-title {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    #crm-bloqueios-celebs-v1 .modal-title .h {
+      font-family: "Google Sans", sans-serif;
+      font-size: 15px;
+      font-weight: 800;
+    }
+    #crm-bloqueios-celebs-v1 .modal-title .s {
+      font-size: 12px;
+      color: var(--color-text-3);
+    }
+    #crm-bloqueios-celebs-v1 .icon-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      border: 1px solid transparent;
+      background: transparent;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      transition: background 140ms ease;
+    }
+    #crm-bloqueios-celebs-v1 .icon-btn:hover { background: #f1f3f4; }
+    #crm-bloqueios-celebs-v1 .icon-btn:focus { outline: none; box-shadow: var(--focus-ring); }
+    #crm-bloqueios-celebs-v1 .icon-btn .material-symbols-rounded { font-size: 22px; color: #5f6368; }
+
+    #crm-bloqueios-celebs-v1 .modal-body {
+      padding: 14px 16px 16px;
+      overflow: auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      background: #fff;
+    }
+    #crm-bloqueios-celebs-v1 .field {
+      border: 1px solid var(--color-outline);
+      border-radius: 16px;
+      padding: 12px 12px 10px;
+      background: #fff;
+      min-height: 126px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    #crm-bloqueios-celebs-v1 .field .label {
+      font-family: "Google Sans", sans-serif;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.4px;
+      color: var(--color-text-3);
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    #crm-bloqueios-celebs-v1 .field .label .mini {
+      font-size: 11px;
+      font-weight: 700;
+      color: #5f6368;
+      text-transform: none;
+      letter-spacing: normal;
+    }
+
+    #crm-bloqueios-celebs-v1 .field .input {
+      height: 40px;
+      border-radius: 12px;
+      border: 1px solid transparent;
+      background: #f1f3f4;
+      padding: 0 12px;
+      outline: none;
+      font-size: 14px;
+      font-family: "Roboto", sans-serif;
+      color: var(--color-text);
+      transition: background 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+    }
+    #crm-bloqueios-celebs-v1 .field .input:focus {
+      background: #fff;
+      border-color: var(--color-outline);
+      box-shadow: var(--focus-ring);
+    }
+
+    #crm-bloqueios-celebs-v1 .checklist {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      border-radius: 12px;
+      border: 1px solid rgba(224,226,231,0.9);
+      background: #fff;
+    }
+    #crm-bloqueios-celebs-v1 .check-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(224,226,231,0.7);
+      cursor: pointer;
+      transition: background 120ms ease;
+      font-size: 14px;
+      color: #3c4043;
+    }
+    #crm-bloqueios-celebs-v1 .check-item:hover { background: #f8fafd; }
+    #crm-bloqueios-celebs-v1 .check-item:last-child { border-bottom: none; }
+    #crm-bloqueios-celebs-v1 .check-item input { width: 16px; height: 16px; }
+    #crm-bloqueios-celebs-v1 .check-item .txt { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    #crm-bloqueios-celebs-v1 .modal-foot {
+      padding: 12px 16px;
+      border-top: 1px solid var(--color-outline);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: #fff;
+    }
+    #crm-bloqueios-celebs-v1 .modal-foot .left {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      min-width: 0;
+    }
+    #crm-bloqueios-celebs-v1 .modal-foot .right {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: flex-end;
+      flex-shrink: 0;
+    }
+
+    #crm-bloqueios-celebs-v1 .ghost-btn {
+      height: 44px;
+      border-radius: var(--radius-pill);
+      padding: 0 14px;
+      border: 1px solid var(--color-outline);
+      background: #fff;
+      color: var(--color-text-2);
+      font-family: "Google Sans", sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 160ms ease, transform 120ms ease, box-shadow 160ms ease;
+    }
+    #crm-bloqueios-celebs-v1 .ghost-btn:hover { background: #f8fafd; }
+    #crm-bloqueios-celebs-v1 .ghost-btn:active { transform: translateY(1px); }
+    #crm-bloqueios-celebs-v1 .ghost-btn:focus { outline: none; box-shadow: var(--focus-ring); }
+
+    /* --- DATE POPOVER --- */
+    #crm-bloqueios-celebs-v1 .popover {
+      position: absolute;
+      top: calc(var(--header-height) - 4px);
+      right: 24px;
+      width: 360px;
+      background: #fff;
+      border: 1px solid var(--color-outline);
+      border-radius: 16px;
+      box-shadow: var(--shadow-2);
+      z-index: 9999;
+      display: none;
+      overflow: hidden;
+    }
+    #crm-bloqueios-celebs-v1 .popover.active { display: block; }
+    #crm-bloqueios-celebs-v1 .popover .p-head {
+      padding: 12px 12px 10px;
+      border-bottom: 1px solid rgba(224,226,231,0.8);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    #crm-bloqueios-celebs-v1 .popover .p-head .t {
+      font-family: "Google Sans", sans-serif;
+      font-weight: 800;
+      font-size: 14px;
+      color: var(--color-text);
+    }
+    #crm-bloqueios-celebs-v1 .popover .p-body { padding: 10px 12px 12px; }
+    #crm-bloqueios-celebs-v1 .preset-list {
+      display: grid;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    #crm-bloqueios-celebs-v1 .preset {
+      height: 40px;
+      border-radius: 12px;
+      padding: 0 12px;
+      border: 1px solid transparent;
+      background: #f1f3f4;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: background 140ms ease, border-color 140ms ease;
+      font-size: 13px;
+      font-weight: 700;
+      color: #3c4043;
+    }
+    #crm-bloqueios-celebs-v1 .preset:hover { background: #e8f0fe; border-color: rgba(26,115,232,0.16); }
+
+    #crm-bloqueios-celebs-v1 .range-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    #crm-bloqueios-celebs-v1 .range-grid label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #5f6368;
+      display: block;
+      margin-bottom: 6px;
+    }
+    #crm-bloqueios-celebs-v1 .range-grid input[type="date"] {
+      width: 100%;
+      height: 40px;
+      border-radius: 12px;
+      border: 1px solid rgba(224,226,231,0.9);
+      padding: 0 10px;
+      background: #fff;
+      outline: none;
+      font-family: "Roboto", sans-serif;
+      font-size: 14px;
+    }
+    #crm-bloqueios-celebs-v1 .range-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 12px;
+    }
+
+    /* --- TOAST --- */
+    #crm-bloqueios-celebs-v1 .toast {
+      position: absolute;
+      right: 18px;
+      bottom: 18px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(32, 33, 36, 0.92);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      box-shadow: var(--shadow-2);
+      display: none;
+      align-items: center;
+      gap: 8px;
+      z-index: 9999;
+    }
+    #crm-bloqueios-celebs-v1 .toast.active { display: inline-flex; }
+    #crm-bloqueios-celebs-v1 .toast .material-symbols-rounded { font-size: 18px; color: #fff; }
+
+    @media (prefers-reduced-motion: reduce) {
+      #crm-bloqueios-celebs-v1 * { transition: none !important; animation: none !important; }
+    }
+
+    @media (max-width: 980px) {
+      #crm-bloqueios-celebs-v1 .brand { min-width: 160px; }
+      #crm-bloqueios-celebs-v1 .header-actions { min-width: 260px; }
+      #crm-bloqueios-celebs-v1 .modal-body { grid-template-columns: 1fr; }
+      #crm-bloqueios-celebs-v1 .popover { right: 12px; width: min(360px, calc(100% - 24px)); }
+    }
+  </style>
+
+  <div class="app-header">
+    <div class="brand" aria-label="Bloqueios">
+      <div class="mark" aria-hidden="true">
+        <span class="material-symbols-rounded">gpp_maybe</span>
+      </div>
+      <div class="title">
+        <div class="h1">Bloqueios</div>
+        <div class="h2">Celebridades • Supabase</div>
+      </div>
+    </div>
+
+    <div class="header-center">
+      <div class="search-wrap">
+        <div class="search" role="search">
+          <span class="material-symbols-rounded" aria-hidden="true">search</span>
+          <input id="blk-search" type="text" placeholder="Buscar por cliente, negócio, segmento, cidade, estado ou tipo..." autocomplete="off" />
+        </div>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <button class="pill-btn" id="btn-date" type="button">
+        <span class="material-symbols-rounded" aria-hidden="true">calendar_month</span>
+        <span id="date-label">Datas</span>
+      </button>
+      <button class="pill-btn" id="btn-filters" type="button">
+        <span class="material-symbols-rounded" aria-hidden="true">tune</span>
+        Filtros
+      </button>
+      <button class="primary-btn" id="btn-export" type="button">
+        <span class="material-symbols-rounded" aria-hidden="true">download</span>
+        Exportar CSV
+      </button>
+      <div class="kpi" aria-live="polite">
+        <div class="count" id="kpi-count">—</div>
+        <div class="status" id="kpi-status">Pronto</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="popover" id="date-popover" role="dialog" aria-label="Filtro de datas">
+    <div class="p-head">
+      <div class="t">Filtro de data (created_at)</div>
+      <button class="icon-btn" id="btn-close-date" type="button" aria-label="Fechar">
+        <span class="material-symbols-rounded" aria-hidden="true">close</span>
+      </button>
+    </div>
+    <div class="p-body">
+      <div class="preset-list">
+        <div class="preset" data-preset="all"><span>Todas</span><span class="material-symbols-rounded" aria-hidden="true">done</span></div>
+        <div class="preset" data-preset="today"><span>Hoje</span><span class="material-symbols-rounded" aria-hidden="true">schedule</span></div>
+        <div class="preset" data-preset="7d"><span>Últimos 7 dias</span><span class="material-symbols-rounded" aria-hidden="true">history</span></div>
+        <div class="preset" data-preset="30d"><span>Últimos 30 dias</span><span class="material-symbols-rounded" aria-hidden="true">history</span></div>
+      </div>
+
+      <div style="font-size:12px; font-weight:800; color:#5F6368; margin-top:8px; text-transform:uppercase; letter-spacing:0.4px;">
+        Intervalo custom
+      </div>
+      <div class="range-grid">
+        <div>
+          <label for="date-start">Início</label>
+          <input id="date-start" type="date" />
+        </div>
+        <div>
+          <label for="date-end">Fim</label>
+          <input id="date-end" type="date" />
+        </div>
+      </div>
+      <div class="range-actions">
+        <button class="ghost-btn" id="btn-clear-date" type="button">Limpar</button>
+        <button class="primary-btn" id="btn-apply-date" type="button">
+          <span class="material-symbols-rounded" aria-hidden="true">check</span>
+          Aplicar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-body">
+    <div class="panel">
+      <div class="table-head">
+        <div class="hint" id="hint">
+          <span class="material-symbols-rounded" aria-hidden="true">info</span>
+          <span>1 clique: destaque • duplo clique: copiar • use filtros para refinar • exporta CSV do resultado filtrado</span>
+        </div>
+      </div>
+
+      <div class="table-wrap" id="table-wrap" role="table" aria-label="Tabela de bloqueios">
+        <div class="state active" id="state-loading">
+          <div class="icon"><span class="material-symbols-rounded">hourglass_top</span></div>
+          <div class="title">Carregando…</div>
+          <div class="desc">Conectando e buscando os bloqueios no Supabase.</div>
+        </div>
+        <div class="state" id="state-empty">
+          <div class="icon"><span class="material-symbols-rounded">inbox</span></div>
+          <div class="title">Nenhum bloqueio encontrado</div>
+          <div class="desc">Ajuste os filtros ou limpe a busca para ver mais resultados.</div>
+        </div>
+        <div class="state" id="state-error">
+          <div class="icon"><span class="material-symbols-rounded">error</span></div>
+          <div class="title">Falha ao carregar</div>
+          <div class="desc" id="state-error-msg">Verifique a conexão com o Supabase e as permissões.</div>
+          <button class="primary-btn retry" id="btn-retry" type="button">
+            <span class="material-symbols-rounded" aria-hidden="true">refresh</span>
+            Tentar novamente
+          </button>
+        </div>
+
+        <div class="grid thead" id="thead" role="rowgroup" style="display:none;">
+          <div class="th sortable" role="columnheader" data-sort="created_at"><span class="material-symbols-rounded" aria-hidden="true">calendar_month</span>Data</div>
+          <div class="th" role="columnheader"><span class="material-symbols-rounded" aria-hidden="true">gpp_maybe</span>Tipo</div>
+          <div class="th" role="columnheader"><span class="material-symbols-rounded" aria-hidden="true">location_on</span>Estado / Cidade</div>
+          <div class="th" role="columnheader"><span class="material-symbols-rounded" aria-hidden="true">category</span>Segmento / Sub</div>
+          <div class="th" role="columnheader"><span class="material-symbols-rounded" aria-hidden="true">store</span>Negócio</div>
+          <div class="th" role="columnheader"><span class="material-symbols-rounded" aria-hidden="true">person</span>Cliente</div>
+          <div class="th" role="columnheader"><span class="material-symbols-rounded" aria-hidden="true">star</span>Celebridade</div>
+        </div>
+        <div class="tbody" id="tbody" role="rowgroup"></div>
+      </div>
+
+      <div class="table-foot" aria-label="Paginação">
+        <div class="pager">
+          <button class="mini-btn" id="btn-prev" type="button" aria-label="Página anterior">
+            <span class="material-symbols-rounded" aria-hidden="true">chevron_left</span>
+          </button>
+          <button class="mini-btn" id="btn-next" type="button" aria-label="Próxima página">
+            <span class="material-symbols-rounded" aria-hidden="true">chevron_right</span>
+          </button>
+          <div class="page-label" id="page-label">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: FILTROS -->
+  <div class="modal-overlay" id="filters-modal" aria-hidden="true">
+    <div class="modal" role="dialog" aria-label="Filtros">
+      <div class="modal-head">
+        <div class="modal-title">
+          <div class="h">Filtros</div>
+          <div class="s">Multi-select por valores + filtros de texto (cliente / celebridade)</div>
+        </div>
+        <button class="icon-btn" id="btn-close-filters" type="button" aria-label="Fechar">
+          <span class="material-symbols-rounded" aria-hidden="true">close</span>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="field">
+          <div class="label">Tipo de bloqueio <span class="mini" id="count-tipo">0 selecionados</span></div>
+          <input class="input" id="filtro-tipo-q" type="text" placeholder="Filtrar opções…" />
+          <div class="checklist" id="list-tipo"></div>
+        </div>
+
+        <div class="field">
+          <div class="label">Estado <span class="mini" id="count-estado">0 selecionados</span></div>
+          <input class="input" id="filtro-estado-q" type="text" placeholder="Filtrar opções…" />
+          <div class="checklist" id="list-estado"></div>
+        </div>
+
+        <div class="field">
+          <div class="label">Cidade <span class="mini" id="count-cidade">0 selecionados</span></div>
+          <input class="input" id="filtro-cidade-q" type="text" placeholder="Filtrar opções…" />
+          <div class="checklist" id="list-cidade"></div>
+        </div>
+
+        <div class="field">
+          <div class="label">Segmento <span class="mini" id="count-seg">0 selecionados</span></div>
+          <input class="input" id="filtro-seg-q" type="text" placeholder="Filtrar opções…" />
+          <div class="checklist" id="list-seg"></div>
+        </div>
+
+        <div class="field">
+          <div class="label">Subsegmento <span class="mini" id="count-sub">0 selecionados</span></div>
+          <input class="input" id="filtro-sub-q" type="text" placeholder="Filtrar opções…" />
+          <div class="checklist" id="list-sub"></div>
+        </div>
+
+        <div class="field">
+          <div class="label">Negócio <span class="mini" id="count-neg">0 selecionados</span></div>
+          <input class="input" id="filtro-neg-q" type="text" placeholder="Filtrar opções…" />
+          <div class="checklist" id="list-neg"></div>
+        </div>
+
+        <div class="field">
+          <div class="label">Cliente (texto)</div>
+          <input class="input" id="filtro-cliente" type="text" placeholder="Ex: Codex, João…" />
+          <div style="font-size:12px; color:#5F6368; line-height:1.4;">
+            Aplica em <b>cliente_nome</b> (ilike).
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="label">Celebridade (ID ou nome)</div>
+          <input class="input" id="filtro-celeb" type="text" placeholder="UUID ou parte do nome" />
+          <div style="font-size:12px; color:#5F6368; line-height:1.4;">
+            UUID filtra direto. Nome busca em <b>celebridadesReferencia</b> e filtra por IDs.
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-foot">
+        <div class="left" id="chips-selected"></div>
+        <div class="right">
+          <button class="ghost-btn" id="btn-clear-filters" type="button">Limpar</button>
+          <button class="primary-btn" id="btn-apply-filters" type="button">
+            <span class="material-symbols-rounded" aria-hidden="true">check</span>
+            Aplicar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite">
+    <span class="material-symbols-rounded" aria-hidden="true">content_copy</span>
+    <span id="toast-txt">Copiado</span>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.min.js"></script>
+  <script>
+  (function () {
+    // =========================
+    // BUBBLE_DATA (config única)
+    // =========================
+    const BUBBLE_DATA = {
+      supabaseUrl: "{{SUPABASE_URL}}",
+      supabaseAnonKey: "{{SUPABASE_ANON_KEY}}",
+      pageSize: 100
+    };
+
+    const DEFAULT_SUPABASE_URL = "https://awqtzoefutnfmnbomujt.supabase.co";
+    const DEFAULT_SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3cXR6b2VmdXRuZm1uYm9tdWp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzkyMTYyMTUsImV4cCI6MjA1NDc5MjIxNX0.JMdboXzu7NMTXH8NuKdxzNO3SYOOag4kuQL_SSO0PEY";
+
+    const root = document.getElementById("crm-bloqueios-celebs-v1");
+    const $ = (id) => root ? root.querySelector("#" + id) : null;
+    const $$ = (sel) => root ? Array.from(root.querySelectorAll(sel)) : [];
+
+    const safeStr = (v) => (v === null || v === undefined) ? "" : String(v);
+    const isPlaceholder = (v) => typeof v === "string" && v.includes("{{");
+    const isUUID = (s) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(s || "").trim());
+    const debounce = (fn, wait = 300) => {
+      let t = null;
+      return function (...args) {
+        clearTimeout(t);
+        t = setTimeout(() => fn.apply(this, args), wait);
+      };
+    };
+
+    function formatDateBR(isoOrDate) {
+      try {
+        const d = (isoOrDate instanceof Date) ? isoOrDate : new Date(isoOrDate);
+        if (Number.isNaN(d.getTime())) return "-";
+        return new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short", year: "numeric" }).format(d);
+      } catch (_) { return "-"; }
+    }
+
+    function csvEscape(val, delimiter) {
+      const s = safeStr(val);
+      const d = delimiter || ",";
+      if (s.includes('"') || s.includes(d) || s.includes("\n") || s.includes("\r")) {
+        return '"' + s.replace(/"/g, '""') + '"';
+      }
+      return s;
+    }
+
+    function downloadText(filename, text) {
+      // BOM ajuda Excel/Windows a reconhecer UTF-8 com acentos.
+      const blob = new Blob(["\uFEFF" + text], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function showToast(message, icon) {
+      const toast = $("toast");
+      const txt = $("toast-txt");
+      if (!toast || !txt) return;
+      txt.textContent = message;
+      const ic = toast.querySelector(".material-symbols-rounded");
+      if (ic && icon) ic.textContent = icon;
+      toast.classList.add("active");
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => toast.classList.remove("active"), 1600);
+    }
+
+    // =========================
+    // Estado
+    // =========================
+    const STATE = {
+      supabase: null,
+      sbUrl: "",
+      sbKey: "",
+      pageSize: Math.max(20, parseInt(BUBBLE_DATA.pageSize, 10) || 100),
+      offset: 0,
+      total: 0,
+      loading: false,
+      exporting: false,
+      sort: { col: "created_at", dir: "desc" },
+      selectedRowId: null,
+      celebNameById: new Map(), // id -> nome
+      filters: {
+        q: "",
+        dateStart: null, // Date | null
+        dateEnd: null,   // Date | null
+        tipo: [],
+        estado: [],
+        cidade: [],
+        segmento: [],
+        subsegmento: [],
+        negocio: [],
+        cliente: "",
+        celebridade: ""
+      },
+      options: {
+        loaded: false,
+        tipo: [],
+        estado: [],
+        cidade: [],
+        segmento: [],
+        subsegmento: [],
+        negocio: []
+      }
+    };
+
+    // =========================
+    // UI helpers
+    // =========================
+    function setKpi(countText, statusText) {
+      const c = $("kpi-count");
+      const s = $("kpi-status");
+      if (c) c.textContent = countText;
+      if (s) s.textContent = statusText;
+    }
+
+    function setState(which) {
+      const loading = $("state-loading");
+      const empty = $("state-empty");
+      const error = $("state-error");
+      const thead = $("thead");
+      if (loading) loading.classList.toggle("active", which === "loading");
+      if (empty) empty.classList.toggle("active", which === "empty");
+      if (error) error.classList.toggle("active", which === "error");
+      if (thead) thead.style.display = (which === "ready") ? "grid" : "none";
+    }
+
+    function updatePager() {
+      const prev = $("btn-prev");
+      const next = $("btn-next");
+      const label = $("page-label");
+      const pageSize = STATE.pageSize;
+      const total = STATE.total || 0;
+      const offset = STATE.offset || 0;
+      const page = Math.floor(offset / pageSize) + 1;
+      const totalPages = Math.max(1, Math.ceil(total / pageSize));
+      const start = total ? (offset + 1) : 0;
+      const end = Math.min(offset + pageSize, total);
+
+      if (label) label.textContent = total ? `${start}–${end} de ${total} (pág. ${page}/${totalPages})` : "—";
+      if (prev) prev.disabled = STATE.loading || offset <= 0;
+      if (next) next.disabled = STATE.loading || (offset + pageSize >= total);
+    }
+
+    function setDateLabel() {
+      const el = $("date-label");
+      if (!el) return;
+      const s = STATE.filters.dateStart;
+      const e = STATE.filters.dateEnd;
+      if (!s && !e) { el.textContent = "Datas"; return; }
+      const a = s ? formatDateBR(s) : "—";
+      const b = e ? formatDateBR(e) : "—";
+      el.textContent = `${a} → ${b}`;
+    }
+
+    function clearSelection() {
+      STATE.selectedRowId = null;
+      const tbody = $("tbody");
+      if (tbody) tbody.classList.remove("dim-others");
+      $$(".tbody .tr.is-selected").forEach(el => el.classList.remove("is-selected"));
+    }
+
+    // =========================
+    // Supabase init
+    // =========================
+    function waitForSupabase(cb, maxAttempts = 60) {
+      let tries = 0;
+      const t = setInterval(() => {
+        tries++;
+        if (window.supabase && typeof window.supabase.createClient === "function") {
+          clearInterval(t);
+          cb();
+          return;
+        }
+        if (tries >= maxAttempts) {
+          clearInterval(t);
+          cb(new Error("Supabase JS não carregou (timeout). Verifique bloqueio de CDN no Bubble ou conflito de scripts."));
+        }
+      }, 120);
+    }
+
+    function normalizeSupabaseProjectUrl(input) {
+      const raw = safeStr(input).trim();
+      if (!raw) return "";
+      // Bubble às vezes injeta a URL REST (…/rest/v1). O createClient precisa da URL do projeto (…supabase.co)
+      // Ex.: https://xyz.supabase.co/rest/v1  -> https://xyz.supabase.co
+      return raw
+        .replace(/\/rest\/v1\/?$/i, "")
+        .replace(/\/+$/g, "");
+    }
+
+    function initSupabase() {
+      const injectedUrl = (!isPlaceholder(BUBBLE_DATA.supabaseUrl) && BUBBLE_DATA.supabaseUrl) ? BUBBLE_DATA.supabaseUrl : "";
+      const injectedKey = (!isPlaceholder(BUBBLE_DATA.supabaseAnonKey) && BUBBLE_DATA.supabaseAnonKey) ? BUBBLE_DATA.supabaseAnonKey : "";
+
+      const url = normalizeSupabaseProjectUrl(injectedUrl) || DEFAULT_SUPABASE_URL;
+      const key = safeStr(injectedKey).trim() || DEFAULT_SUPABASE_KEY;
+
+      if (!url || !key) throw new Error("Config Supabase ausente (URL/AnonKey).");
+      STATE.sbUrl = url;
+      STATE.sbKey = key;
+      STATE.supabase = window.supabase.createClient(url, key);
+      return true;
+    }
+
+    // =========================
+    // Query builder
+    // =========================
+    async function resolveCelebrityFilterIds(term) {
+      const t = safeStr(term).trim();
+      if (!t) return null;
+      if (isUUID(t)) return { mode: "uuid", ids: [t] };
+
+      // 1) tenta via supabase-js (se estiver ok)
+      try {
+        const { data, error } = await STATE.supabase
+          .from("celebridadesReferencia")
+          .select("id, nome")
+          .ilike("nome", `%${t}%`)
+          .limit(50);
+        if (error) throw error;
+        const ids = (Array.isArray(data) ? data : []).map(r => r && r.id).filter(Boolean);
+        return { mode: "name", ids };
+      } catch (_) {}
+
+      // 2) fallback via REST
+      try {
+        const qs = new URLSearchParams();
+        qs.set("select", "id");
+        qs.set("nome", `ilike.*${t}*`);
+        qs.set("limit", "50");
+        const { json } = await restFetchJson(`/celebridadesReferencia?${qs.toString()}`);
+        const ids = (Array.isArray(json) ? json : []).map(r => r && r.id).filter(Boolean);
+        return { mode: "name", ids };
+      } catch (_) {
+        return { mode: "name", ids: [] };
+      }
+    }
+
+    function applyMultiIn(query, col, arr) {
+      if (!Array.isArray(arr) || arr.length === 0) return query;
+      const safe = arr.map(x => safeStr(x).trim()).filter(Boolean);
+      if (!safe.length) return query;
+      return query.in(col, safe);
+    }
+
+    function applyPageRange(query, offset, pageSize) {
+      const off = Math.max(0, parseInt(offset, 10) || 0);
+      const size = Math.max(1, parseInt(pageSize, 10) || 1);
+      if (query && typeof query.range === "function") {
+        return query.range(off, off + size - 1);
+      }
+      // Fallback para builds que não expõem .range()
+      if (query && typeof query.limit === "function" && typeof query.offset === "function") {
+        return query.limit(size).offset(off);
+      }
+      return null;
+    }
+
+    // =========================
+    // REST fallback (PostgREST)
+    // =========================
+    function getRestBase() {
+      const base = safeStr(STATE.sbUrl).trim().replace(/\/+$/g, "");
+      if (!base) throw new Error("Supabase URL não inicializada.");
+      return base + "/rest/v1";
+    }
+
+    function parseContentRangeTotal(contentRange) {
+      const s = safeStr(contentRange);
+      const m = s.match(/\/(\d+)\s*$/);
+      return m ? (parseInt(m[1], 10) || 0) : 0;
+    }
+
+    function buildInList(values) {
+      const list = (Array.isArray(values) ? values : []).map(v => safeStr(v).trim()).filter(Boolean);
+      if (!list.length) return null;
+      // aspas para suportar espaços/acentos
+      return "in.(" + list.map(v => JSON.stringify(v)).join(",") + ")";
+    }
+
+    function sanitizeForPostgrestValue(raw) {
+      // evita quebrar querystring (principalmente no `or=` que usa vírgula/parenteses como separadores)
+      return safeStr(raw).replace(/[(),]/g, " ").replace(/\s+/g, " ").trim();
+    }
+
+    async function restFetchJson(pathWithQuery, { preferCountExact = false } = {}) {
+      const url = getRestBase() + pathWithQuery;
+      const headers = {
+        apikey: STATE.sbKey,
+        Authorization: `Bearer ${STATE.sbKey}`,
+      };
+      if (preferCountExact) headers.Prefer = "count=exact";
+      const res = await fetch(url, { method: "GET", headers });
+      const text = await res.text();
+      let json = null;
+      try { json = text ? JSON.parse(text) : null; } catch (_) { json = null; }
+      if (!res.ok) {
+        const msg = (json && (json.message || json.error)) ? (json.message || json.error) : `HTTP ${res.status}`;
+        throw new Error(msg);
+      }
+      return { json, headers: res.headers };
+    }
+
+    async function hydrateCelebrityNamesFromRows(rows) {
+      const ids = Array.from(new Set((Array.isArray(rows) ? rows : [])
+        .map(r => safeStr(r && r.celebridade).trim())
+        .filter(v => v && isUUID(v))));
+      const missing = ids.filter(id => !STATE.celebNameById.has(id));
+      if (!missing.length) return;
+
+      // chunk para evitar URL grande
+      const chunkSize = 120;
+      for (let i = 0; i < missing.length; i += chunkSize) {
+        const chunk = missing.slice(i, i + chunkSize);
+        const qs = new URLSearchParams();
+        qs.set("select", "id,nome");
+        qs.set("id", buildInList(chunk));
+        qs.set("limit", String(chunkSize));
+        const { json } = await restFetchJson(`/celebridadesReferencia?${qs.toString()}`);
+        (Array.isArray(json) ? json : []).forEach(r => {
+          const id = safeStr(r && r.id).trim();
+          const nome = safeStr(r && r.nome).trim();
+          if (id) STATE.celebNameById.set(id, nome || id);
+        });
+      }
+    }
+
+    async function restFetchBloqueiosPage({ offset, limit, withCount, celebResolved } = {}) {
+      const qs = new URLSearchParams();
+      qs.set("select", "id,created_at,estado,cidade,tipo_bloqueio,segmento_nome,subsegmento_nome,negocio_nome,cliente_nome,celebridade");
+      qs.set("order", `${STATE.sort.col}.${STATE.sort.dir}`);
+      qs.set("limit", String(Math.max(1, parseInt(limit, 10) || 100)));
+      qs.set("offset", String(Math.max(0, parseInt(offset, 10) || 0)));
+
+      // Date range
+      if (STATE.filters.dateStart instanceof Date && !Number.isNaN(STATE.filters.dateStart.getTime())) {
+        qs.append("created_at", `gte.${STATE.filters.dateStart.toISOString()}`);
+      }
+      if (STATE.filters.dateEnd instanceof Date && !Number.isNaN(STATE.filters.dateEnd.getTime())) {
+        const end = new Date(STATE.filters.dateEnd);
+        end.setHours(23, 59, 59, 999);
+        qs.append("created_at", `lte.${end.toISOString()}`);
+      }
+
+      // Multi-select
+      const tipoIn = buildInList(STATE.filters.tipo); if (tipoIn) qs.set("tipo_bloqueio", tipoIn);
+      const estadoIn = buildInList(STATE.filters.estado); if (estadoIn) qs.set("estado", estadoIn);
+      const cidadeIn = buildInList(STATE.filters.cidade); if (cidadeIn) qs.set("cidade", cidadeIn);
+      const segIn = buildInList(STATE.filters.segmento); if (segIn) qs.set("segmento_nome", segIn);
+      const subIn = buildInList(STATE.filters.subsegmento); if (subIn) qs.set("subsegmento_nome", subIn);
+      const negIn = buildInList(STATE.filters.negocio); if (negIn) qs.set("negocio_nome", negIn);
+
+      // Cliente
+      const cliente = sanitizeForPostgrestValue(STATE.filters.cliente);
+      if (cliente) qs.set("cliente_nome", `ilike.*${cliente}*`);
+
+      // Celebridade
+      const celebTerm = safeStr(STATE.filters.celebridade).trim();
+      const resolved = celebResolved || (celebTerm ? await resolveCelebrityFilterIds(celebTerm) : null);
+      if (resolved && Array.isArray(resolved.ids)) {
+        if (resolved.ids.length === 0) qs.set("id", "eq.-1");
+        else if (resolved.ids.length === 1) qs.set("celebridade", `eq.${resolved.ids[0]}`);
+        else qs.set("celebridade", "in.(" + resolved.ids.map(v => JSON.stringify(v)).join(",") + ")");
+      }
+
+      // Busca rápida (OR)
+      const term = sanitizeForPostgrestValue(STATE.filters.q);
+      if (term) {
+        const like = `*${term}*`;
+        // PostgREST espera: or=(a.ilike.*x*,b.ilike.*x*)
+        qs.set("or", "(" + [
+          `tipo_bloqueio.ilike.${like}`,
+          `estado.ilike.${like}`,
+          `cidade.ilike.${like}`,
+          `segmento_nome.ilike.${like}`,
+          `subsegmento_nome.ilike.${like}`,
+          `negocio_nome.ilike.${like}`,
+          `cliente_nome.ilike.${like}`,
+        ].join(",") + ")");
+      }
+
+      const { json, headers } = await restFetchJson(`/bloqueiosCelebridades?${qs.toString()}`, { preferCountExact: !!withCount });
+      const total = withCount ? parseContentRangeTotal(headers.get("content-range")) : null;
+      return { rows: Array.isArray(json) ? json : [], total };
+    }
+
+    function applyDateRange(query) {
+      const s = STATE.filters.dateStart;
+      const e = STATE.filters.dateEnd;
+      if (s instanceof Date && !Number.isNaN(s.getTime())) {
+        query = query.gte("created_at", s.toISOString());
+      }
+      if (e instanceof Date && !Number.isNaN(e.getTime())) {
+        // inclui o dia todo local, ajustando para 23:59:59.999
+        const end = new Date(e);
+        end.setHours(23, 59, 59, 999);
+        query = query.lte("created_at", end.toISOString());
+      }
+      return query;
+    }
+
+    function applyQuickSearch(query) {
+      const term = safeStr(STATE.filters.q).trim();
+      if (!term) return query;
+      const like = `%${term}%`;
+      // busca nos campos mais úteis
+      return query.or([
+        `tipo_bloqueio.ilike.${like}`,
+        `estado.ilike.${like}`,
+        `cidade.ilike.${like}`,
+        `segmento_nome.ilike.${like}`,
+        `subsegmento_nome.ilike.${like}`,
+        `negocio_nome.ilike.${like}`,
+        `cliente_nome.ilike.${like}`
+      ].join(","));
+    }
+
+    async function buildBloqueiosQuery({ forCountAndData = true } = {}) {
+      let q = STATE.supabase
+        .from("bloqueiosCelebridades")
+        .select("id,created_at,estado,cidade,tipo_bloqueio,segmento_nome,subsegmento_nome,negocio_nome,cliente_nome,celebridade", forCountAndData ? { count: "exact" } : undefined);
+
+      // Ordenação
+      const col = (STATE.sort && STATE.sort.col) ? STATE.sort.col : "created_at";
+      const dir = (STATE.sort && STATE.sort.dir) ? STATE.sort.dir : "desc";
+      q = q.order(col, { ascending: dir === "asc" });
+
+      // Data range
+      q = applyDateRange(q);
+
+      // Multi-selects
+      q = applyMultiIn(q, "tipo_bloqueio", STATE.filters.tipo);
+      q = applyMultiIn(q, "estado", STATE.filters.estado);
+      q = applyMultiIn(q, "cidade", STATE.filters.cidade);
+      q = applyMultiIn(q, "segmento_nome", STATE.filters.segmento);
+      q = applyMultiIn(q, "subsegmento_nome", STATE.filters.subsegmento);
+      q = applyMultiIn(q, "negocio_nome", STATE.filters.negocio);
+
+      // Cliente texto
+      const cliente = safeStr(STATE.filters.cliente).trim();
+      if (cliente) q = q.ilike("cliente_nome", `%${cliente}%`);
+
+      // Celebridade
+      const celebTerm = safeStr(STATE.filters.celebridade).trim();
+      if (celebTerm) {
+        const resolved = await resolveCelebrityFilterIds(celebTerm);
+        if (resolved && Array.isArray(resolved.ids)) {
+          if (resolved.ids.length === 0) {
+            // filtro ativo, mas sem matches => retorna vazio de propósito
+            q = q.eq("id", -1);
+          } else if (resolved.ids.length === 1) {
+            q = q.eq("celebridade", resolved.ids[0]);
+          } else {
+            q = q.in("celebridade", resolved.ids);
+          }
+        }
+      }
+
+      // Busca rápida
+      q = applyQuickSearch(q);
+
+      return q;
+    }
+
+    // =========================
+    // Options (distinct-ish)
+    // =========================
+    function uniqSorted(arr) {
+      const set = new Set();
+      (Array.isArray(arr) ? arr : []).forEach(v => {
+        const s = safeStr(v).trim();
+        if (s) set.add(s);
+      });
+      return Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"));
+    }
+
+    async function loadFilterOptionsIfNeeded() {
+      if (STATE.options.loaded) return;
+      setKpi("—", "Carregando filtros…");
+      try {
+        const qs = new URLSearchParams();
+        qs.set("select", "tipo_bloqueio,estado,cidade,segmento_nome,subsegmento_nome,negocio_nome");
+        qs.set("limit", "5000");
+        const { json } = await restFetchJson(`/bloqueiosCelebridades?${qs.toString()}`);
+        const rows = Array.isArray(json) ? json : [];
+        STATE.options.tipo = uniqSorted(rows.map(r => r && r.tipo_bloqueio));
+        STATE.options.estado = uniqSorted(rows.map(r => r && r.estado));
+        STATE.options.cidade = uniqSorted(rows.map(r => r && r.cidade));
+        STATE.options.segmento = uniqSorted(rows.map(r => r && r.segmento_nome));
+        STATE.options.subsegmento = uniqSorted(rows.map(r => r && r.subsegmento_nome));
+        STATE.options.negocio = uniqSorted(rows.map(r => r && r.negocio_nome));
+        STATE.options.loaded = true;
+      } finally {
+        setKpi(STATE.total ? `${STATE.total} bloqueios` : "—", "Pronto");
+      }
+    }
+
+    function renderChecklist(listEl, values, selectedArr, onToggle, filterText) {
+      if (!listEl) return;
+      const term = safeStr(filterText).trim().toLowerCase();
+      const items = (Array.isArray(values) ? values : []).filter(v => {
+        if (!term) return true;
+        return safeStr(v).toLowerCase().includes(term);
+      });
+      const selected = new Set((Array.isArray(selectedArr) ? selectedArr : []).map(v => safeStr(v)));
+
+      listEl.innerHTML = "";
+      if (items.length === 0) {
+        const div = document.createElement("div");
+        div.style.padding = "12px";
+        div.style.fontSize = "12px";
+        div.style.color = "#5F6368";
+        div.textContent = "Sem opções.";
+        listEl.appendChild(div);
+        return;
+      }
+
+      items.forEach(v => {
+        const id = "chk-" + Math.random().toString(16).slice(2);
+        const row = document.createElement("label");
+        row.className = "check-item";
+        row.setAttribute("for", id);
+        row.innerHTML = `
+          <input id="${id}" type="checkbox" ${selected.has(String(v)) ? "checked" : ""} />
+          <div class="txt">${safeStr(v) || "-"}</div>
+        `;
+        row.addEventListener("click", (e) => {
+          // não deixa o label dar double toggle
+          if (e.target && e.target.tagName === "INPUT") return;
+          const cb = row.querySelector("input");
+          if (cb) cb.checked = !cb.checked;
+          onToggle(v, cb ? cb.checked : false);
+        });
+        const cb = row.querySelector("input");
+        if (cb) {
+          cb.addEventListener("change", () => onToggle(v, cb.checked));
+        }
+        listEl.appendChild(row);
+      });
+    }
+
+    function renderSelectedChips() {
+      const host = $("chips-selected");
+      if (!host) return;
+      host.innerHTML = "";
+
+      const toneFromKey = (key) => {
+        switch (key) {
+          case "tipo": return "tone-blue";
+          case "estado": return "tone-green";
+          case "cidade": return "tone-green";
+          case "segmento": return "tone-yellow";
+          case "subsegmento": return "tone-yellow";
+          case "negocio": return "tone-red";
+          case "cliente": return "tone-blue";
+          case "celebridade": return "tone-red";
+          default: return "tone-blue";
+        }
+      };
+
+      const addChip = (label, onRemove) => {
+        const el = document.createElement("span");
+        el.className = "chip";
+        el.innerHTML = `<span class="ellipsis">${label}</span>`;
+        el.style.cursor = "pointer";
+        el.title = "Clique para remover";
+        el.addEventListener("click", onRemove);
+        host.appendChild(el);
+      };
+
+      const f = STATE.filters;
+      const makeRemoveArr = (key, val) => () => {
+        f[key] = (Array.isArray(f[key]) ? f[key] : []).filter(x => x !== val);
+        syncFilterUiCounts();
+        renderFiltersModalLists(); // reflete checkboxes
+        renderSelectedChips();
+      };
+
+      (f.tipo || []).forEach(v => { const k="tipo"; const elLabel=`Tipo: ${v}`; const on=makeRemoveArr(k, v); const tone=toneFromKey(k); const chip=document.createElement("span"); chip.className=`chip ${tone}`; chip.innerHTML=`<span class="ellipsis">${elLabel}</span>`; chip.style.cursor="pointer"; chip.title="Clique para remover"; chip.addEventListener("click", on); host.appendChild(chip); });
+      (f.estado || []).forEach(v => { const k="estado"; const elLabel=`UF: ${v}`; const on=makeRemoveArr(k, v); const tone=toneFromKey(k); const chip=document.createElement("span"); chip.className=`chip ${tone}`; chip.innerHTML=`<span class="ellipsis">${elLabel}</span>`; chip.style.cursor="pointer"; chip.title="Clique para remover"; chip.addEventListener("click", on); host.appendChild(chip); });
+      (f.cidade || []).forEach(v => { const k="cidade"; const elLabel=`Cidade: ${v}`; const on=makeRemoveArr(k, v); const tone=toneFromKey(k); const chip=document.createElement("span"); chip.className=`chip ${tone}`; chip.innerHTML=`<span class="ellipsis">${elLabel}</span>`; chip.style.cursor="pointer"; chip.title="Clique para remover"; chip.addEventListener("click", on); host.appendChild(chip); });
+      (f.segmento || []).forEach(v => { const k="segmento"; const elLabel=`Seg: ${v}`; const on=makeRemoveArr(k, v); const tone=toneFromKey(k); const chip=document.createElement("span"); chip.className=`chip ${tone}`; chip.innerHTML=`<span class="ellipsis">${elLabel}</span>`; chip.style.cursor="pointer"; chip.title="Clique para remover"; chip.addEventListener("click", on); host.appendChild(chip); });
+      (f.subsegmento || []).forEach(v => { const k="subsegmento"; const elLabel=`Sub: ${v}`; const on=makeRemoveArr(k, v); const tone=toneFromKey(k); const chip=document.createElement("span"); chip.className=`chip ${tone}`; chip.innerHTML=`<span class="ellipsis">${elLabel}</span>`; chip.style.cursor="pointer"; chip.title="Clique para remover"; chip.addEventListener("click", on); host.appendChild(chip); });
+      (f.negocio || []).forEach(v => { const k="negocio"; const elLabel=`Neg: ${v}`; const on=makeRemoveArr(k, v); const tone=toneFromKey(k); const chip=document.createElement("span"); chip.className=`chip ${tone}`; chip.innerHTML=`<span class="ellipsis">${elLabel}</span>`; chip.style.cursor="pointer"; chip.title="Clique para remover"; chip.addEventListener("click", on); host.appendChild(chip); });
+      if (safeStr(f.cliente).trim()) { const k="cliente"; const tone=toneFromKey(k); const label=`Cliente: ${safeStr(f.cliente).trim()}`; const chip=document.createElement("span"); chip.className=`chip ${tone}`; chip.innerHTML=`<span class="ellipsis">${label}</span>`; chip.style.cursor="pointer"; chip.title="Clique para remover"; chip.addEventListener("click", () => { f.cliente = ""; const inp = $("filtro-cliente"); if (inp) inp.value = ""; renderSelectedChips(); }); host.appendChild(chip); }
+      if (safeStr(f.celebridade).trim()) { const k="celebridade"; const tone=toneFromKey(k); const label=`Celeb: ${safeStr(f.celebridade).trim()}`; const chip=document.createElement("span"); chip.className=`chip ${tone}`; chip.innerHTML=`<span class="ellipsis">${label}</span>`; chip.style.cursor="pointer"; chip.title="Clique para remover"; chip.addEventListener("click", () => { f.celebridade = ""; const inp = $("filtro-celeb"); if (inp) inp.value = ""; renderSelectedChips(); }); host.appendChild(chip); }
+    }
+
+    function syncFilterUiCounts() {
+      const f = STATE.filters;
+      const set = (id, n) => { const el = $(id); if (el) el.textContent = `${n} selecionados`; };
+      set("count-tipo", (f.tipo || []).length);
+      set("count-estado", (f.estado || []).length);
+      set("count-cidade", (f.cidade || []).length);
+      set("count-seg", (f.segmento || []).length);
+      set("count-sub", (f.subsegmento || []).length);
+      set("count-neg", (f.negocio || []).length);
+    }
+
+    function renderFiltersModalLists() {
+      renderChecklist($("list-tipo"), STATE.options.tipo, STATE.filters.tipo, (v, checked) => {
+        const a = STATE.filters.tipo;
+        STATE.filters.tipo = checked ? Array.from(new Set([...a, v])) : a.filter(x => x !== v);
+        syncFilterUiCounts(); renderSelectedChips();
+      }, $("filtro-tipo-q")?.value);
+
+      renderChecklist($("list-estado"), STATE.options.estado, STATE.filters.estado, (v, checked) => {
+        const a = STATE.filters.estado;
+        STATE.filters.estado = checked ? Array.from(new Set([...a, v])) : a.filter(x => x !== v);
+        syncFilterUiCounts(); renderSelectedChips();
+      }, $("filtro-estado-q")?.value);
+
+      renderChecklist($("list-cidade"), STATE.options.cidade, STATE.filters.cidade, (v, checked) => {
+        const a = STATE.filters.cidade;
+        STATE.filters.cidade = checked ? Array.from(new Set([...a, v])) : a.filter(x => x !== v);
+        syncFilterUiCounts(); renderSelectedChips();
+      }, $("filtro-cidade-q")?.value);
+
+      renderChecklist($("list-seg"), STATE.options.segmento, STATE.filters.segmento, (v, checked) => {
+        const a = STATE.filters.segmento;
+        STATE.filters.segmento = checked ? Array.from(new Set([...a, v])) : a.filter(x => x !== v);
+        syncFilterUiCounts(); renderSelectedChips();
+      }, $("filtro-seg-q")?.value);
+
+      renderChecklist($("list-sub"), STATE.options.subsegmento, STATE.filters.subsegmento, (v, checked) => {
+        const a = STATE.filters.subsegmento;
+        STATE.filters.subsegmento = checked ? Array.from(new Set([...a, v])) : a.filter(x => x !== v);
+        syncFilterUiCounts(); renderSelectedChips();
+      }, $("filtro-sub-q")?.value);
+
+      renderChecklist($("list-neg"), STATE.options.negocio, STATE.filters.negocio, (v, checked) => {
+        const a = STATE.filters.negocio;
+        STATE.filters.negocio = checked ? Array.from(new Set([...a, v])) : a.filter(x => x !== v);
+        syncFilterUiCounts(); renderSelectedChips();
+      }, $("filtro-neg-q")?.value);
+    }
+
+    // =========================
+    // Fetch + render
+    // =========================
+    async function copyRowToClipboard(row) {
+      const r = row || {};
+      const id = safeStr(r.id);
+      const local = [safeStr(r.estado).trim(), safeStr(r.cidade).trim()].filter(Boolean).join(" • ") || "-";
+      const seg = [safeStr(r.segmento_nome).trim(), safeStr(r.subsegmento_nome).trim()].filter(Boolean).join(" • ") || "-";
+      const tipo = safeStr(r.tipo_bloqueio).trim() || "-";
+      const negocio = safeStr(r.negocio_nome).trim() || "-";
+      const cliente = safeStr(r.cliente_nome).trim() || "-";
+      const celebId = safeStr(r.celebridade).trim() || "-";
+      const celebNome = (celebId && celebId !== "-" && STATE.celebNameById && STATE.celebNameById.get(celebId)) ? STATE.celebNameById.get(celebId) : "";
+
+      const text = [
+        `Data: ${formatDateBR(r.created_at)}`,
+        `Tipo: ${tipo}`,
+        `Local: ${local}`,
+        `Segmento/Sub: ${seg}`,
+        `Negócio: ${negocio}`,
+        `Cliente: ${cliente}`,
+        `Celebridade: ${celebNome ? `${celebNome} (${celebId})` : celebId}`,
+        `Bloqueio (id): ${id}`
+      ].join("\n");
+
+      try {
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const ta = document.createElement("textarea");
+          ta.value = text;
+          ta.setAttribute("readonly", "");
+          ta.style.position = "fixed";
+          ta.style.left = "-9999px";
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          ta.remove();
+        }
+        showToast("Linha copiada", "content_copy");
+        return true;
+      } catch (_) {
+        showToast("Não foi possível copiar", "error");
+        return false;
+      }
+    }
+
+    function renderRows(rows) {
+      const tbody = $("tbody");
+      if (!tbody) return;
+      tbody.innerHTML = "";
+      tbody.classList.remove("dim-others");
+
+      const toneFromText = (text) => {
+        const s = safeStr(text).toLowerCase();
+        if (s.includes("consult")) return "tone-yellow";
+        if (s.includes("cliente")) return "tone-red";
+        if (s.includes("celeb")) return "tone-blue";
+        // fallback determinístico (hash simples) -> 4 cores Google
+        let h = 0;
+        for (let i = 0; i < s.length; i++) h = ((h << 5) - h) + s.charCodeAt(i);
+        const tones = ["tone-blue","tone-red","tone-yellow","tone-green"];
+        return tones[Math.abs(h) % tones.length];
+      };
+
+      const frag = document.createDocumentFragment();
+      (Array.isArray(rows) ? rows : []).forEach(r => {
+        const id = safeStr(r.id);
+        const tr = document.createElement("div");
+        tr.className = "grid tr";
+        tr.dataset.rowid = id;
+        tr.setAttribute("role", "row");
+        tr.tabIndex = 0;
+
+        const local = [safeStr(r.estado).trim(), safeStr(r.cidade).trim()].filter(Boolean).join(" • ") || "-";
+        const seg = [safeStr(r.segmento_nome).trim(), safeStr(r.subsegmento_nome).trim()].filter(Boolean).join(" • ") || "-";
+        const tipo = safeStr(r.tipo_bloqueio).trim() || "-";
+        const negocio = safeStr(r.negocio_nome).trim() || "-";
+        const cliente = safeStr(r.cliente_nome).trim() || "-";
+        const celebId = safeStr(r.celebridade).trim() || "-";
+        const celebNome = (celebId && celebId !== "-" && STATE.celebNameById && STATE.celebNameById.get(celebId)) ? STATE.celebNameById.get(celebId) : "";
+        const celebLabel = celebNome ? celebNome : celebId;
+
+        tr.innerHTML = `
+          <div class="td" role="cell"><span class="ellipsis">${formatDateBR(r.created_at)}</span></div>
+          <div class="td" role="cell"><span class="chip ${toneFromText(tipo)}"><span class="ellipsis">${tipo}</span></span></div>
+          <div class="td" role="cell"><span class="ellipsis">${local}</span></div>
+          <div class="td" role="cell"><span class="ellipsis">${seg}</span></div>
+          <div class="td" role="cell"><span class="ellipsis">${negocio}</span></div>
+          <div class="td" role="cell"><span class="ellipsis">${cliente}</span></div>
+          <div class="td" role="cell" title="${celebNome ? `${celebNome} • ${celebId}` : celebId}">
+            <span class="ellipsis">${safeStr(celebLabel) || "-"}</span>
+          </div>
+        `;
+
+        tr.addEventListener("click", (e) => {
+          e.preventDefault();
+          const rowId = tr.dataset.rowid;
+          const already = (STATE.selectedRowId && STATE.selectedRowId === rowId);
+          clearSelection();
+          if (!already) {
+            STATE.selectedRowId = rowId;
+            tbody.classList.add("dim-others");
+            tr.classList.add("is-selected");
+          }
+        });
+
+        tr.addEventListener("dblclick", async (e) => {
+          e.preventDefault();
+          await copyRowToClipboard(r);
+        });
+
+        tr.addEventListener("keydown", async (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            tr.click();
+            return;
+          }
+          // Ctrl+C / Cmd+C copia (quando a linha está focada)
+          const isCopy = (e.key && e.key.toLowerCase() === "c") && (e.ctrlKey || e.metaKey);
+          if (isCopy) {
+            e.preventDefault();
+            await copyRowToClipboard(r);
+          }
+        });
+
+        frag.appendChild(tr);
+      });
+      tbody.appendChild(frag);
+    }
+
+    async function fetchAndRender() {
+      if (STATE.loading) return;
+      STATE.loading = true;
+      clearSelection();
+      updatePager();
+      setKpi(STATE.total ? `${STATE.total} bloqueios` : "—", "Carregando…");
+      setState("loading");
+
+      try {
+        const { rows, total } = await restFetchBloqueiosPage({ offset: STATE.offset, limit: STATE.pageSize, withCount: true });
+        await hydrateCelebrityNamesFromRows(rows);
+        STATE.total = (typeof total === "number") ? total : (Array.isArray(rows) ? rows.length : 0);
+        updatePager();
+        setKpi(`${STATE.total} bloqueios`, "Pronto");
+        setDateLabel();
+
+        if (!rows || rows.length === 0) {
+          $("tbody").innerHTML = "";
+          setState("empty");
+          return;
+        }
+        setState("ready");
+        renderRows(rows);
+      } catch (err) {
+        const msg = safeStr(err && (err.message || err.toString())) || "Erro desconhecido";
+        const el = $("state-error-msg");
+        if (el) el.textContent = msg;
+        setKpi("—", "Erro");
+        setState("error");
+      } finally {
+        STATE.loading = false;
+        updatePager();
+      }
+    }
+
+    // =========================
+    // Export CSV (resultado filtrado)
+    // =========================
+    async function exportCsv() {
+      if (STATE.exporting || STATE.loading) return;
+      const btn = $("btn-export");
+      const prevBtnLabel = btn ? btn.textContent : "";
+      STATE.exporting = true;
+      if (btn) { btn.disabled = true; btn.textContent = "Exportando…"; }
+      setKpi(`${STATE.total || "—"} bloqueios`, "Exportando…");
+      showToast("Exportando CSV…", "download");
+
+      try {
+        const batchSize = 1000;
+        let offset = 0;
+        const all = [];
+        const celebTerm = safeStr(STATE.filters.celebridade).trim();
+        const celebResolved = celebTerm ? await resolveCelebrityFilterIds(celebTerm) : null;
+
+        while (true) {
+          const { rows } = await restFetchBloqueiosPage({ offset, limit: batchSize, withCount: false, celebResolved });
+          all.push(...rows);
+          if (rows.length < batchSize) break;
+          offset += batchSize;
+        }
+
+        // Excel PT-BR costuma abrir melhor com separador ';'
+        const delimiter = ";";
+        const header = ["id","created_at","tipo_bloqueio","estado","cidade","segmento_nome","subsegmento_nome","negocio_nome","cliente_nome","celebridade"];
+        const lines = [header.join(delimiter)];
+        all.forEach(r => {
+          const line = [
+            csvEscape(r.id, delimiter),
+            csvEscape(r.created_at, delimiter),
+            csvEscape(r.tipo_bloqueio, delimiter),
+            csvEscape(r.estado, delimiter),
+            csvEscape(r.cidade, delimiter),
+            csvEscape(r.segmento_nome, delimiter),
+            csvEscape(r.subsegmento_nome, delimiter),
+            csvEscape(r.negocio_nome, delimiter),
+            csvEscape(r.cliente_nome, delimiter),
+            csvEscape(r.celebridade, delimiter)
+          ].join(delimiter);
+          lines.push(line);
+        });
+        const filename = `bloqueios_${new Date().toISOString().slice(0,10)}.csv`;
+        downloadText(filename, lines.join("\n"));
+        showToast(`CSV gerado (${all.length})`, "check_circle");
+      } catch (err) {
+        showToast("Falha ao exportar", "error");
+      } finally {
+        STATE.exporting = false;
+        if (btn) { btn.disabled = false; btn.textContent = prevBtnLabel || "Exportar CSV"; }
+        setKpi(`${STATE.total || "—"} bloqueios`, "Pronto");
+      }
+    }
+
+    // =========================
+    // Eventos (UI)
+    // =========================
+    function openFilters() {
+      const modal = $("filters-modal");
+      if (!modal) return;
+      modal.classList.add("active");
+      modal.setAttribute("aria-hidden", "false");
+    }
+    function closeFilters() {
+      const modal = $("filters-modal");
+      if (!modal) return;
+      modal.classList.remove("active");
+      modal.setAttribute("aria-hidden", "true");
+    }
+    function toggleDatePopover(force) {
+      const pop = $("date-popover");
+      if (!pop) return;
+      const shouldOpen = (typeof force === "boolean") ? force : !pop.classList.contains("active");
+      pop.classList.toggle("active", shouldOpen);
+    }
+
+    function wireUi() {
+      // busca
+      const search = $("blk-search");
+      if (search) {
+        search.addEventListener("input", debounce(() => {
+          STATE.filters.q = search.value || "";
+          STATE.offset = 0;
+          fetchAndRender();
+        }, 450));
+      }
+
+      // paginação
+      $("btn-prev")?.addEventListener("click", () => {
+        STATE.offset = Math.max(0, (STATE.offset || 0) - STATE.pageSize);
+        fetchAndRender();
+      });
+      $("btn-next")?.addEventListener("click", () => {
+        STATE.offset = (STATE.offset || 0) + STATE.pageSize;
+        fetchAndRender();
+      });
+
+      // sort (apenas data por enquanto)
+      $$(".th.sortable").forEach(th => {
+        th.addEventListener("click", () => {
+          const col = th.dataset.sort || "created_at";
+          if (STATE.sort.col === col) {
+            STATE.sort.dir = (STATE.sort.dir === "asc") ? "desc" : "asc";
+          } else {
+            STATE.sort.col = col;
+            STATE.sort.dir = "desc";
+          }
+          STATE.offset = 0;
+          fetchAndRender();
+        });
+      });
+
+      // click fora: limpa destaque
+      document.addEventListener("click", (e) => {
+        const tbody = $("tbody");
+        if (!tbody) return;
+        const pop = $("date-popover");
+        const btnDate = $("btn-date");
+        const btnFilters = $("btn-filters");
+        const modal = $("filters-modal");
+
+        if (pop && pop.classList.contains("active")) {
+          if (btnDate && btnDate.contains(e.target)) return;
+          if (pop.contains(e.target)) return;
+          toggleDatePopover(false);
+        }
+
+        if (modal && modal.classList.contains("active")) return; // modal controla backdrop
+        if (tbody.contains(e.target)) return;
+        clearSelection();
+
+        // evitar fechar filtros ao clicar no botão
+        if (btnFilters && btnFilters.contains(e.target)) return;
+      });
+
+      // date popover
+      $("btn-date")?.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleDatePopover();
+      });
+      $("btn-close-date")?.addEventListener("click", () => toggleDatePopover(false));
+      $("btn-clear-date")?.addEventListener("click", () => {
+        STATE.filters.dateStart = null;
+        STATE.filters.dateEnd = null;
+        const a = $("date-start"); const b = $("date-end");
+        if (a) a.value = "";
+        if (b) b.value = "";
+        setDateLabel();
+        STATE.offset = 0;
+        fetchAndRender();
+      });
+      $("btn-apply-date")?.addEventListener("click", () => {
+        const a = $("date-start")?.value || "";
+        const b = $("date-end")?.value || "";
+        STATE.filters.dateStart = a ? new Date(a + "T00:00:00") : null;
+        STATE.filters.dateEnd = b ? new Date(b + "T00:00:00") : null;
+        setDateLabel();
+        toggleDatePopover(false);
+        STATE.offset = 0;
+        fetchAndRender();
+      });
+      $$(".preset").forEach(p => {
+        p.addEventListener("click", () => {
+          const type = p.dataset.preset;
+          const now = new Date();
+          const start = new Date(now);
+          const end = new Date(now);
+          if (type === "all") {
+            STATE.filters.dateStart = null;
+            STATE.filters.dateEnd = null;
+          } else if (type === "today") {
+            start.setHours(0,0,0,0);
+            end.setHours(0,0,0,0);
+            STATE.filters.dateStart = start;
+            STATE.filters.dateEnd = end;
+          } else if (type === "7d") {
+            start.setDate(start.getDate() - 6);
+            start.setHours(0,0,0,0);
+            end.setHours(0,0,0,0);
+            STATE.filters.dateStart = start;
+            STATE.filters.dateEnd = end;
+          } else if (type === "30d") {
+            start.setDate(start.getDate() - 29);
+            start.setHours(0,0,0,0);
+            end.setHours(0,0,0,0);
+            STATE.filters.dateStart = start;
+            STATE.filters.dateEnd = end;
+          }
+          const a = $("date-start"); const b = $("date-end");
+          if (a) a.value = STATE.filters.dateStart ? STATE.filters.dateStart.toISOString().slice(0,10) : "";
+          if (b) b.value = STATE.filters.dateEnd ? STATE.filters.dateEnd.toISOString().slice(0,10) : "";
+          setDateLabel();
+          toggleDatePopover(false);
+          STATE.offset = 0;
+          fetchAndRender();
+        });
+      });
+
+      // modal filtros
+      $("btn-filters")?.addEventListener("click", async () => {
+        toggleDatePopover(false);
+        await loadFilterOptionsIfNeeded();
+        syncFilterUiCounts();
+        renderFiltersModalLists();
+        renderSelectedChips();
+        openFilters();
+      });
+      $("btn-close-filters")?.addEventListener("click", closeFilters);
+      $("filters-modal")?.addEventListener("click", (e) => {
+        if (e.target === $("filters-modal")) closeFilters();
+      });
+      document.addEventListener("keydown", (e) => {
+        if (e.key !== "Escape") return;
+        if ($("filters-modal")?.classList.contains("active")) closeFilters();
+        if ($("date-popover")?.classList.contains("active")) toggleDatePopover(false);
+      });
+
+      // filtrar listas no modal
+      ["filtro-tipo-q","filtro-estado-q","filtro-cidade-q","filtro-seg-q","filtro-sub-q","filtro-neg-q"].forEach(id => {
+        const el = $(id);
+        if (!el) return;
+        el.addEventListener("input", debounce(renderFiltersModalLists, 160));
+      });
+
+      // inputs texto
+      $("filtro-cliente")?.addEventListener("input", debounce((e) => {
+        STATE.filters.cliente = e.target.value || "";
+        renderSelectedChips();
+      }, 180));
+      $("filtro-celeb")?.addEventListener("input", debounce((e) => {
+        STATE.filters.celebridade = e.target.value || "";
+        renderSelectedChips();
+      }, 180));
+
+      $("btn-clear-filters")?.addEventListener("click", () => {
+        STATE.filters.tipo = [];
+        STATE.filters.estado = [];
+        STATE.filters.cidade = [];
+        STATE.filters.segmento = [];
+        STATE.filters.subsegmento = [];
+        STATE.filters.negocio = [];
+        STATE.filters.cliente = "";
+        STATE.filters.celebridade = "";
+        const ids = ["filtro-cliente","filtro-celeb"];
+        ids.forEach(id => { const el = $(id); if (el) el.value = ""; });
+        syncFilterUiCounts();
+        renderFiltersModalLists();
+        renderSelectedChips();
+      });
+      $("btn-apply-filters")?.addEventListener("click", () => {
+        closeFilters();
+        STATE.offset = 0;
+        fetchAndRender();
+      });
+
+      // export
+      $("btn-export")?.addEventListener("click", exportCsv);
+
+      // retry
+      $("btn-retry")?.addEventListener("click", () => {
+        STATE.offset = 0;
+        fetchAndRender();
+      });
+    }
+
+    // =========================
+    // Boot
+    // =========================
+    function startApp(err) {
+      if (err) {
+        const msgEl = $("state-error-msg");
+        if (msgEl) msgEl.textContent = safeStr(err.message || err);
+        setKpi("—", "Erro");
+        setState("error");
+        return;
+      }
+      try {
+        initSupabase();
+        wireUi();
+        setDateLabel();
+        fetchAndRender();
+      } catch (e) {
+        const msgEl = $("state-error-msg");
+        if (msgEl) msgEl.textContent = safeStr(e.message || e);
+        setState("error");
+      }
+    }
+
+    if (!root) return;
+    setState("loading");
+    setKpi("—", "Conectando…");
+    waitForSupabase(startApp);
+  })();
+  </script>
+</div>
+
+

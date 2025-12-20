@@ -1,0 +1,33 @@
+[data-cdn-widget="demo-card"] .card{
+  border:1px solid #e5e7eb;
+  border-radius:14px;
+  padding:16px;
+  max-width:520px;
+  background:#ffffff;
+  box-shadow:0 6px 20px rgba(0,0,0,.06);
+  font-family: system-ui, -apple-system, Segoe UI, Arial, sans-serif;
+}
+
+[data-cdn-widget="demo-card"] .title{
+  font-weight:700;
+  font-size:18px;
+  margin-bottom:8px;
+}
+
+[data-cdn-widget="demo-card"] .desc{
+  color:#374151;
+  margin-bottom:12px;
+}
+
+[data-cdn-widget="demo-card"] .btn{
+  background:#2563eb;
+  color:#fff;
+  border:0;
+  padding:10px 14px;
+  border-radius:999px;
+  cursor:pointer;
+}
+
+
+
+

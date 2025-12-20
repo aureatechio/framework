@@ -1,0 +1,62 @@
+[data-cdn-widget="elemento-novo"] .card{
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 16px;
+  max-width: 640px;
+  background: #ffeb3b;
+  box-shadow: 0 6px 20px rgba(0,0,0,.06);
+  font-family: system-ui, -apple-system, Segoe UI, Arial, sans-serif;
+}
+
+[data-cdn-widget="elemento-novo"] .title{
+  font-weight: 800;
+  font-size: 18px;
+  margin-bottom: 6px;
+}
+
+[data-cdn-widget="elemento-novo"] .desc{
+  color: #374151;
+  margin-bottom: 14px;
+}
+
+[data-cdn-widget="elemento-novo"] .row{
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+}
+
+[data-cdn-widget="elemento-novo"] .input{
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  padding: 10px 12px;
+  outline: none;
+}
+
+[data-cdn-widget="elemento-novo"] .input:focus{
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, .15);
+}
+
+[data-cdn-widget="elemento-novo"] .btn{
+  background: #2563eb;
+  color: #fff;
+  border: 0;
+  padding: 10px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+[data-cdn-widget="elemento-novo"] .btn:hover{
+  filter: brightness(.98);
+}
+
+[data-cdn-widget="elemento-novo"] .hint{
+  margin-top: 10px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+

@@ -1,0 +1,725 @@
+<div id="comp-popup-criar-lead-material-v1">
+    <style>
+      /* --- CONFIGURAÇÃO DE DESIGN (TOKENS) --- */
+      #comp-popup-criar-lead-material-v1{
+        --color-google-blue:#4285F4;
+        --color-google-red:#EA4335;
+        --color-google-yellow:#FBBC05;
+        --color-google-green:#34A853;
+  
+        --color-primary:#1A73E8;
+        --color-primary-variant:#174EA6;
+        --color-background:#FFFFFF;
+        --color-surface:#FFFFFF;
+      --color-surface-alt:#F7F8FA;
+        --color-error:#D93025;
+        --color-success:#1E8E3E;
+  
+        --color-text-primary:#202124;
+        --color-text-secondary:#5F6368;
+        --color-border:#DADCE0;
+  
+        --font-family-base: 'Roboto', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+  
+        --font-size-h2: 20px;
+        --font-size-body: 14px;
+        --font-size-caption: 12px;
+  
+        --font-weight-regular: 400;
+        --font-weight-medium: 500;
+  
+        --space-s: 8px;
+        --space-m: 16px;
+        --space-l: 24px;
+  
+        --radius-m: 8px;
+      --radius-l: 18px;
+      --radius-xl: 22px;
+  
+      --shadow-level-1: 0 1px 2px rgba(60,64,67,0.10), 0 2px 8px rgba(60,64,67,0.06);
+      --shadow-level-2: 0 2px 6px rgba(60,64,67,0.14), 0 8px 20px rgba(60,64,67,0.10);
+  
+        font-family: var(--font-family-base);
+        color: var(--color-text-primary);
+      }
+  
+      #comp-popup-criar-lead-material-v1 *{ box-sizing:border-box; }
+  
+    #comp-popup-criar-lead-material-v1 .wrap{
+      background: var(--color-surface);
+      border: 1px solid rgba(218,220,224,0.75);
+      border-radius: var(--radius-xl);
+      box-shadow: none;
+      overflow: hidden;
+      width: 100%;
+      max-width: 720px;
+    }
+  
+    #comp-popup-criar-lead-material-v1 .header{
+      padding: 18px 20px;
+      background: #fff;
+      border-bottom: 1px solid rgba(218,220,224,0.65);
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap: var(--space-m);
+    }
+
+    #comp-popup-criar-lead-material-v1 .header-right{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+    }
+
+    #comp-popup-criar-lead-material-v1 .icon-btn{
+      width: 36px;
+      height: 36px;
+      border-radius: 999px;
+      border: 1px solid rgba(218,220,224,0.95);
+      background: #fff;
+      color: var(--color-text-secondary);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+      transition: background 160ms ease, border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+      user-select:none;
+    }
+
+    #comp-popup-criar-lead-material-v1 .icon-btn:hover{
+      background: rgba(241,243,244,0.85);
+      border-color: rgba(218,220,224,1);
+    }
+
+    #comp-popup-criar-lead-material-v1 .icon-btn:active{ transform: translateY(1px); }
+
+    #comp-popup-criar-lead-material-v1 .icon-btn:focus{
+      outline:none;
+      box-shadow: 0 0 0 4px rgba(26,115,232,0.14);
+      border-color: rgba(26,115,232,0.55);
+    }
+
+    #comp-popup-criar-lead-material-v1 .icon-btn svg{
+      width: 18px;
+      height: 18px;
+      display:block;
+    }
+  
+    #comp-popup-criar-lead-material-v1 .title{
+        margin:0;
+      font-size: 18px;
+        line-height: 1.2;
+        font-weight: var(--font-weight-medium);
+      }
+  
+      #comp-popup-criar-lead-material-v1 .subtitle{
+        margin: 6px 0 0 0;
+        font-size: var(--font-size-caption);
+        color: var(--color-text-secondary);
+      }
+  
+    #comp-popup-criar-lead-material-v1 .pill{
+        align-self:flex-start;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: var(--font-size-caption);
+      border: 1px solid rgba(26,115,232,0.22);
+      background: rgba(26,115,232,0.06);
+        color: var(--color-primary-variant);
+        white-space: nowrap;
+      }
+  
+    #comp-popup-criar-lead-material-v1 .body{
+      padding: 18px 20px;
+        display:grid;
+        gap: var(--space-m);
+      }
+  
+      #comp-popup-criar-lead-material-v1 .grid{
+        display:grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--space-m);
+      }
+  
+      #comp-popup-criar-lead-material-v1 .field{
+        display:flex;
+        flex-direction:column;
+        gap: 6px;
+        min-width: 0;
+      }
+  
+      #comp-popup-criar-lead-material-v1 label{
+        font-size: var(--font-size-caption);
+        color: var(--color-text-secondary);
+      }
+  
+    #comp-popup-criar-lead-material-v1 input,
+    #comp-popup-criar-lead-material-v1 textarea,
+    #comp-popup-criar-lead-material-v1 select{
+        width:100%;
+      border: 1px solid rgba(218,220,224,0.9);
+        border-radius: 12px;
+        padding: 12px 12px;
+        font-size: var(--font-size-body);
+        background: #fff;
+        outline: none;
+        transition: border-color 180ms ease, box-shadow 180ms ease;
+      }
+  
+      #comp-popup-criar-lead-material-v1 textarea{
+        min-height: 92px;
+        resize: vertical;
+      }
+  
+      #comp-popup-criar-lead-material-v1 input:focus,
+      #comp-popup-criar-lead-material-v1 textarea:focus,
+      #comp-popup-criar-lead-material-v1 select:focus{
+        border-color: rgba(26,115,232,0.75);
+        box-shadow: 0 0 0 4px rgba(26,115,232,0.14);
+      }
+  
+      #comp-popup-criar-lead-material-v1 .hint{
+        font-size: var(--font-size-caption);
+        color: var(--color-text-secondary);
+      }
+  
+      #comp-popup-criar-lead-material-v1 .row{
+        display:flex;
+        gap: var(--space-m);
+        align-items:center;
+        justify-content:space-between;
+        flex-wrap: wrap;
+      }
+  
+    #comp-popup-criar-lead-material-v1 .status{
+      display:flex;
+      align-items:center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: var(--font-size-caption);
+      border: 1px solid rgba(218,220,224,0.9);
+      background: rgba(247,248,250,0.95);
+      color: var(--color-text-secondary);
+      max-width: 100%;
+    }
+    #comp-popup-criar-lead-material-v1 .status[hidden]{ display:none !important; }
+    #comp-popup-criar-lead-material-v1 .status .dot{
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: rgba(95,99,104,0.55);
+      flex: 0 0 auto;
+    }
+      #comp-popup-criar-lead-material-v1 .status.ok{
+        border-color: rgba(30,142,62,0.35);
+        background: rgba(30,142,62,0.08);
+        color: var(--color-success);
+      }
+      #comp-popup-criar-lead-material-v1 .status.ok .dot{ background: rgba(30,142,62,0.75); }
+      #comp-popup-criar-lead-material-v1 .status.err{
+        border-color: rgba(217,48,37,0.35);
+        background: rgba(217,48,37,0.08);
+        color: var(--color-error);
+      }
+      #comp-popup-criar-lead-material-v1 .status.err .dot{ background: rgba(217,48,37,0.75); }
+  
+    #comp-popup-criar-lead-material-v1 .footer{
+      padding: 14px 20px;
+      border-top: 1px solid rgba(218,220,224,0.65);
+      background: #fff;
+      display:flex;
+      justify-content:flex-end;
+      gap: var(--space-s);
+      flex-wrap: wrap;
+    }
+  
+    #comp-popup-criar-lead-material-v1 .btn{
+        border: 1px solid rgba(218,220,224,0.95);
+        background: #fff;
+        color: var(--color-text-primary);
+        border-radius: 999px;
+        padding: 12px 16px;
+        font-size: 14px;
+        line-height: 20px;
+        font-weight: var(--font-weight-medium);
+        cursor:pointer;
+        transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease, background 160ms ease;
+        user-select:none;
+      }
+
+      #comp-popup-criar-lead-material-v1 .btn.ghost{
+        background: transparent;
+        border-color: transparent;
+        color: var(--color-primary-variant);
+      }
+  
+      #comp-popup-criar-lead-material-v1 .btn:focus{
+        outline:none;
+        box-shadow: 0 0 0 4px rgba(26,115,232,0.14);
+        border-color: rgba(26,115,232,0.55);
+      }
+  
+      #comp-popup-criar-lead-material-v1 .btn:active{ transform: translateY(1px); }
+  
+      #comp-popup-criar-lead-material-v1 .btn.primary{
+        background: var(--color-primary);
+        border-color: var(--color-primary);
+        color:#fff;
+        box-shadow: var(--shadow-level-1);
+      }
+  
+      #comp-popup-criar-lead-material-v1 .btn.primary:hover{
+        background: var(--color-primary-variant);
+        border-color: var(--color-primary-variant);
+        box-shadow: var(--shadow-level-2);
+      }
+  
+      #comp-popup-criar-lead-material-v1 .btn[disabled]{
+        opacity: 0.55;
+        cursor:not-allowed;
+        transform:none;
+        box-shadow:none;
+      }
+  
+      #comp-popup-criar-lead-material-v1 .mono{
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      }
+  
+    #comp-popup-criar-lead-material-v1 .soft{
+      padding: 8px 10px;
+      border-radius: 14px;
+      border: 1px solid rgba(218,220,224,0.8);
+      background: rgba(247,248,250,0.90);
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-caption);
+    }
+  
+    @media (max-width: 560px){
+        #comp-popup-criar-lead-material-v1 .grid{ grid-template-columns: 1fr; }
+      #comp-popup-criar-lead-material-v1 .header{ padding: 16px; }
+      #comp-popup-criar-lead-material-v1 .body{ padding: 16px; }
+      #comp-popup-criar-lead-material-v1 .footer{ padding: 12px 16px; }
+      }
+  
+      @media (prefers-reduced-motion: reduce){
+        #comp-popup-criar-lead-material-v1 input,
+        #comp-popup-criar-lead-material-v1 textarea,
+        #comp-popup-criar-lead-material-v1 select,
+        #comp-popup-criar-lead-material-v1 .btn{
+          transition: none !important;
+        }
+      }
+    </style>
+  
+    <div class="wrap" role="region" aria-label="Criar novo lead">
+      <div class="header">
+        <div>
+          <h2 class="title" id="ttl">Novo lead</h2>
+          <p class="subtitle" id="subttl">Preencha os dados para criar um novo lead.</p>
+        </div>
+        <div class="header-right">
+          <div class="pill" id="pill">etapa: novo lead</div>
+          <button class="icon-btn" type="button" id="btn-cancelar" aria-label="Cancelar e fechar">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M18.3 5.71a1 1 0 0 0-1.41 0L12 10.59 7.11 5.7A1 1 0 0 0 5.7 7.11L10.59 12 5.7 16.89a1 1 0 1 0 1.41 1.41L12 13.41l4.89 4.89a1 1 0 0 0 1.41-1.41L13.41 12l4.89-4.89a1 1 0 0 0 0-1.4Z" fill="currentColor"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+  
+      <div class="body">
+
+  
+        <div class="grid" aria-label="Campos do lead">
+          <div class="field" style="grid-column: 1 / -1;">
+            <label for="in-nome">Nome *</label>
+            <input id="in-nome" type="text" autocomplete="name" placeholder="Ex.: Maria Silva" />
+            <div class="hint">Como vai aparecer no card.</div>
+          </div>
+  
+          <div class="field">
+            <label for="in-telefone">Telefone (WhatsApp) *</label>
+            <input id="in-telefone" type="tel" inputmode="tel" autocomplete="tel" placeholder="Ex.: +55 11 99999-9999" />
+            <div class="hint">Salvamos só números (DDI + DDD).</div>
+          </div>
+  
+          <div class="field">
+            <label for="in-email">E-mail</label>
+            <input id="in-email" type="email" autocomplete="email" placeholder="Ex.: maria@empresa.com" />
+          </div>
+  
+          <div class="field">
+            <label for="in-empresa">Empresa</label>
+            <input id="in-empresa" type="text" placeholder="Ex.: Acelerai" />
+          </div>
+  
+          <div class="field">
+            <label for="in-canal">Canal de contato</label>
+            <select id="in-canal" aria-label="Canal de contato">
+              <option value="WhatsApp" selected>WhatsApp</option>
+              <option value="Instagram">Instagram</option>
+              <option value="Facebook">Facebook</option>
+              <option value="Indicação">Indicação</option>
+              <option value="Site">Site</option>
+              <option value="">(vazio)</option>
+            </select>
+          </div>
+  
+          <div class="field" style="grid-column: 1 / -1;">
+            <label for="in-anotacoes">Anotações</label>
+            <textarea id="in-anotacoes" placeholder="Notas internas (opcional)"></textarea>
+          </div>
+        </div>
+  
+        <div class="row">
+          <div class="status" id="status" role="status" aria-live="polite" hidden>
+            <span class="dot" aria-hidden="true"></span>
+            <span class="msg"></span>
+          </div>
+        </div>
+      </div>
+  
+      <div class="footer">
+        <button class="btn ghost" type="button" id="btn-limpar">Limpar</button>
+        <button class="btn primary" type="button" id="btn-criar">Criar lead</button>
+      </div>
+    </div>
+  
+    <script>
+      (function () {
+        "use strict";
+  
+        // =========================
+        // BUBBLE_DATA (injeção única)
+        // =========================
+        const BUBBLE_DATA = {
+          // Pinado do `tabela&kambam.html` (mesmo projeto Supabase do CRM)
+          supabaseUrl: "https://awqtzoefutnfmnbomujt.supabase.co",
+          supabaseAnonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3cXR6b2VmdXRuZm1uYm9tdWp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzkyMTYyMTUsImV4cCI6MjA1NDc5MjIxNX0.JMdboXzu7NMTXH8NuKdxzNO3SYOOag4kuQL_SSO0PEY",
+  
+          // obrigatório: vem do Bubble
+          vendedorResponsavelId: "{{TEXT_VENDEDOR_RESPONSAVEL_ID}}",
+
+          // flag do Bubble: se true, cria lead com public.leads.teste = true; se false, ignora completamente
+          // Aceita: true/false, "true"/"false", "1"/"0", "sim"/"nao"
+          ambienteTeste: "{{TEXT_AMBIENTE_TESTE}}",
+  
+          // Pinado do `tabela&kambam.html` (mesmo funil do Kanban)
+          funilId: "d2bc9ef3-4db7-41aa-abf1-0b6cc69cf60a",
+  
+          // Etapa "Novo Lead" (UUID em `public.etapa`)
+          // (confirmado via MCP: para este funil, é a6709949-9857-4b25-965d-b4bf8270426b)
+          etapaNovoLeadId: "a6709949-9857-4b25-965d-b4bf8270426b",
+  
+          // pré-preenchimento opcional (Bubble pode mandar)
+          prefill: {
+            nome: "{{TEXT_PREFILL_NOME}}",
+            telefone: "{{TEXT_PREFILL_TELEFONE}}",
+            email: "{{TEXT_PREFILL_EMAIL}}",
+            empresa: "{{TEXT_PREFILL_EMPRESA}}"
+          },
+  
+          // callbacks opcionais (Toolbox/JS to Bubble)
+          bubbleCallbacks: {
+            onCreated: "bubble_fn_leadCreated", // se existir, chamamos com (lead_id)
+            onError: "bubble_fn_leadCreateError" // se existir, chamamos com (mensagem)
+          }
+        };
+  
+        // =========================
+        // Helpers
+        // =========================
+        const root = document.getElementById("comp-popup-criar-lead-material-v1");
+        const $ = (sel) => root.querySelector(sel);
+  
+        function setStatus(kind, msg) {
+          const el = $("#status");
+          const msgEl = el ? el.querySelector(".msg") : null;
+          if (!el || !msgEl) return;
+          el.className = "status" + (kind ? (" " + kind) : "");
+          msgEl.textContent = msg || "";
+          el.hidden = !msg;
+        }
+  
+        function safeStr(v) {
+          const s = (v === null || v === undefined) ? "" : String(v);
+          return s.trim();
+        }
+
+        function isBubbleToken(v) {
+          const s = safeStr(v);
+          // Quando o Bubble não injeta valor, ele pode deixar {{...}} literal. Não queremos renderizar isso.
+          return !!s && /\{\{[^}]+\}\}/.test(s);
+        }
+
+        function parseBool(v) {
+          if (typeof v === "boolean") return v;
+          const s = safeStr(v).toLowerCase();
+          if (!s || isBubbleToken(s)) return false;
+          if (["true", "1", "sim", "yes", "y"].includes(s)) return true;
+          if (["false", "0", "nao", "não", "no", "n"].includes(s)) return false;
+          return false;
+        }
+  
+        function onlyDigits(v) {
+          return safeStr(v).replace(/\D/g, "");
+        }
+  
+        function isValidEmail(v) {
+          const s = safeStr(v);
+          if (!s) return true;
+          return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+        }
+  
+        function uuid() {
+          if (crypto && crypto.randomUUID) return crypto.randomUUID();
+          // fallback simples
+          return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function(c){
+            const r = Math.random() * 16 | 0;
+            const v = c === "x" ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+          });
+        }
+  
+        function callBubble(name, args) {
+          try {
+            if (!name) return;
+            const fn = window[name];
+            if (typeof fn === "function") fn.apply(null, args || []);
+          } catch (e) {}
+        }
+
+        function closePopup(leadIdOrEmpty) {
+          const closeCandidates = [
+            "bubble_fn_closeAddLeadPopup",
+            "bubble_fn_close_add_lead_popup",
+            "bubble_fn_closePopup",
+            "bubble_fn_close_popup"
+          ];
+          for (let i = 0; i < closeCandidates.length; i++) {
+            const fnName = closeCandidates[i];
+            if (typeof window[fnName] === "function") {
+              try { window[fnName](leadIdOrEmpty || ""); } catch (e) {}
+              return true;
+            }
+          }
+          return false;
+        }
+  
+        // =========================
+        // UI refs
+        // =========================
+        const inNome = $("#in-nome");
+        const inTel = $("#in-telefone");
+        const inEmail = $("#in-email");
+        const inEmpresa = $("#in-empresa");
+        const inCanal = $("#in-canal");
+        const inAnot = $("#in-anotacoes");
+  
+        const btnCriar = $("#btn-criar");
+        const btnLimpar = $("#btn-limpar");
+        const btnCancelar = $("#btn-cancelar");
+  
+        // =========================
+        // Boot + validações
+        // =========================
+        function applyPrefill() {
+          if (BUBBLE_DATA && BUBBLE_DATA.prefill) {
+            if (safeStr(BUBBLE_DATA.prefill.nome) && !isBubbleToken(BUBBLE_DATA.prefill.nome)) inNome.value = safeStr(BUBBLE_DATA.prefill.nome);
+            if (safeStr(BUBBLE_DATA.prefill.telefone) && !isBubbleToken(BUBBLE_DATA.prefill.telefone)) inTel.value = safeStr(BUBBLE_DATA.prefill.telefone);
+            if (safeStr(BUBBLE_DATA.prefill.email) && !isBubbleToken(BUBBLE_DATA.prefill.email)) inEmail.value = safeStr(BUBBLE_DATA.prefill.email);
+            if (safeStr(BUBBLE_DATA.prefill.empresa) && !isBubbleToken(BUBBLE_DATA.prefill.empresa)) inEmpresa.value = safeStr(BUBBLE_DATA.prefill.empresa);
+          }
+        }
+  
+        function paintConfig() {
+          $("#pill").textContent = "etapa: Novo Lead";
+        }
+  
+        function validate() {
+          const nome = safeStr(inNome.value);
+          const tel = onlyDigits(inTel.value);
+          const emailOk = isValidEmail(inEmail.value);
+  
+          const hasVend = safeStr(BUBBLE_DATA.vendedorResponsavelId);
+  
+          if (!hasVend) return { ok:false, msg:"Config incompleta: VENDEDOR_RESPONSAVEL_ID." };
+          if (!nome) return { ok:false, msg:"Informe o nome." };
+          if (!tel) return { ok:false, msg:"Informe o telefone (só números)." };
+          if (!emailOk) return { ok:false, msg:"E-mail inválido." };
+  
+          return { ok:true, nome, tel };
+        }
+  
+        function setBusy(isBusy) {
+          btnCriar.disabled = !!isBusy;
+          btnLimpar.disabled = !!isBusy;
+          btnCriar.textContent = isBusy ? "Criando..." : "Criar lead";
+        }
+  
+        // =========================
+        // Request (Edge Function do projeto)
+        // =========================
+        function buildFunctionUrl() {
+          // Supabase Edge Functions: https://<ref>.supabase.co/functions/v1/<name>
+          const base = safeStr(BUBBLE_DATA.supabaseUrl).replace(/\/+$/, "");
+          return base + "/functions/v1/create-lead-popup";
+        }
+
+        function mapApiError(errCode, detail) {
+          const d = safeStr(detail);
+          const dc = d.toLowerCase();
+
+          // Mensagens comuns (Postgres/Supabase)
+          if (/invalid input syntax for type uuid/i.test(d)) {
+            return "Configuração inválida. Atualize o popup e confirme vendedor/funil/etapa.";
+          }
+          if (dc.includes("permission denied") || dc.includes("row level security") || dc.includes("rls")) {
+            return "Sem permissão para criar lead. Verifique as permissões/RLS do projeto.";
+          }
+          if (dc.includes("jwt") && (dc.includes("expired") || dc.includes("invalid") || dc.includes("malformed"))) {
+            return "Chave Supabase inválida/expirada. Atualize a anon key no popup.";
+          }
+          if (dc.includes("duplicate key") || dc.includes("unique constraint")) {
+            return "Já existe um lead com esses dados (duplicado).";
+          }
+          if (dc.includes("violates foreign key") || dc.includes("foreign key constraint")) {
+            return "Referência inválida (vendedor/funil/etapa). Confirme os UUIDs.";
+          }
+          if (dc.includes("null value in column") || dc.includes("violates not-null constraint")) {
+            return "Faltou um campo obrigatório. Confira nome e telefone.";
+          }
+          if (dc.includes("timeout") || dc.includes("timed out")) {
+            return "A requisição demorou demais. Tente novamente.";
+          }
+          if (dc.includes("failed to fetch") || dc.includes("networkerror")) {
+            return "Sem conexão no momento. Verifique a internet e tente novamente.";
+          }
+
+          // Erros padronizados das Edge Functions
+          switch (errCode) {
+            case "invalid_vendedorResponsavelId": return "Vendedor responsável inválido. (UUID)";
+            case "invalid_funilId": return "Funil inválido. (UUID)";
+            case "invalid_etapaNovoLeadId": return "Etapa inválida. (UUID)";
+            case "missing_nome": return "Informe o nome.";
+            case "missing_telefone": return "Informe o telefone (só números).";
+            case "insert_failed": return "Não foi possível criar o lead. Tente novamente.";
+            case "etapa_lookup_failed": return "Não consegui localizar a etapa “Novo Lead”.";
+            case "etapa_not_found": return "Etapa não encontrada para este funil.";
+            case "missing_env": return "Função do servidor não configurada (env).";
+            case "invalid_json": return "Erro interno ao montar requisição.";
+            default: return d || "Erro ao criar lead.";
+          }
+        }
+  
+        async function createLead() {
+          setStatus("", "");
+
+          // Callback Bubble ao clicar (mesmo antes de validar/enviar)
+          callBubble("bubble_fn_createLead_click", [JSON.stringify({
+            nome: safeStr(inNome.value),
+            telefone: onlyDigits(inTel.value),
+            email: safeStr(inEmail.value) || null,
+            empresa: safeStr(inEmpresa.value) || null,
+            canal_contato: safeStr(inCanal.value) || null,
+            ambienteTeste: parseBool(BUBBLE_DATA.ambienteTeste)
+          })]);
+
+          const v = validate();
+          if (!v.ok) {
+            setStatus("err", v.msg);
+            return;
+          }
+  
+          setBusy(true);
+  
+          try {
+            const url = buildFunctionUrl();
+            const reqBody = {
+              vendedorResponsavelId: safeStr(BUBBLE_DATA.vendedorResponsavelId),
+              funilId: safeStr(BUBBLE_DATA.funilId) || null,
+              etapaNovoLeadId: safeStr(BUBBLE_DATA.etapaNovoLeadId) || null,
+              nome: safeStr(inNome.value),
+              telefone: onlyDigits(inTel.value),
+              email: safeStr(inEmail.value) || null,
+              empresa: safeStr(inEmpresa.value) || null,
+              canal_contato: safeStr(inCanal.value) || null,
+              anotacoes: safeStr(inAnot.value) || null
+            };
+
+            // Regra: só envia `teste=true` quando ambienteTeste for true. Se for false, ignora completamente.
+            if (parseBool(BUBBLE_DATA.ambienteTeste)) {
+              reqBody.teste = true;
+            }
+
+            const resp = await fetch(url, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                // verify_jwt=true: usa anon key (JWT) como bearer
+                "Authorization": "Bearer " + safeStr(BUBBLE_DATA.supabaseAnonKey),
+                "apikey": safeStr(BUBBLE_DATA.supabaseAnonKey)
+              },
+              body: JSON.stringify(reqBody)
+            });
+
+            const json = await resp.json().catch(() => ({}));
+            if (!resp.ok || !json || json.ok !== true) {
+              const errMsg = mapApiError(json && json.error, json && (json.detail || json.message));
+              throw new Error(errMsg);
+            }
+
+            setStatus("ok", "Lead criado com sucesso.");
+            const createdLeadId = json && json.lead && json.lead.lead_id;
+            callBubble(BUBBLE_DATA.bubbleCallbacks && BUBBLE_DATA.bubbleCallbacks.onCreated, [createdLeadId]);
+
+            // Fechar popup no Bubble (se existir a função) e limpar inputs
+            clearForm();
+            closePopup(createdLeadId);
+  
+            // opcional: você pode fechar o popup no Bubble via workflow ao receber o lead_id
+          } catch (e) {
+            const msg = (e && e.message) ? e.message : "Erro ao criar lead.";
+            setStatus("err", msg);
+            callBubble(BUBBLE_DATA.bubbleCallbacks && BUBBLE_DATA.bubbleCallbacks.onError, [msg]);
+          } finally {
+            setBusy(false);
+          }
+        }
+  
+        function clearForm() {
+          setStatus("", "");
+          inNome.value = "";
+          inTel.value = "";
+          inEmail.value = "";
+          inEmpresa.value = "";
+          inCanal.value = "";
+          inAnot.value = "";
+          inNome.focus();
+        }
+  
+        // binds
+        btnCriar.addEventListener("click", createLead);
+        btnLimpar.addEventListener("click", clearForm);
+        if (btnCancelar) {
+          btnCancelar.addEventListener("click", function () {
+            clearForm();
+            closePopup("");
+          });
+        }
+  
+        // enter para criar
+        root.addEventListener("keydown", function (e) {
+          if (e.key === "Enter" && (e.target === inNome || e.target === inTel || e.target === inEmail || e.target === inEmpresa)) {
+            e.preventDefault();
+            createLead();
+          }
+        });
+  
+        // init
+        applyPrefill();
+        paintConfig();
+      })();
+    </script>
+  </div>

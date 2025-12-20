@@ -1,0 +1,221 @@
+<div data-cdn-widget="bloqueios-celebs">
+  <div class="app-header">
+    <div class="brand" aria-label="Bloqueios">
+      <div class="mark" aria-hidden="true">
+        <span class="material-symbols-rounded">gpp_maybe</span>
+      </div>
+      <div class="title">
+        <div class="h1">Bloqueios</div>
+        <div class="h2">Celebridades • Supabase</div>
+      </div>
+    </div>
+
+    <div class="header-center">
+      <div class="search-wrap">
+        <div class="search" role="search">
+          <span class="material-symbols-rounded" aria-hidden="true">search</span>
+          <input id="blk-search" type="text" placeholder="Buscar por cliente, negócio, segmento, cidade, estado ou tipo..." autocomplete="off" />
+        </div>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <button class="pill-btn" id="btn-date" type="button">
+        <span class="material-symbols-rounded" aria-hidden="true">calendar_month</span>
+        <span id="date-label">Datas</span>
+      </button>
+      <button class="pill-btn" id="btn-filters" type="button">
+        <span class="material-symbols-rounded" aria-hidden="true">tune</span>
+        Filtros
+      </button>
+      <button class="primary-btn" id="btn-export" type="button">
+        <span class="material-symbols-rounded" aria-hidden="true">download</span>
+        Exportar CSV
+      </button>
+      <div class="kpi" aria-live="polite">
+        <div class="count" id="kpi-count">—</div>
+        <div class="status" id="kpi-status">Pronto</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="popover" id="date-popover" role="dialog" aria-label="Filtro de datas">
+    <div class="p-head">
+      <div class="t">Filtro de data (created_at)</div>
+      <button class="icon-btn" id="btn-close-date" type="button" aria-label="Fechar">
+        <span class="material-symbols-rounded" aria-hidden="true">close</span>
+      </button>
+    </div>
+    <div class="p-body">
+      <div class="preset-list">
+        <div class="preset" data-preset="all"><span>Todas</span><span class="material-symbols-rounded" aria-hidden="true">done</span></div>
+        <div class="preset" data-preset="today"><span>Hoje</span><span class="material-symbols-rounded" aria-hidden="true">schedule</span></div>
+        <div class="preset" data-preset="7d"><span>Últimos 7 dias</span><span class="material-symbols-rounded" aria-hidden="true">history</span></div>
+        <div class="preset" data-preset="30d"><span>Últimos 30 dias</span><span class="material-symbols-rounded" aria-hidden="true">history</span></div>
+      </div>
+
+      <div style="font-size:12px; font-weight:800; color:#5F6368; margin-top:8px; text-transform:uppercase; letter-spacing:0.4px;">
+        Intervalo custom
+      </div>
+      <div class="range-grid">
+        <div>
+          <label for="date-start">Início</label>
+          <input id="date-start" type="date" />
+        </div>
+        <div>
+          <label for="date-end">Fim</label>
+          <input id="date-end" type="date" />
+        </div>
+      </div>
+      <div class="range-actions">
+        <button class="ghost-btn" id="btn-clear-date" type="button">Limpar</button>
+        <button class="primary-btn" id="btn-apply-date" type="button">
+          <span class="material-symbols-rounded" aria-hidden="true">check</span>
+          Aplicar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-body">
+    <div class="panel">
+      <div class="table-head">
+        <div class="hint" id="hint">
+          <span class="material-symbols-rounded" aria-hidden="true">info</span>
+          <span>1 clique: destaque • duplo clique: copiar • use filtros para refinar • exporta CSV do resultado filtrado</span>
+        </div>
+      </div>
+
+      <div class="table-wrap" id="table-wrap" role="table" aria-label="Tabela de bloqueios">
+        <div class="state active" id="state-loading">
+          <div class="icon"><span class="material-symbols-rounded">hourglass_top</span></div>
+          <div class="title">Carregando…</div>
+          <div class="desc">Conectando e buscando os bloqueios no Supabase.</div>
+        </div>
+        <div class="state" id="state-empty">
+          <div class="icon"><span class="material-symbols-rounded">inbox</span></div>
+          <div class="title">Nenhum bloqueio encontrado</div>
+          <div class="desc">Ajuste os filtros ou limpe a busca para ver mais resultados.</div>
+        </div>
+        <div class="state" id="state-error">
+          <div class="icon"><span class="material-symbols-rounded">error</span></div>
+          <div class="title">Falha ao carregar</div>
+          <div class="desc" id="state-error-msg">Verifique a conexão com o Supabase e as permissões.</div>
+          <button class="primary-btn retry" id="btn-retry" type="button">
+            <span class="material-symbols-rounded" aria-hidden="true">refresh</span>
+            Tentar novamente
+          </button>
+        </div>
+
+        <div class="grid thead" id="thead" role="rowgroup" style="display:none;">
+          <div class="th sortable" role="columnheader" data-sort="created_at"><span class="material-symbols-rounded" aria-hidden="true">calendar_month</span>Data</div>
+          <div class="th" role="columnheader"><span class="material-symbols-rounded" aria-hidden="true">gpp_maybe</span>Tipo</div>
+          <div class="th" role="columnheader"><span class="material-symbols-rounded" aria-hidden="true">location_on</span>Estado / Cidade</div>
+          <div class="th" role="columnheader"><span class="material-symbols-rounded" aria-hidden="true">category</span>Segmento / Sub</div>
+          <div class="th" role="columnheader"><span class="material-symbols-rounded" aria-hidden="true">store</span>Negócio</div>
+          <div class="th" role="columnheader"><span class="material-symbols-rounded" aria-hidden="true">person</span>Cliente</div>
+          <div class="th" role="columnheader"><span class="material-symbols-rounded" aria-hidden="true">star</span>Celebridade</div>
+        </div>
+        <div class="tbody" id="tbody" role="rowgroup"></div>
+      </div>
+
+      <div class="table-foot" aria-label="Paginação">
+        <div class="pager">
+          <button class="mini-btn" id="btn-prev" type="button" aria-label="Página anterior">
+            <span class="material-symbols-rounded" aria-hidden="true">chevron_left</span>
+          </button>
+          <button class="mini-btn" id="btn-next" type="button" aria-label="Próxima página">
+            <span class="material-symbols-rounded" aria-hidden="true">chevron_right</span>
+          </button>
+          <div class="page-label" id="page-label">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: FILTROS -->
+  <div class="modal-overlay" id="filters-modal" aria-hidden="true">
+    <div class="modal" role="dialog" aria-label="Filtros">
+      <div class="modal-head">
+        <div class="modal-title">
+          <div class="h">Filtros</div>
+          <div class="s">Multi-select por valores + filtros de texto (cliente / celebridade)</div>
+        </div>
+        <button class="icon-btn" id="btn-close-filters" type="button" aria-label="Fechar">
+          <span class="material-symbols-rounded" aria-hidden="true">close</span>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="field">
+          <div class="label">Tipo de bloqueio <span class="mini" id="count-tipo">0 selecionados</span></div>
+          <input class="input" id="filtro-tipo-q" type="text" placeholder="Filtrar opções…" />
+          <div class="checklist" id="list-tipo"></div>
+        </div>
+
+        <div class="field">
+          <div class="label">Estado <span class="mini" id="count-estado">0 selecionados</span></div>
+          <input class="input" id="filtro-estado-q" type="text" placeholder="Filtrar opções…" />
+          <div class="checklist" id="list-estado"></div>
+        </div>
+
+        <div class="field">
+          <div class="label">Cidade <span class="mini" id="count-cidade">0 selecionados</span></div>
+          <input class="input" id="filtro-cidade-q" type="text" placeholder="Filtrar opções…" />
+          <div class="checklist" id="list-cidade"></div>
+        </div>
+
+        <div class="field">
+          <div class="label">Segmento <span class="mini" id="count-seg">0 selecionados</span></div>
+          <input class="input" id="filtro-seg-q" type="text" placeholder="Filtrar opções…" />
+          <div class="checklist" id="list-seg"></div>
+        </div>
+
+        <div class="field">
+          <div class="label">Subsegmento <span class="mini" id="count-sub">0 selecionados</span></div>
+          <input class="input" id="filtro-sub-q" type="text" placeholder="Filtrar opções…" />
+          <div class="checklist" id="list-sub"></div>
+        </div>
+
+        <div class="field">
+          <div class="label">Negócio <span class="mini" id="count-neg">0 selecionados</span></div>
+          <input class="input" id="filtro-neg-q" type="text" placeholder="Filtrar opções…" />
+          <div class="checklist" id="list-neg"></div>
+        </div>
+
+        <div class="field">
+          <div class="label">Cliente (texto)</div>
+          <input class="input" id="filtro-cliente" type="text" placeholder="Ex: Codex, João…" />
+          <div style="font-size:12px; color:#5F6368; line-height:1.4;">
+            Aplica em <b>cliente_nome</b> (ilike).
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="label">Celebridade (ID ou nome)</div>
+          <input class="input" id="filtro-celeb" type="text" placeholder="UUID ou parte do nome" />
+          <div style="font-size:12px; color:#5F6368; line-height:1.4;">
+            UUID filtra direto. Nome busca em <b>celebridadesReferencia</b> e filtra por IDs.
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-foot">
+        <div class="left" id="chips-selected"></div>
+        <div class="right">
+          <button class="ghost-btn" id="btn-clear-filters" type="button">Limpar</button>
+          <button class="primary-btn" id="btn-apply-filters" type="button">
+            <span class="material-symbols-rounded" aria-hidden="true">check</span>
+            Aplicar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite">
+    <span class="material-symbols-rounded" aria-hidden="true">content_copy</span>
+    <span id="toast-txt">Copiado</span>
+  </div>
+</div>
+

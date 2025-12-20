@@ -1,0 +1,295 @@
+<div data-cdn-widget="dashboard">
+<div id="dashboard-acelerai-v2">
+  <!-- HTML STRUCTURE -->
+  
+  <!-- SKELETON SCREEN (Visible initially) -->
+  <div id="dashboard-skeleton">
+    <!-- Header Skeleton -->
+    <div class="header-row">
+       <div class="skeleton" style="width: 250px; height: 48px; border-radius: 8px;"></div>
+       <div class="flex gap-3">
+          <div class="skeleton" style="width: 180px; height: 36px; border-radius: 8px;"></div>
+          <div class="skeleton" style="width: 320px; height: 36px; border-radius: 8px;"></div>
+       </div>
+    </div>
+
+    <!-- KPI Grid Skeleton -->
+    <section class="grid grid-cols-2 md-grid-cols-4 xl-grid-cols-7 mb-12">
+        <div class="kpi-card" style="height: 120px; border: none; box-shadow: none; background: transparent;"><div class="skeleton"></div></div>
+        <div class="kpi-card" style="height: 120px; border: none; box-shadow: none; background: transparent;"><div class="skeleton"></div></div>
+        <div class="kpi-card" style="height: 120px; border: none; box-shadow: none; background: transparent;"><div class="skeleton"></div></div>
+        <div class="kpi-card" style="height: 120px; border: none; box-shadow: none; background: transparent;"><div class="skeleton"></div></div>
+        <div class="kpi-card" style="height: 120px; border: none; box-shadow: none; background: transparent;"><div class="skeleton"></div></div>
+        <div class="kpi-card" style="height: 120px; border: none; box-shadow: none; background: transparent;"><div class="skeleton"></div></div>
+        <div class="kpi-card" style="height: 120px; border: none; box-shadow: none; background: transparent;"><div class="skeleton"></div></div>
+    </section>
+
+    <!-- Main Charts Skeleton (Velocímetro, Revenue, Meetings) -->
+    <section class="grid grid-cols-1 xl-grid-cols-5 gap-6 mb-12">
+        <!-- Velocímetro -->
+        <div class="card" style="height: 380px; border: none; box-shadow: none; background: transparent;"><div class="skeleton"></div></div>
+        <!-- Revenue Chart (3 cols) -->
+        <div class="card xl-col-span-3" style="height: 380px; border: none; box-shadow: none; background: transparent;"><div class="skeleton"></div></div>
+        <!-- Meetings -->
+        <div class="card" style="height: 380px; border: none; box-shadow: none; background: transparent;"><div class="skeleton"></div></div>
+    </section>
+
+    <!-- SLAs Skeleton -->
+    <section class="grid grid-cols-1 md-grid-cols-4 gap-4 mb-12">
+       <div class="skeleton" style="height: 110px; border-radius: 12px;"></div>
+       <div class="skeleton" style="height: 110px; border-radius: 12px;"></div>
+       <div class="skeleton" style="height: 110px; border-radius: 12px;"></div>
+       <div class="skeleton" style="height: 110px; border-radius: 12px;"></div>
+    </section>
+
+    <!-- Ranking & Funnel Skeleton -->
+    <section class="grid grid-cols-1 xl-grid-cols-2 gap-6 mb-12">
+        <div class="card" style="height: 500px; border: none; box-shadow: none; background: transparent;"><div class="skeleton"></div></div>
+        <div class="card" style="height: 500px; border: none; box-shadow: none; background: transparent;"><div class="skeleton"></div></div>
+    </section>
+
+    <!-- Conversions & Channels Skeleton -->
+    <section class="grid grid-cols-1 xl-grid-cols-5 gap-6 mb-12">
+        <div class="card" style="height: 300px; border: none; box-shadow: none; background: transparent;"><div class="skeleton"></div></div>
+        <div class="card xl-col-span-4" style="height: 300px; border: none; box-shadow: none; background: transparent;"><div class="skeleton"></div></div>
+    </section>
+
+    <!-- Pipeline Skeleton -->
+    <section class="card mb-12" style="height: 200px; border: none; box-shadow: none; background: transparent;">
+        <div class="skeleton"></div>
+    </section>
+    
+    <!-- Bottom Metrics Skeleton -->
+    <section class="grid grid-cols-2 md-grid-cols-4 gap-4 mb-12">
+       <div class="skeleton" style="height: 100px; border-radius: 12px;"></div>
+       <div class="skeleton" style="height: 100px; border-radius: 12px;"></div>
+       <div class="skeleton" style="height: 100px; border-radius: 12px;"></div>
+       <div class="skeleton" style="height: 100px; border-radius: 12px;"></div>
+    </section>
+  </div>
+
+  <!-- REAL CONTENT (Hidden initially) -->
+  <div id="dashboard-content" style="display: none;">
+  
+  <!-- 1. HEADER -->
+  <header class="header-row">
+    <div class="page-title">
+      <h1>Dashboard Aceleraí</h1>
+      <p class="text-muted text-xs font-medium mt-1">Vendas e Marketing • Dezembro 2024</p>
+    </div>
+    
+    <div class="controls justify-end">
+       <!-- Select Vendedor estilizado -->
+      <div class="select-wrapper">
+        <select id="seller-select" class="custom-select">
+            <option value="">Todos os executivos</option>
+        </select>
+        <i data-lucide="chevron-down" size="14" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); pointer-events:none; color:var(--text-muted);"></i>
+      </div>
+
+      <!-- Filtros de Data (Pill Group) -->
+      <div class="control-group">
+        <button id="btn-today" class="control-btn-pill" onclick="setDateFilter('today')">Hoje</button>
+        <button id="btn-week" class="control-btn-pill" onclick="setDateFilter('week')">Semana</button>
+        <button id="btn-month" class="control-btn-pill active" onclick="setDateFilter('month')">Mês</button>
+        <button id="btn-semestre" class="control-btn-pill" onclick="setDateFilter('semester')">Semestre</button>
+        <button id="btn-year" class="control-btn-pill" onclick="setDateFilter('year')">Ano</button>
+        <button id="btn-custom" class="control-btn-pill">Personalizado</button>
+      </div>
+
+      <!-- Theme & Refresh -->
+      <div class="control-group">
+         <button class="theme-toggle-btn active" id="theme-sun" onclick="setTheme('light')" data-mode="light"><i data-lucide="sun" size="16"></i></button>
+         <button class="theme-toggle-btn" id="theme-moon" onclick="setTheme('dark')" data-mode="dark"><i data-lucide="moon" size="16"></i></button>
+      </div>
+      
+      <div class="badge-live"><div class="dot-pulse"></div> <span id="badge-live-text">Atualizado agora</span></div>
+    </div>
+  </header>
+
+  <!-- 2. KPI GRID (7 COLUMNS) -->
+  <section class="grid grid-cols-2 md-grid-cols-4 xl-grid-cols-7 mb-12" id="kpi-grid">
+    <!-- Injected by JS -->
+  </section>
+
+  <!-- 3. MAIN CHARTS & MEETINGS -->
+  <section class="grid grid-cols-1 xl-grid-cols-5 gap-6 mb-12">
+    <!-- Velocímetro -->
+    <div class="card flex-col items-center relative" style="padding: 20px;">
+      <div class="text-center mb-3 w-full">
+        <div class="section-title text-primary" style="font-size: 16px; margin-bottom: 2px;">Velocímetro do Mês</div>
+        <div class="section-subtitle" id="gauge-month-label">Meta de Dezembro</div>
+      </div>
+
+      <!-- Container Relativo para Gráfico e Texto Central -->
+      <div class="relative w-full flex justify-center" style="height: 200px; margin-bottom: 8px;">
+        <!-- Gráfico -->
+        <div id="gauge-chart" style="position: absolute; top: 0; left: 0; right: 0; display: flex; justify-content: center; z-index: 1;"></div>
+
+        <!-- Conteúdo Central (Overlay) -->
+        <div class="absolute inset-0 flex flex-col items-center justify-center pt-6 pointer-events-none z-10">
+          <div style="font-size: 48px; font-weight: 700; line-height: 1; letter-spacing: -0.02em;" id="gauge-percentage">--</div>
+          <div class="text-xs font-bold flex items-center gap-1 mt-2 px-2 py-1 rounded-full" id="gauge-trend" style="font-size: 11px;">
+            <i data-lucide="trending-up" size="11" id="gauge-trend-icon"></i> <span id="gauge-trend-text">--</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Info -->
+      <div class="text-center relative z-10 w-full">
+        <div class="gauge-legend" aria-label="Legenda do velocímetro">
+          <span class="gauge-legend-item"><span class="gauge-legend-dot gauge-legend-dot--actual"></span>Atual</span>
+          <span class="gauge-legend-item"><span class="gauge-legend-dot gauge-legend-dot--meta"></span>Meta</span>
+        </div>
+
+        <div style="font-size: 17px; font-weight: 700; margin-bottom: 6px;" id="gauge-values">
+          <span id="gauge-current" style="color: var(--text-main);">--</span>
+          <span class="text-muted font-normal" style="font-size: 14px; margin: 0 4px;">/</span>
+          <span id="gauge-target" style="color: var(--text-muted);">--</span>
+        </div>
+        <div class="text-xs text-muted mb-3" id="gauge-missing" style="font-size: 11px;">--</div>
+
+        <div class="gauge-status gauge-status--warning" id="gauge-status" role="status" aria-live="polite">
+          <span class="gauge-status-icon" aria-hidden="true">
+            <i data-lucide="alert-triangle" size="14" id="gauge-status-icon"></i>
+          </span>
+          <span class="gauge-status-text" id="gauge-status-text">--</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Revenue Chart -->
+    <div class="card xl-col-span-3">
+      <div class="flex justify-between items-start mb-6">
+        <div>
+            <div class="section-title">Evolução do Faturamento</div>
+            <div class="section-subtitle">Comparativo mensal com meta</div>
+        </div>
+        
+        <div class="flex gap-2">
+            <span class="text-xs font-medium px-2 py-1 rounded bg-blue-50 text-blue-600 border border-blue-100">Atual</span>
+            <span class="text-xs font-medium px-2 py-1 rounded bg-gray-50 text-gray-500 border border-gray-200">Anterior</span>
+             <span class="text-xs font-medium px-2 py-1 rounded bg-green-50 text-green-600 border border-green-100">Meta</span>
+        </div>
+      </div>
+      <div id="revenue-chart" style="height: 280px;"></div>
+    </div>
+
+    <!-- Meetings Card -->
+    <div class="card flex-col gap-2 bg-white" style="background: var(--bg-card)">
+      <div class="section-title mb-4">Reuniões</div>
+      
+      <div class="meeting-card now">
+        <div class="icon-box"><i data-lucide="video"></i></div>
+        <div class="grow">
+          <div class="text-xs font-medium mb-0.5 opacity-80" style="color:#ef4444">Acontecendo agora</div>
+          <div class="count" id="meetings-now">--</div>
+        </div>
+        <div class="dot-pulse" style="background:#ef4444"></div>
+      </div>
+      
+      <div class="meeting-card today">
+        <div class="icon-box"><i data-lucide="calendar"></i></div>
+        <div class="grow">
+          <div class="text-xs font-medium mb-0.5 opacity-80" style="color:#3b82f6">Hoje</div>
+          <div class="count" id="meetings-today">--</div>
+        </div>
+      </div>
+      
+      <div class="meeting-card week">
+        <div class="icon-box"><i data-lucide="calendar-days"></i></div>
+        <div class="grow">
+          <div class="text-xs font-medium mb-0.5 opacity-80" style="color:var(--text-muted)">Esta semana</div>
+          <div class="count" id="meetings-week">--</div>
+        </div>
+      </div>
+      
+      <div class="meeting-card month">
+        <div class="icon-box"><i data-lucide="calendar-range"></i></div>
+        <div class="grow">
+          <div class="text-xs font-medium mb-0.5 opacity-80" style="color:#16a34a">Este mês</div>
+          <div class="count" id="meetings-month">--</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. SLAs -->
+  <section class="grid grid-cols-1 md-grid-cols-4 gap-4 mb-12">
+    <div class="sla-card on-track">
+      <div class="flex justify-between items-center mb-2"><span class="text-xs font-bold flex gap-2"><i data-lucide="clock" size="14"></i> FRT Pré-vendas</span><i data-lucide="check-circle-2" size="14"></i></div>
+      <div class="text-2xl font-bold">15min <span class="text-sm opacity-70">/ 20min</span></div>
+      <div class="sla-bar-bg"><div class="sla-bar-fill" style="width: 75%"></div></div>
+    </div>
+    <div class="sla-card at-risk">
+      <div class="flex justify-between items-center mb-2"><span class="text-xs font-bold flex gap-2"><i data-lucide="clock" size="14"></i> Ciclo de Venda</span><i data-lucide="alert-triangle" size="14"></i></div>
+      <div class="text-2xl font-bold">2.2d <span class="text-sm opacity-70">/ 2d</span></div>
+      <div class="sla-bar-bg"><div class="sla-bar-fill" style="width: 100%"></div></div>
+    </div>
+    <div class="sla-card on-track">
+      <div class="flex justify-between items-center mb-2"><span class="text-xs font-bold flex gap-2"><i data-lucide="clock" size="14"></i> Tempo Proposta</span><i data-lucide="check-circle-2" size="14"></i></div>
+      <div class="text-2xl font-bold">4h <span class="text-sm opacity-70">/ 6h</span></div>
+      <div class="sla-bar-bg"><div class="sla-bar-fill" style="width: 66%"></div></div>
+    </div>
+    <div class="sla-card breached">
+      <div class="flex justify-between items-center mb-2"><span class="text-xs font-bold flex gap-2"><i data-lucide="clock" size="14"></i> Follow-up</span><i data-lucide="alert-triangle" size="14"></i></div>
+      <div class="text-2xl font-bold">28h <span class="text-sm opacity-70">/ 24h</span></div>
+      <div class="sla-bar-bg"><div class="sla-bar-fill" style="width: 100%"></div></div>
+    </div>
+  </section>
+
+  <!-- 5. RANKING & FUNNEL -->
+  <section class="grid grid-cols-1 xl-grid-cols-2 gap-6 mb-12">
+    <div class="card">
+      <div class="flex justify-between mb-4 items-center">
+          <div class="section-title">Ranking de Executivos</div>
+          <div class="flex gap-2">
+             <span class="control-btn-pill flex items-center gap-1" style="cursor:default"><i data-lucide="users" size="12"></i> <span id="ranking-count">--</span></span>
+             <span class="control-btn-pill" style="font-size:10px; cursor:default">KWAY Score</span>
+          </div>
+      </div>
+      <div id="ranking-list" style="max-height: 420px; overflow-y: auto; padding-right: 4px;"></div>
+    </div>
+    <div class="card flex-col h-full">
+      <div class="section-title">Funil de Vendas</div>
+      <div id="funnel-bars" class="flex flex-col justify-between grow py-2 h-full"></div>
+    </div>
+  </section>
+
+  <!-- 6. CONVERSIONS & CHANNELS -->
+  <section class="grid grid-cols-1 xl-grid-cols-5 gap-6 mb-12">
+    <div class="card flex-col items-center">
+      <div class="section-title mb-2">Taxas de Conversão</div>
+      <div id="conversion-chart" style="width: 100%; height: 250px;"></div>
+    </div>
+    <div class="card xl-col-span-4 flex-col">
+      <div class="section-title">Performance por Canal</div>
+      <div class="grid grid-cols-1 md-grid-cols-4 gap-4" id="channel-grid"></div>
+    </div>
+  </section>
+
+  <!-- 7. SELLER PIPELINE TIMELINE -->
+  <section class="card card-muted mb-12">
+    <div class="section-title">Tempos por Etapa do Funil</div>
+    <div id="pipeline-container" class="pipeline-diagram-scroll"></div>
+  </section>
+
+  <!-- 8. BOTTOM METRICS -->
+  <section class="card">
+    <div class="section-title">Métricas de Eficiência</div>
+    <div class="grid grid-cols-2 md-grid-cols-4 gap-4 text-center">
+      <div class="p-4 bg-gray-50 rounded-xl" style="background:var(--bg-subtle)"><div class="text-3xl font-bold text-primary">2.2</div><div class="text-xs text-muted">Dias Ciclo</div></div>
+      <div class="p-4 bg-gray-50 rounded-xl" style="background:var(--bg-subtle)"><div class="text-3xl font-bold text-success">89%</div><div class="text-xs text-muted">SLA Cumprido</div></div>
+      <div class="p-4 bg-gray-50 rounded-xl" style="background:var(--bg-subtle)"><div class="text-3xl font-bold text-primary">4.2</div><div class="text-xs text-muted">NPS Score</div></div>
+      <div class="p-4 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-center gap-3 text-left" style="background:var(--col-primary-light); border-color:var(--col-primary-light)">
+        <i data-lucide="target" class="text-primary" size="24"></i>
+        <div><div class="text-xs font-bold" style="color:var(--text-main)">Projeção</div><div class="text-lg font-bold text-primary">R$ 2.35M</div></div>
+      </div>
+    </div>
+  </section>
+
+  </div><!-- END REAL CONTENT -->
+
+  <!-- SCRIPTS -->
+  </div>
+</div>
