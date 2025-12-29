@@ -150,6 +150,7 @@
     // Estado (por instância)
     // =========================
     const cfg = params || {};
+    const DEBUG = !!cfg.debug;
     const cfgUrl = normalizeSupabaseProjectUrl(cfg.supabaseUrl || DEFAULT_SUPABASE_URL);
     const cfgKey = safeStr(cfg.supabaseAnonKey || DEFAULT_SUPABASE_KEY).trim();
     const cfgPageSize = Math.max(20, parseInt(cfg.pageSize, 10) || 100);
@@ -304,6 +305,7 @@
 
     async function restFetchJson(pathWithQuery, { preferCountExact = false } = {}) {
       const url = getRestBase() + pathWithQuery;
+      if (DEBUG) console.log(`[${WIDGET_KEY}] GET`, url);
       const headers = {
         apikey: STATE.sbKey,
         Authorization: `Bearer ${STATE.sbKey}`,
@@ -464,6 +466,11 @@
         STATE.options.subsegmento = uniqSorted(rows.map(r => r && r.subsegmento_nome));
         STATE.options.negocio = uniqSorted(rows.map(r => r && r.negocio_nome));
         STATE.options.loaded = true;
+      } catch (e) {
+        // Não trava o modal se falhar carregar opções (RLS, timeout, etc)
+        const msg = safeStr(e && (e.message || e.toString())) || "Falha ao carregar filtros";
+        if (DEBUG) console.warn(`[${WIDGET_KEY}] loadFilterOptionsIfNeeded falhou:`, msg);
+        showToast("Falha ao carregar opções de filtro", "error");
       } finally {
         setKpi(STATE.total ? `${STATE.total} bloqueios` : "—", "Pronto");
       }
@@ -1022,6 +1029,7 @@
       $("btn-apply-filters")?.addEventListener("click", () => {
         closeFilters();
         STATE.offset = 0;
+        if (DEBUG) console.log(`[${WIDGET_KEY}] aplicar filtros`, JSON.parse(JSON.stringify(STATE.filters)));
         fetchAndRender();
       });
 

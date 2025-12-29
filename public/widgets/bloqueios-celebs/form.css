@@ -751,17 +751,5 @@
   [data-cdn-widget="bloqueios-celebs"] .popover { right: 12px; width: min(360px, calc(100% - 24px)); }
 }
 
-/* TESTE VISUAL (remover depois): fundo “Material blue” bem clarinho na área da tabela */
-[data-cdn-widget="bloqueios-celebs"] .table-wrap {
-  background: #e3f2fd !important; /* Material Blue 50 */
-}
-[data-cdn-widget="bloqueios-celebs"] .grid.thead {
-  background: #bbdefb !important; /* Material Blue 100 */
-}
-[data-cdn-widget="bloqueios-celebs"] .tbody .tr {
-  background: #e3f2fd !important;
-}
-[data-cdn-widget="bloqueios-celebs"] .tbody .tr:hover {
-  background: #dbeafe !important; /* leve highlight (azul bem suave) */
-}
+/* (sem override de teste) */
 

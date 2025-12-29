@@ -47,6 +47,12 @@
       --text-main: #f8fafc; /* Slate-50 */
       --text-muted: #94a3b8; /* Slate-400 */
       --border-color: #334155; /* Slate-700 */
+
+      /* Tokens “light” ajustados para dark (evita cards/realces estourados) */
+      --col-primary-light: rgba(59, 130, 246, 0.15);
+      --col-success-light: rgba(34, 197, 94, 0.15);
+      --col-warning-light: rgba(245, 158, 11, 0.15);
+      --col-danger-light: rgba(239, 68, 68, 0.15);
       
       --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
       --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
@@ -95,6 +101,8 @@
       .xl-grid-cols-4 { grid-template-columns: repeat(4, 1fr); }
       .xl-grid-cols-5 { grid-template-columns: repeat(5, 1fr); }
       .xl-grid-cols-7 { grid-template-columns: repeat(7, 1fr); }
+      .xl-grid-cols-8 { grid-template-columns: repeat(8, 1fr); }
+      .xl-grid-cols-9 { grid-template-columns: repeat(9, 1fr); }
       .xl-col-span-3 { grid-column: span 3; }
       .xl-col-span-4 { grid-column: span 4; }
     }
@@ -176,6 +184,12 @@
         box-shadow: 0 1px 2px rgba(0,0,0,0.1);
     }
 
+    /* Eficiência - NPS (placeholder discreto) */
+    .eff-nps-muted {
+      opacity: 0.45;
+      filter: grayscale(0.35);
+    }
+
     /* Custom Dropdown */
     .select-wrapper {
         position: relative;
@@ -198,6 +212,429 @@
     .custom-select:focus {
         outline: none;
         border-color: var(--col-primary);
+    }
+
+    /* Ranking sort (discreto) */
+    .ranking-sort-wrap {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      height: 30px;
+    }
+    .ranking-sort-select {
+      appearance: none;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      border-radius: 10px;
+      padding: 6px 28px 6px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      height: 30px;
+      cursor: pointer;
+      box-shadow: var(--shadow-sm);
+    }
+    .ranking-sort-select:focus { outline: none; border-color: var(--col-primary); }
+    .ranking-sort-icon {
+      position: absolute;
+      right: 8px;
+      pointer-events: none;
+      color: var(--text-muted);
+      opacity: 0.8;
+    }
+
+    /* Header do Ranking: menos “apertado”, com wrap inteligente */
+    #dashboard-acelerai-v2 .ranking-header {
+      gap: 16px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    #dashboard-acelerai-v2 .ranking-header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      min-width: 0;
+    }
+    #dashboard-acelerai-v2 .ranking-header-actions {
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      align-items: center;
+      margin-left: auto;
+    }
+    #dashboard-acelerai-v2 .ranking-header-actions#ranking-controls-executives,
+    #dashboard-acelerai-v2 .ranking-header-actions#ranking-controls-meetings {
+      min-width: 220px;
+    }
+    #dashboard-acelerai-v2 .ranking-header-actions .control-btn-pill {
+      padding: 7px 12px;
+      line-height: 1;
+      border-radius: 999px;
+    }
+    #dashboard-acelerai-v2 .ranking-score-pill {
+      opacity: 0.82;
+      letter-spacing: 0.04em;
+    }
+    @media (max-width: 760px) {
+      #dashboard-acelerai-v2 .ranking-header-actions {
+        width: 100%;
+        justify-content: flex-start;
+        gap: 8px;
+      }
+      #dashboard-acelerai-v2 .ranking-sort-select {
+        min-width: 170px;
+      }
+    }
+
+    /* Abas do Ranking */
+    #dashboard-acelerai-v2 .ranking-tabs {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px;
+      border-radius: 999px;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-color);
+    }
+    #dashboard-acelerai-v2 .ranking-tab-btn {
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 700;
+      padding: 6px 10px;
+      border-radius: 999px;
+      cursor: pointer;
+      line-height: 1;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+    #dashboard-acelerai-v2 .ranking-tab-btn:hover {
+      background: rgba(255,255,255,0.55);
+      color: var(--text-main);
+    }
+    #dashboard-acelerai-v2.dark-mode .ranking-tab-btn:hover {
+      background: rgba(148,163,184,0.12);
+    }
+    #dashboard-acelerai-v2 .ranking-tab-btn.active {
+      background: var(--bg-card);
+      color: var(--col-primary);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Aba Reuniões (listas) */
+    #dashboard-acelerai-v2 .meetings-tab-wrap { display: flex; flex-direction: column; gap: 14px; }
+    #dashboard-acelerai-v2 .meetings-tab-section { display: flex; flex-direction: column; gap: 10px; }
+    #dashboard-acelerai-v2 .meetings-tab-title {
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      padding: 0 2px;
+    }
+    #dashboard-acelerai-v2 .meetings-tab-list { display: flex; flex-direction: column; gap: 10px; }
+    #dashboard-acelerai-v2 .meeting-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      background: var(--bg-card);
+      box-shadow: var(--shadow-sm);
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+      min-width: 0;
+    }
+    #dashboard-acelerai-v2 .meeting-row:hover {
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+      border-color: rgba(59,130,246,0.45);
+    }
+    #dashboard-acelerai-v2 .meeting-row-main { flex: 1; min-width: 0; }
+    #dashboard-acelerai-v2 .meeting-row-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--text-main);
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 4px;
+    }
+    #dashboard-acelerai-v2 .meeting-row-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      line-height: 1.2;
+    }
+    #dashboard-acelerai-v2 .meeting-pill {
+      font-size: 10px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-subtle);
+      color: var(--text-main);
+      white-space: nowrap;
+    }
+    #dashboard-acelerai-v2 .meeting-pill--scheduled { color: #1d4ed8; border-color: rgba(59,130,246,0.25); background: rgba(59,130,246,0.12); }
+    #dashboard-acelerai-v2 .meeting-pill--done { color: #166534; border-color: rgba(34,197,94,0.25); background: rgba(34,197,94,0.12); }
+    #dashboard-acelerai-v2 .meeting-pill--cancel { color: #991b1b; border-color: rgba(239,68,68,0.25); background: rgba(239,68,68,0.12); }
+
+    /* Donut de score (estilo adm.html, adaptado) */
+    #dashboard-acelerai-v2 .meeting-donut {
+      position: relative;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: conic-gradient(var(--chart-color) var(--chart-deg), rgba(148,163,184,0.25) 0deg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+    }
+    #dashboard-acelerai-v2 .meeting-donut::after {
+      content: "";
+      width: 32px;
+      height: 32px;
+      background: var(--bg-card);
+      border-radius: 50%;
+      position: absolute;
+    }
+    #dashboard-acelerai-v2 .meeting-donut .meeting-donut-val {
+      position: relative;
+      z-index: 2;
+      font-size: 11px;
+      font-weight: 900;
+      color: var(--text-main);
+    }
+
+    /* Modal Reunião */
+    #dashboard-acelerai-v2 .meeting-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      z-index: 2147482000;
+    }
+    #dashboard-acelerai-v2.dark-mode .meeting-modal-overlay { background: rgba(0,0,0,0.65); }
+    #dashboard-acelerai-v2 .meeting-modal-card {
+      width: 100%;
+      max-width: 720px;
+      max-height: 85vh;
+      overflow: hidden;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.25);
+      display: flex;
+      flex-direction: column;
+    }
+    #dashboard-acelerai-v2 .meeting-modal-header {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    #dashboard-acelerai-v2 .meeting-modal-score-wrap {
+      flex: 0 0 auto;
+      padding-top: 2px;
+    }
+    #dashboard-acelerai-v2 .meeting-modal-score-donut {
+      position: relative;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: conic-gradient(var(--chart-color) var(--chart-deg), rgba(148,163,184,0.25) 0deg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border-color);
+    }
+    #dashboard-acelerai-v2 .meeting-modal-score-donut::after {
+      content: "";
+      width: 34px;
+      height: 34px;
+      background: var(--bg-card);
+      border-radius: 50%;
+      position: absolute;
+    }
+    #dashboard-acelerai-v2 .meeting-modal-score-donut-val {
+      position: relative;
+      z-index: 2;
+      font-size: 13px;
+      font-weight: 900;
+      color: var(--text-main);
+    }
+    #dashboard-acelerai-v2 .meeting-modal-title-main {
+      font-size: 14px;
+      font-weight: 900;
+      color: var(--text-main);
+      line-height: 1.2;
+    }
+    #dashboard-acelerai-v2 .meeting-modal-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    #dashboard-acelerai-v2 .meeting-modal-close {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-subtle);
+      color: var(--text-main);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    #dashboard-acelerai-v2 .meeting-modal-body {
+      padding: 14px 16px 16px;
+      overflow: auto;
+    }
+    #dashboard-acelerai-v2 .meeting-modal-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    @media (max-width: 640px) {
+      #dashboard-acelerai-v2 .meeting-modal-grid { grid-template-columns: 1fr; }
+    }
+    #dashboard-acelerai-v2 .meeting-modal-kv {
+      border: 1px solid var(--border-color);
+      background: var(--bg-subtle);
+      border-radius: 12px;
+      padding: 10px 12px;
+      min-width: 0;
+    }
+    #dashboard-acelerai-v2 .meeting-modal-k {
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    #dashboard-acelerai-v2 .meeting-modal-v {
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--text-main);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    /* (score agora é donut no header) */
+    #dashboard-acelerai-v2 .meeting-modal-v a {
+      color: var(--col-primary);
+      text-decoration: none;
+      font-weight: 800;
+    }
+    #dashboard-acelerai-v2 .meeting-modal-v a:hover { text-decoration: underline; }
+
+    /* Tag de status dentro do modal */
+    #dashboard-acelerai-v2 .meeting-modal-status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      line-height: 1;
+      max-width: 100%;
+    }
+    #dashboard-acelerai-v2 .meeting-modal-note {
+      margin-top: 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      background: var(--bg-card);
+      padding: 12px;
+    }
+    #dashboard-acelerai-v2 .meeting-modal-note-title {
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    #dashboard-acelerai-v2 .meeting-modal-note-body {
+      font-size: 13px;
+      color: var(--text-main);
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+
+    /* Texto IA: melhor espaçamento + destaque por parágrafo/seção */
+    #dashboard-acelerai-v2 .ai-block { display: flex; flex-direction: column; gap: 10px; }
+    #dashboard-acelerai-v2 .ai-section-title {
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    #dashboard-acelerai-v2 .ai-paragraph {
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-color);
+      line-height: 1.75;
+    }
+    #dashboard-acelerai-v2 .ai-list {
+      margin: 0;
+      padding-left: 18px;
+    }
+    #dashboard-acelerai-v2 .ai-list li { margin: 6px 0; }
+
+    /* Evita “espaço sobrando” dentro dos cards em grids (não estica altura do item) */
+    #dashboard-acelerai-v2 .grid-no-stretch {
+      align-items: start;
+    }
+
+    /* Linha principal (Velocímetro + Faturamento + Reuniões): mesma altura e alinhamento */
+    #dashboard-acelerai-v2 .main-charts-row {
+      align-items: stretch;
+    }
+    #dashboard-acelerai-v2 .main-charts-row > .card {
+      height: 100%;
+      min-height: 380px;
+    }
+    #dashboard-acelerai-v2 .revenue-card {
+      display: flex;
+      flex-direction: column;
+    }
+    #dashboard-acelerai-v2 .revenue-card #revenue-chart {
+      flex: 1;
+      min-height: 0;
+    }
+
+    /* Reuniões dentro do card Ranking: conter e rolar internamente (não expandir card) */
+    #dashboard-acelerai-v2 #ranking-meetings-view {
+      max-height: 420px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    /* Taxas de Conversão: reduzir altura “sobrando” */
+    .conversion-card {
+      padding: 18px 18px 14px;
+    }
+
+    /* Ranking/Funil: respiro inferior (lista/barras não encostam na borda do card) */
+    #dashboard-acelerai-v2 #ranking-list {
+      padding-bottom: 12px;
+    }
+    #dashboard-acelerai-v2 #funnel-bars {
+      padding-bottom: 10px;
     }
 
     .theme-toggle-btn {
@@ -245,10 +682,12 @@
       border-radius: var(--radius-xl);
       padding: 14px;
       min-width: 0;
+      overflow: hidden; /* evita “vazar” elementos (mini-métricas/ícones) para fora do card */
       box-shadow: var(--shadow-sm);
       transition: all 0.2s ease;
     }
-    .kpi-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--col-primary); }
+    /* Hover: sem "subir" o card (isso estava cortando a borda superior em containers com overflow/scroll) */
+    .kpi-card:hover { box-shadow: var(--shadow-md); border-color: var(--col-primary); }
     
     .kpi-header { 
       display: flex; 
@@ -273,20 +712,32 @@
       justify-content: center;
       font-size: 18px;
     }
+
+    /* Ícones dos KPIs (Lucide) — forçar herança de cor mesmo com CSS global do Bubble */
+    #dashboard-acelerai-v2 .kpi-icon-box { color: inherit; }
+    #dashboard-acelerai-v2 .kpi-icon-box svg {
+      color: inherit !important;
+      stroke: currentColor !important;
+      fill: none !important;
+    }
+    #dashboard-acelerai-v2 .kpi-icon-box svg * {
+      stroke: currentColor !important;
+      fill: none !important;
+    }
     
-    /* Variantes de fundo do ícone */
-    .icon-bg-blue { background: #eff6ff; color: #3b82f6; }
-    .icon-bg-green { background: #f0fdf4; color: #22c55e; }
-    .icon-bg-orange { background: #fffbeb; color: #f59e0b; }
-    .icon-bg-gray { background: #f1f5f9; color: #64748b; }
-    .icon-bg-purple { background: #f5f3ff; color: #8b5cf6; }
+    /* Variantes de fundo do ícone (escopado) */
+    #dashboard-acelerai-v2 .icon-bg-blue { background: #eff6ff; color: #3b82f6; }
+    #dashboard-acelerai-v2 .icon-bg-green { background: #f0fdf4; color: #22c55e; }
+    #dashboard-acelerai-v2 .icon-bg-orange { background: #fffbeb; color: #f59e0b; }
+    #dashboard-acelerai-v2 .icon-bg-gray { background: #f1f5f9; color: #64748b; }
+    #dashboard-acelerai-v2 .icon-bg-purple { background: #f5f3ff; color: #8b5cf6; }
     
     /* Dark Mode Icons Overrides */
-    .dark-mode .icon-bg-blue { background: rgba(59,130,246,0.15); color: #60a5fa; }
-    .dark-mode .icon-bg-green { background: rgba(34,197,94,0.15); color: #4ade80; }
-    .dark-mode .icon-bg-orange { background: rgba(245,158,11,0.15); color: #fbbf24; }
-    .dark-mode .icon-bg-gray { background: rgba(148,163,184,0.15); color: #cbd5e1; }
-    .dark-mode .icon-bg-purple { background: rgba(139,92,246,0.15); color: #a78bfa; }
+    #dashboard-acelerai-v2.dark-mode .icon-bg-blue { background: rgba(59,130,246,0.15); color: #60a5fa; }
+    #dashboard-acelerai-v2.dark-mode .icon-bg-green { background: rgba(34,197,94,0.15); color: #4ade80; }
+    #dashboard-acelerai-v2.dark-mode .icon-bg-orange { background: rgba(245,158,11,0.15); color: #fbbf24; }
+    #dashboard-acelerai-v2.dark-mode .icon-bg-gray { background: rgba(148,163,184,0.15); color: #cbd5e1; }
+    #dashboard-acelerai-v2.dark-mode .icon-bg-purple { background: rgba(139,92,246,0.15); color: #a78bfa; }
 
     .kpi-val { 
       font-size: 20px; 
@@ -297,20 +748,78 @@
       line-height: 1.2;
     }
 
+    /* Sub-métrica (pill) no KPI (ex.: Conversão global) */
+    .kpi-subpill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      font-size: 11px;
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 10px;
+      width: fit-content;
+      max-width: 100%;
+    }
+    .kpi-subpill-label {
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+    .kpi-subpill-val {
+      font-weight: 900;
+      color: var(--text-main);
+    }
+
+    /* Sub-métrica com destaque (Stat Highlight - UX Premium) */
+    .kpi-stat-highlight {
+      display: flex;
+      flex-direction: column;
+      padding: 4px 0 8px 12px;
+      border-left: 3px solid var(--col-primary);
+      margin: 8px 0 16px 2px;
+      transition: all 0.2s ease;
+    }
+    .kpi-stat-highlight-label {
+      display: flex;
+      align-items: center;
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 4px;
+    }
+    .kpi-stat-highlight-val {
+      font-size: 24px;
+      font-weight: 900;
+      color: var(--text-main);
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+    .dark-mode .kpi-stat-highlight {
+      border-left-color: #60a5fa;
+    }
+
     /* Grid de Comparações no Footer */
     .kpi-footer {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 4px;
-      border-top: 1px solid var(--border-color);
-      padding-top: 14px;
+      gap: 2px; /* ainda mais compacto para não cortar em telas menores */
+      border-top: 1px solid var(--border-color); /* volta divisor */
+      padding-top: 10px; /* reduz altura e evita “cortar” rodapé */
       margin-top: auto;
+      min-width: 0;
     }
 
     .kpi-comp-item {
       display: flex;
       flex-direction: column;
       gap: 2px;
+      min-width: 0; /* permite ellipsis dentro de grid/flex */
     }
     
     /* Alinhamento Inteligente das Colunas */
@@ -319,21 +828,34 @@
     .kpi-comp-item:nth-child(3) { align-items: flex-end; }
 
     .kpi-comp-val {
-      font-size: 11px;
+      font-size: 9px; /* menor para caber 100% sem truncar */
       font-weight: 700;
       display: flex;
       align-items: center;
-      gap: 2px;
+      gap: 1px;
       line-height: 1;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .kpi-comp-label {
-      font-size: 9px;
+      font-size: 7px; /* mais compacto */
       color: var(--text-muted);
       font-weight: 500;
-      line-height: 1.1;
+      line-height: 1.05;
       opacity: 0.9;
       max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Ícones do trend no footer: não “esticam” layout */
+    .kpi-comp-val i,
+    .kpi-comp-val svg {
+      flex: 0 0 auto;
     }
     
     /* Ajuste de alinhamento de texto para os labels */
@@ -343,11 +865,74 @@
 
     .trend-up { color: var(--col-success); }
     .trend-down { color: var(--col-danger); }
+    .trend-flat { color: var(--col-primary); } /* azul padrão */
 
-    /* KPI Grid Responsivo */
+    /* KPIs em 1 única linha (scroll horizontal) */
     #kpi-grid {
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      display: flex;
+      flex-wrap: nowrap;
       gap: 14px;
+      width: 100%;
+      overflow-x: auto;
+      overflow-y: hidden;
+      /* Importante: precisa de respiro em cima/baixo para o box-shadow do hover não ser "cortado"
+         pelo overflow do container (principalmente no topo). */
+      padding: 8px 6px 14px; /* topo + lateral + espaço pro scrollbar */
+      margin-bottom: 22px !important; /* reduz o "buraco" abaixo (override do mb-12 do HTML) */
+      scroll-snap-type: x proximity;
+      -webkit-overflow-scrolling: touch;
+    }
+    #kpi-grid .kpi-card {
+      /* Mobile / telas pequenas: scroll horizontal */
+      flex: 0 0 260px;
+      scroll-snap-align: start;
+    }
+    @media (max-width: 420px) {
+      #kpi-grid .kpi-card { flex-basis: 230px; }
+    }
+
+    /* Desktop (telas largas): 9 KPIs cabem em 1 linha (sem scroll) */
+    @media (min-width: 1200px) {
+      #kpi-grid {
+        /* Em telas largas, usar GRID para os cards crescerem junto ao invés de só "afastarem". */
+        display: grid;
+        grid-template-columns: repeat(9, minmax(0, 1fr));
+        overflow: visible;
+        gap: 14px;
+        padding: 8px 0 0; /* sem scrollbar -> sem espaço extra, mas mantém respiro no hover */
+      }
+      #kpi-grid .kpi-card {
+        width: 100%;
+        min-width: 0;         /* permite encolher sem "estourar" */
+        max-width: none;      /* permite crescer */
+        scroll-snap-align: none;
+      }
+      /* compacta o card para caber bem */
+      #kpi-grid .kpi-card { padding: 12px; }
+      #kpi-grid .kpi-header { margin-bottom: 10px; }
+      #kpi-grid .kpi-icon-box { width: 32px; height: 32px; }
+      #kpi-grid .kpi-val { font-size: 18px; }
+      #kpi-grid .kpi-footer { padding-top: 10px; }
+      #kpi-grid .kpi-comp-label { font-size: 9px; letter-spacing: 0.08em; }
+    }
+
+    /* Gráficos: dar mais "respiro" (evita visual achatado) */
+    #revenue-chart { height: 320px !important; }
+    #conversion-chart { height: 210px !important; }
+    @media (min-width: 1200px) {
+      #revenue-chart { height: 360px !important; }
+      #conversion-chart { height: 225px !important; }
+    }
+
+    /* Scrollbar discreto */
+    #kpi-grid::-webkit-scrollbar { height: 8px; }
+    #kpi-grid::-webkit-scrollbar-track { background: transparent; }
+    #kpi-grid::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.35);
+      border-radius: 99px;
+    }
+    #dashboard-acelerai-v2.dark-mode #kpi-grid::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.22);
     }
 
     /* Meetings Sidebar Refined */
@@ -671,6 +1256,10 @@
       overflow-x: auto;
       padding: 8px 2px 6px 2px;
     }
+    .pipeline-diagram-scroll--pivot {
+      overflow-x: hidden;
+      padding: 8px 2px 10px 2px;
+    }
     .pipeline-diagram-header {
       display: flex;
       align-items: center;
@@ -709,6 +1298,65 @@
       min-width: max-content;
       border-top: 1px solid var(--border-color);
       padding-top: 10px;
+    }
+
+    /* Pipeline - modo Pivot (1 vendedor) */
+    .pipeline-pivot {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 100%;
+      min-width: 0;
+    }
+    .pipeline-pivot-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 2px 12px 2px;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .pipeline-pivot-head-meta { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+    .pipeline-pivot-name {
+      font-size: 13px;
+      font-weight: 900;
+      color: var(--text-main);
+      line-height: 1.1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+    .pipeline-pivot-eff {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--text-muted);
+      line-height: 1;
+    }
+    .pipeline-pivot-eff strong { color: var(--col-warning); font-weight: 900; }
+    .pipeline-pivot-rows { display: flex; flex-direction: column; gap: 10px; }
+    .pipeline-pivot-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      background: var(--bg-card);
+      box-shadow: var(--shadow-sm);
+      min-width: 0;
+    }
+    .pipeline-pivot-stage {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 900;
+      color: var(--text-main);
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     /* 1ª coluna (labels) */
@@ -807,12 +1455,14 @@
       left: 50%;
       top: 0;
       bottom: 0;
-      width: 2px;
+      width: 1px;
       transform: translateX(-50%);
-      background: rgba(148,163,184,0.35);
+      /* mais suave para não “vazar” visualmente por dentro das pills */
+      background: rgba(148,163,184,0.18);
+      z-index: 0;
     }
     .dark-mode .pipeline-cell::before {
-      background: rgba(148,163,184,0.22);
+      background: rgba(148,163,184,0.14);
     }
     .pipeline-dot {
       position: absolute;
@@ -823,8 +1473,12 @@
       border-radius: 999px;
       transform: translate(-50%, -50%);
       background: var(--col-primary);
-      box-shadow: 0 0 0 3px var(--bg-card);
+      box-shadow: 0 0 0 4px var(--bg-card);
       z-index: 1;
+    }
+    /* Remover “bullets” do pipeline (melhora legibilidade dos números) */
+    #dashboard-acelerai-v2 #pipeline-container .pipeline-dot {
+      display: none;
     }
     .pipeline-pill {
       position: relative;
@@ -837,7 +1491,8 @@
       min-width: 62px;
       text-align: center;
       white-space: nowrap;
-      box-shadow: var(--shadow-sm);
+      /* halo opaco atrás da pill para “cortar” a linha vertical */
+      box-shadow: 0 0 0 7px var(--bg-card), var(--shadow-sm);
     }
     .pipeline-pill--blue { background: rgba(59,130,246,0.12); color: #2563eb; border-color: rgba(59,130,246,0.22); }
     .pipeline-pill--amber { background: rgba(245,158,11,0.14); color: #b45309; border-color: rgba(245,158,11,0.22); }
@@ -926,9 +1581,9 @@
       font-weight: 700;
       padding: 5px 10px;
       border-radius: 999px;
-      background: #e2e8f0;
-      color: #0f172a;
-      border: 1px solid #d0d7e2;
+      background: var(--bg-subtle);
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
       min-width: 60px;
       text-align: center;
     }
@@ -936,9 +1591,9 @@
       width: 100%;
       height: 22px;
       border-radius: 999px;
-      background: #eef2f6;
+      background: var(--bg-subtle);
       overflow: hidden;
-      border: 1px solid #e2e8f0;
+      border: 1px solid var(--border-color);
     }
     .funnel-bar-fill {
       height: 100%;
@@ -976,32 +1631,14 @@
         opacity: 1;
     }
 
-    /* TEMA PRETO E BRANCO (wish-board): Vasco mode (fundo preto + cards brancos) */
+    /* Scroll interno do dashboard (sem depender do scroll da página Bubble) */
+    [data-cdn-widget="dashboard"] { height: 100%; }
     #dashboard-acelerai-v2 {
-      --bg-background: #000000;
-      --bg-card: #ffffff;
-      --bg-subtle: #f2f2f2;
-      --text-main: #000000;
-      --text-muted: #333333;
-      --border-color: #000000;
-
-      /* Cores “neutras” para manter tudo em P&B */
-      --col-primary: #000000;
-      --col-primary-light: #f2f2f2;
-      --col-success: #000000;
-      --col-success-light: #f2f2f2;
-      --col-warning: #000000;
-      --col-warning-light: #f2f2f2;
-      --col-danger: #000000;
-      --col-danger-light: #f2f2f2;
-    }
-    /* Força o mesmo tema mesmo se o usuário alternar para dark-mode */
-    #dashboard-acelerai-v2.dark-mode {
-      --bg-background: #000000;
-      --bg-card: #ffffff;
-      --bg-subtle: #f2f2f2;
-      --text-main: #000000;
-      --text-muted: #333333;
-      --border-color: #000000;
+      /* ocupa a altura do HTML Element/parent no Bubble e scrolla por dentro */
+      height: 100%;
+      max-height: 100%;
+      overflow-y: auto;
+      overflow-x: hidden;
+      overscroll-behavior: contain;
     }
   
