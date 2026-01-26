@@ -1,3 +1,19 @@
+/**
+ * ============================================================================
+ * WIDGET: wish-board (Dashboard Aceleraí) - CSS
+ * ============================================================================
+ * 
+ * DOCUMENTAÇÃO PARA IAs:
+ * - docs/AGENTS_GUIDE.md  → Guia de Multi-Agentes (Agente de CSS e Layout)
+ * - PROJECT_DOC.md        → Contexto geral
+ * - CHANGELOG.md          → Histórico de versões
+ * 
+ * TOKENS CSS: --col-*, --bg-*, --text-*, --shadow-*
+ * DARK MODE:  #dashboard-acelerai-v2.dark-mode
+ * ESCOPO:     #dashboard-acelerai-v2 ou [data-cdn-widget="dashboard"]
+ * 
+ * ============================================================================
+ */
 
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
@@ -96,10 +112,14 @@
       .md-grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
       .md-grid-cols-4 { grid-template-columns: repeat(4, 1fr); }
     }
+    @media (min-width: 1024px) {
+      .lg-grid-cols-6 { grid-template-columns: repeat(6, 1fr); }
+    }
     @media (min-width: 1280px) {
       .xl-grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
       .xl-grid-cols-4 { grid-template-columns: repeat(4, 1fr); }
       .xl-grid-cols-5 { grid-template-columns: repeat(5, 1fr); }
+      .xl-grid-cols-6 { grid-template-columns: repeat(6, 1fr); }
       .xl-grid-cols-7 { grid-template-columns: repeat(7, 1fr); }
       .xl-grid-cols-8 { grid-template-columns: repeat(8, 1fr); }
       .xl-grid-cols-9 { grid-template-columns: repeat(9, 1fr); }
@@ -184,6 +204,87 @@
         box-shadow: 0 1px 2px rgba(0,0,0,0.1);
     }
 
+    /* Revenue chart controls (compact, não quebra no Bubble) */
+    #dashboard-acelerai-v2 .revenue-header-actions {
+      display: flex;
+      align-items: center;
+      /* Importante: com overflow-x, flex-end corta o 1º chip (overflow fica à esquerda).
+         Mantemos o bloco à direita via layout do header, mas o conteúdo começa no início. */
+      justify-content: flex-start;
+      flex-wrap: nowrap;
+      gap: 8px;
+      max-width: 100%;
+      padding: 2px 6px; /* evita cortar o primeiro/último chip no scroll */
+      overflow-x: auto;
+      overflow-y: hidden;
+    }
+    #dashboard-acelerai-v2 .revenue-controls-group {
+      padding: 0;
+      border-radius: 12px;
+      background: transparent;
+      border: 0;
+    }
+    #dashboard-acelerai-v2 .revenue-controls-group .revenue-chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      padding: 4px 8px;
+      font-size: 11px;
+      white-space: nowrap;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      box-shadow: none;
+      border-radius: 6px;
+      transition: all 0.15s ease;
+    }
+    #dashboard-acelerai-v2 .revenue-controls-group .revenue-chip:hover {
+      background: rgba(148, 163, 184, 0.12);
+      color: var(--text-main);
+    }
+    #dashboard-acelerai-v2 .revenue-controls-group .revenue-chip.active {
+      background: rgba(59, 130, 246, 0.12);
+      color: var(--col-primary);
+      font-weight: 500;
+    }
+    #dashboard-acelerai-v2.dark-mode .revenue-controls-group .revenue-chip {
+      background: transparent;
+    }
+    #dashboard-acelerai-v2.dark-mode .revenue-controls-group .revenue-chip:hover {
+      background: rgba(148, 163, 184, 0.1);
+    }
+    #dashboard-acelerai-v2.dark-mode .revenue-controls-group .revenue-chip.active {
+      background: rgba(96, 165, 250, 0.18);
+      color: #60a5fa;
+    }
+    #dashboard-acelerai-v2 .revenue-controls-group .revenue-chip.is-off {
+      opacity: 0.5;
+    }
+    /* Chips de icone (Zoom/Legenda) - mais compactos */
+    #dashboard-acelerai-v2 .revenue-controls-group .revenue-chip.icon-only {
+      padding: 5px 7px;
+    }
+    #dashboard-acelerai-v2 .revenue-controls-group .revenue-chip.icon-only svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    #dashboard-acelerai-v2 .rev-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+    #dashboard-acelerai-v2.dark-mode .rev-dot {
+      /* sem shadow no dark mode */
+    }
+    #dashboard-acelerai-v2 .rev-dot--real { background: #3b82f6; }
+    #dashboard-acelerai-v2 .rev-dot--ly { background: #ef4444; }
+    #dashboard-acelerai-v2 .rev-dot--meta { background: #10b981; }
+    #dashboard-acelerai-v2 .rev-dot--proj { background: #0ea5e9; }
+
     /* Eficiência - NPS (placeholder discreto) */
     .eff-nps-muted {
       opacity: 0.45;
@@ -194,6 +295,57 @@
     .select-wrapper {
         position: relative;
         min-width: 180px;
+    }
+
+    /* Agência: ligeiramente mais compacto para caber bem no header */
+    #dashboard-acelerai-v2 #agency-select.custom-select {
+      min-width: 160px;
+    }
+
+    /* Agência (segmented pills) */
+    #dashboard-acelerai-v2 .agency-segment {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      padding: 2px;
+      height: 36px;
+      border-radius: 10px;
+      background: rgba(148, 163, 184, 0.10);
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      overflow: hidden;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+    #dashboard-acelerai-v2 .agency-segment-btn {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+    }
+    #dashboard-acelerai-v2 .agency-segment-btn:hover {
+      background: rgba(148, 163, 184, 0.14);
+      color: var(--text-main);
+    }
+    #dashboard-acelerai-v2 .agency-segment-btn.active {
+      background: rgba(59, 130, 246, 0.14);
+      color: var(--col-primary);
+    }
+    #dashboard-acelerai-v2.dark-mode .agency-segment {
+      background: rgba(148, 163, 184, 0.08);
+      border-color: rgba(148, 163, 184, 0.18);
+    }
+    #dashboard-acelerai-v2.dark-mode .agency-segment-btn:hover {
+      background: rgba(148, 163, 184, 0.10);
+    }
+    #dashboard-acelerai-v2.dark-mode .agency-segment-btn.active {
+      background: rgba(96, 165, 250, 0.18);
+      color: #60a5fa;
     }
     .custom-select {
         appearance: none;
@@ -275,6 +427,20 @@
     #dashboard-acelerai-v2 .ranking-score-pill {
       opacity: 0.82;
       letter-spacing: 0.04em;
+    }
+    /* Aba Reuniões: pill com score + ícone + texto */
+    #dashboard-acelerai-v2 #ranking-controls-meetings .ranking-score-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      opacity: 0.95;
+    }
+    #dashboard-acelerai-v2 #meetings-score-avg {
+      font-weight: inherit;
+      letter-spacing: inherit;
     }
     @media (max-width: 760px) {
       #dashboard-acelerai-v2 .ranking-header-actions {
@@ -441,13 +607,20 @@
       padding: 14px 16px;
       border-bottom: 1px solid var(--border-color);
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       justify-content: space-between;
-      gap: 10px;
+      gap: 12px;
     }
     #dashboard-acelerai-v2 .meeting-modal-score-wrap {
       flex: 0 0 auto;
-      padding-top: 2px;
+      padding-top: 0;
+    }
+    #dashboard-acelerai-v2 .meeting-modal-title {
+      flex: 1 1 auto;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
     }
     #dashboard-acelerai-v2 .meeting-modal-score-donut {
       position: relative;
@@ -481,6 +654,35 @@
       font-weight: 900;
       color: var(--text-main);
       line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+    #dashboard-acelerai-v2 .meeting-modal-title-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      flex-wrap: wrap;
+    }
+    #dashboard-acelerai-v2 .meeting-modal-stage-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-subtle);
+      color: var(--text-main);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      line-height: 1;
+      white-space: nowrap;
+      flex: 0 0 auto;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     #dashboard-acelerai-v2 .meeting-modal-sub {
       font-size: 12px;
@@ -605,16 +807,28 @@
       align-items: stretch;
     }
     #dashboard-acelerai-v2 .main-charts-row > .card {
-      height: 100%;
-      min-height: 380px;
+      /* Fix: no Bubble, ao trocar filtros (Hoje/Semana/Mês) alguns re-renders de gráficos podem
+         empurrar o layout e fazer os cards "crescerem" para baixo. Travamos a altura por breakpoint. */
+      height: 380px;
+      max-height: 380px;
+      overflow: hidden;
     }
     #dashboard-acelerai-v2 .revenue-card {
       display: flex;
       flex-direction: column;
     }
+    #dashboard-acelerai-v2 .revenue-card > .flex {
+      flex: 0 0 auto;
+      min-height: 44px;
+      margin-bottom: 12px;
+    }
     #dashboard-acelerai-v2 .revenue-card #revenue-chart {
-      flex: 1;
-      min-height: 0;
+      /* Altura fixa para evitar feedback-loop (Bubble + ApexCharts) */
+      flex: 0 0 320px;
+      height: 320px;
+      max-height: 320px;
+      min-height: 320px;
+      overflow: hidden; /* impede SVG/tooling do Apex de expandir o card */
     }
 
     /* Reuniões dentro do card Ranking: conter e rolar internamente (não expandir card) */
@@ -731,6 +945,7 @@
     #dashboard-acelerai-v2 .icon-bg-orange { background: #fffbeb; color: #f59e0b; }
     #dashboard-acelerai-v2 .icon-bg-gray { background: #f1f5f9; color: #64748b; }
     #dashboard-acelerai-v2 .icon-bg-purple { background: #f5f3ff; color: #8b5cf6; }
+    #dashboard-acelerai-v2 .icon-bg-cyan { background: #ecfeff; color: #06b6d4; }
     
     /* Dark Mode Icons Overrides */
     #dashboard-acelerai-v2.dark-mode .icon-bg-blue { background: rgba(59,130,246,0.15); color: #60a5fa; }
@@ -738,6 +953,7 @@
     #dashboard-acelerai-v2.dark-mode .icon-bg-orange { background: rgba(245,158,11,0.15); color: #fbbf24; }
     #dashboard-acelerai-v2.dark-mode .icon-bg-gray { background: rgba(148,163,184,0.15); color: #cbd5e1; }
     #dashboard-acelerai-v2.dark-mode .icon-bg-purple { background: rgba(139,92,246,0.15); color: #a78bfa; }
+    #dashboard-acelerai-v2.dark-mode .icon-bg-cyan { background: rgba(6,182,212,0.15); color: #22d3ee; }
 
     .kpi-val { 
       font-size: 20px; 
@@ -868,7 +1084,7 @@
     .trend-flat { color: var(--col-primary); } /* azul padrão */
 
     /* KPIs em 1 única linha (scroll horizontal) */
-    #kpi-grid {
+    #dashboard-acelerai-v2 #kpi-grid {
       display: flex;
       flex-wrap: nowrap;
       gap: 14px;
@@ -882,45 +1098,55 @@
       scroll-snap-type: x proximity;
       -webkit-overflow-scrolling: touch;
     }
-    #kpi-grid .kpi-card {
+    #dashboard-acelerai-v2 #kpi-grid .kpi-card {
       /* Mobile / telas pequenas: scroll horizontal */
       flex: 0 0 260px;
       scroll-snap-align: start;
     }
     @media (max-width: 420px) {
-      #kpi-grid .kpi-card { flex-basis: 230px; }
+      #dashboard-acelerai-v2 #kpi-grid .kpi-card { flex-basis: 230px; }
     }
 
-    /* Desktop (telas largas): 9 KPIs cabem em 1 linha (sem scroll) */
+    /* Desktop (telas largas): KPIs em GRID (6 + 6) */
     @media (min-width: 1200px) {
-      #kpi-grid {
+      #dashboard-acelerai-v2 #kpi-grid {
         /* Em telas largas, usar GRID para os cards crescerem junto ao invés de só "afastarem". */
         display: grid;
-        grid-template-columns: repeat(9, minmax(0, 1fr));
+        grid-template-columns: repeat(6, minmax(0, 1fr));
         overflow: visible;
         gap: 14px;
         padding: 8px 0 0; /* sem scrollbar -> sem espaço extra, mas mantém respiro no hover */
       }
-      #kpi-grid .kpi-card {
+      #dashboard-acelerai-v2 #kpi-grid .kpi-card {
         width: 100%;
         min-width: 0;         /* permite encolher sem "estourar" */
         max-width: none;      /* permite crescer */
         scroll-snap-align: none;
       }
       /* compacta o card para caber bem */
-      #kpi-grid .kpi-card { padding: 12px; }
-      #kpi-grid .kpi-header { margin-bottom: 10px; }
-      #kpi-grid .kpi-icon-box { width: 32px; height: 32px; }
-      #kpi-grid .kpi-val { font-size: 18px; }
-      #kpi-grid .kpi-footer { padding-top: 10px; }
-      #kpi-grid .kpi-comp-label { font-size: 9px; letter-spacing: 0.08em; }
+      #dashboard-acelerai-v2 #kpi-grid .kpi-card { padding: 12px; }
+      #dashboard-acelerai-v2 #kpi-grid .kpi-header { margin-bottom: 10px; }
+      #dashboard-acelerai-v2 #kpi-grid .kpi-icon-box { width: 32px; height: 32px; }
+      #dashboard-acelerai-v2 #kpi-grid .kpi-val { font-size: 18px; }
+      #dashboard-acelerai-v2 #kpi-grid .kpi-footer { padding-top: 10px; }
+      #dashboard-acelerai-v2 #kpi-grid .kpi-comp-label { font-size: 9px; letter-spacing: 0.08em; }
     }
 
-    /* Gráficos: dar mais "respiro" (evita visual achatado) */
-    #revenue-chart { height: 320px !important; }
+    /* Gráficos: trava altura do revenue para evitar crescimento acumulativo */
+    #revenue-chart { height: 320px !important; max-height: 320px !important; }
     #conversion-chart { height: 210px !important; }
     @media (min-width: 1200px) {
-      #revenue-chart { height: 360px !important; }
+      #dashboard-acelerai-v2 .main-charts-row > .card {
+        height: 420px;
+        max-height: 420px;
+      }
+      #dashboard-acelerai-v2 .revenue-card #revenue-chart {
+        flex: 0 0 340px;
+        height: 340px;
+        max-height: 340px;
+        min-height: 340px;
+      }
+      #revenue-chart { height: 340px !important; max-height: 340px !important; }
       #conversion-chart { height: 225px !important; }
     }
 
@@ -1126,6 +1352,9 @@
         height: 100%;
         border-radius: 50%;
         object-fit: cover;
+        display: block;
+        /* Ajuste fino: traz o rosto para baixo (foco mais no topo da imagem) */
+        object-position: 50% 25%;
         background: #e2e8f0;
     }
     .rank-badge {
@@ -1174,6 +1403,36 @@
         font-weight: 700;
         color: #10b981; 
         line-height: 1;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 6px;
+    }
+
+    /* Ícone ao lado do score: indica "nota média das reuniões" */
+    .rank-score-avg-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--col-warning);
+        cursor: help;
+        opacity: 0.9;
+        width: 20px;
+        height: 20px;
+        border-radius: 999px;
+        background: var(--col-warning-light);
+        border: 1px solid rgba(245, 158, 11, 0.25);
+        box-shadow: 0 1px 0 rgba(0,0,0,0.03);
+    }
+    .rank-score-avg-icon svg,
+    .rank-score-avg-icon i,
+    .rank-score-avg-icon i svg {
+        display: block;
+    }
+    .rank-score-avg-icon:hover {
+        color: var(--col-warning);
+        opacity: 1;
+        border-color: rgba(245, 158, 11, 0.55);
     }
     .rank-trend {
         font-size: 9px;
@@ -1403,6 +1662,10 @@
       border-radius: 999px;
       border: 1px solid var(--border-color);
       background: var(--bg-subtle);
+      object-fit: cover;
+      display: block;
+      /* Ajuste fino: traz o rosto para baixo (foco mais no topo da imagem) */
+      object-position: 50% 25%;
     }
     .pipeline-rank-badge {
       position: absolute;
@@ -1572,24 +1835,99 @@
     .channel-stat .value { font-weight: 700; font-size: 13px; color: var(--text-main); }
     .channel-stat .label { font-size: 11px; color: var(--text-muted); font-weight: 600; }
 
-    /* Funnel (UX polish) */
-    .funnel-step { padding: 10px 0; }
-    .funnel-label { font-size: 16px; font-weight: 700; color: var(--text-main); letter-spacing: -0.01em; }
-    .funnel-value { font-size: 16px; font-weight: 700; color: var(--text-main); }
-    .funnel-badge {
-      font-size: 12.5px;
+    /* Funnel Visual Horizontal SVG (Curvo) - Minimalista Azul */
+    .funnel-visual-wrapper {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      padding: 10px 0;
+      gap: 24px;
+    }
+    .funnel-svg-container {
+      width: 100%;
+      height: 180px;
+      position: relative;
+    }
+    .funnel-svg-container svg {
+      width: 100%;
+      height: 100%;
+      filter: none;
+      overflow: visible;
+    }
+    .funnel-data-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0;
+      width: 100%;
+    }
+    .funnel-data-cell {
+      display: flex;
+      flex-direction: column;
+      padding: 0 12px;
+      border-left: 1px solid var(--border-color);
+    }
+    .funnel-data-cell:first-child {
+      border-left: none;
+      padding-left: 0;
+    }
+    .funnel-data-cell:last-child {
+      padding-right: 0;
+    }
+    .funnel-data-value {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--text-main);
+      line-height: 1.1;
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+    .funnel-data-pct {
+      font-size: 14px;
       font-weight: 700;
-      padding: 5px 10px;
+      color: var(--col-primary);
+    }
+    .funnel-data-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-top: 4px;
+    }
+    
+    @media (max-width: 768px) {
+      .funnel-svg-container { height: 120px; }
+      .funnel-data-grid { 
+        grid-template-columns: repeat(3, 1fr); 
+        gap: 16px;
+      }
+      .funnel-data-cell { 
+        border-left: none; 
+        padding: 8px 0;
+        border-bottom: 1px solid var(--border-color);
+      }
+      .funnel-data-value { font-size: 22px; }
+    }
+
+    /* Fallback para estilos antigos (caso necessário) */
+    .funnel-step { padding: 6px 0; }
+    .funnel-label { font-size: 13px; font-weight: 700; color: var(--text-main); letter-spacing: -0.01em; }
+    .funnel-value { font-size: 13px; font-weight: 700; color: var(--text-main); }
+    .funnel-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
       border-radius: 999px;
       background: var(--bg-subtle);
       color: var(--text-main);
       border: 1px solid var(--border-color);
-      min-width: 60px;
+      min-width: 45px;
       text-align: center;
     }
     .funnel-bar-bg {
       width: 100%;
-      height: 22px;
+      height: 12px;
       border-radius: 999px;
       background: var(--bg-subtle);
       overflow: hidden;
@@ -1631,14 +1969,466 @@
         opacity: 1;
     }
 
-    /* Scroll interno do dashboard (sem depender do scroll da página Bubble) */
-    [data-cdn-widget="dashboard"] { height: 100%; }
-    #dashboard-acelerai-v2 {
-      /* ocupa a altura do HTML Element/parent no Bubble e scrolla por dentro */
-      height: 100%;
-      max-height: 100%;
-      overflow-y: auto;
-      overflow-x: hidden;
-      overscroll-behavior: contain;
+    /* Scroll natural da página (permite scroll total) */
+    [data-cdn-widget="dashboard"] {
+      min-height: 100vh;
+      overflow: visible;
     }
-  
+    #dashboard-acelerai-v2 {
+      height: auto;
+      overflow: visible;
+      overflow-x: hidden;
+    }
+
+    /* --- FILTRO PERSONALIZADO (popover) --- */
+    .custom-date-popover {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 50;
+      width: 380px;
+      max-width: 92vw;
+      background: #ffffff !important;
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      box-shadow: 0 18px 60px rgba(15, 23, 42, 0.18);
+      padding: 12px;
+      opacity: 1 !important;
+    }
+    .custom-date-title {
+      font-size: 12px;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 10px;
+      letter-spacing: -0.01em;
+    }
+    .custom-date-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .custom-date-field {
+      position: relative;
+      flex: 1 1 160px;
+      min-width: 160px;
+      display: flex;
+      align-items: center;
+    }
+    .custom-date-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+    .custom-date-input {
+      flex: 1 1 150px;
+      width: auto;
+      height: 34px;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+      background: #ffffff;
+      color: #0f172a;
+      padding: 0 34px 0 10px; /* espaço pro ícone */
+      font-size: 12px;
+      outline: none;
+    }
+    .custom-date-icon-btn {
+      position: absolute;
+      right: 6px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 26px;
+      height: 26px;
+      border-radius: 8px;
+      border: 1px solid rgba(148,163,184,0.35);
+      background: rgba(241,245,249,0.9);
+      color: #0f172a;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .custom-date-icon-btn:active { transform: translateY(-50%) scale(0.98); }
+    .custom-date-input:focus {
+      border-color: rgba(59,130,246,0.55);
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.18);
+    }
+    .custom-date-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      margin-top: 6px;
+    }
+    .custom-date-btn {
+      height: 34px;
+      padding: 0 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-subtle);
+      color: var(--text-main);
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 0.08s ease, opacity 0.2s ease;
+    }
+    .custom-date-btn:active { transform: translateY(1px); }
+    .custom-date-btn--primary {
+      background: rgba(59,130,246,0.14);
+      border-color: rgba(59,130,246,0.28);
+      color: rgba(59,130,246,1);
+    }
+    .custom-date-hint {
+      margin-top: 10px;
+      font-size: 11px;
+      color: #475569;
+      line-height: 1.25;
+    }
+    /* indicador visual: período aplicado */
+    #btn-custom.has-range {
+      border-color: rgba(59,130,246,0.30);
+      background: rgba(59,130,246,0.10);
+    }
+    /* Evita que o botão "Personalizado • ..." estoure o header e quebre o layout (Bubble web) */
+    #btn-custom {
+      max-width: 220px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ============================================
+       METAS DE PROPOSTAS E REUNIÕES
+       ============================================ */
+
+    /* KPI Cards (Meta de Propostas / Reuniões) */
+    .meta-kpi-card {
+      padding: 16px;
+    }
+    .meta-kpi-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+    .meta-kpi-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+      min-width: 0;
+    }
+    .meta-kpi-title {
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+    .meta-kpi-title small {
+      font-size: 9px;
+      font-weight: 600;
+      opacity: 0.7;
+      margin-left: 2px;
+    }
+    .meta-kpi-numbers {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .meta-kpi-current {
+      font-size: 42px;
+      font-weight: 900;
+      color: var(--text-main);
+      line-height: 1;
+      letter-spacing: -0.03em;
+    }
+    .meta-kpi-separator {
+      font-size: 24px;
+      font-weight: 500;
+      color: var(--text-muted);
+      opacity: 0.5;
+    }
+    .meta-kpi-target {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+    #meta-propostas-trend {
+      color: var(--col-primary);
+    }
+    .meta-kpi-trend {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--col-success);
+    }
+    .meta-kpi-trend svg {
+      width: 16px;
+      height: 16px;
+    }
+    .meta-kpi-missing {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    /* Donut circular (anel de progresso) */
+    .meta-kpi-donut {
+      position: relative;
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: conic-gradient(var(--chart-color, #3b82f6) var(--chart-deg, 0deg), rgba(148,163,184,0.18) 0deg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .meta-kpi-donut::after {
+      content: "";
+      width: 78px;
+      height: 78px;
+      background: var(--bg-card);
+      border-radius: 50%;
+      position: absolute;
+    }
+    .meta-kpi-donut-val {
+      position: relative;
+      z-index: 2;
+      /* Mais legível dentro do donut (sem estourar em telas menores) */
+      font-size: clamp(22px, 2.2vw, 28px);
+      font-weight: 900;
+      color: var(--text-main);
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }
+    .meta-kpi-donut--blue {
+      --chart-color: #3b82f6;
+    }
+    .meta-kpi-donut--green {
+      --chart-color: #22c55e;
+    }
+
+    /* Tabela Performance Individual */
+    .metas-team-title-container {
+      margin-top: 24px;
+      margin-bottom: 16px;
+    }
+    .metas-legend {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+    .metas-legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .metas-legend-dot--blue,
+    .metas-legend-dot--green {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .metas-legend-dot--blue {
+      background: #3b82f6;
+    }
+    .metas-legend-dot--green {
+      background: #22c55e;
+    }
+
+    /* Header da tabela */
+    .metas-table-header {
+      display: grid;
+      grid-template-columns: minmax(180px, 1.5fr) 1fr 80px;
+      gap: 16px;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border-color);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+    .metas-table-header-media {
+      text-align: right;
+    }
+
+    /* Linha da tabela */
+    .metas-team-row {
+      display: grid;
+      grid-template-columns: minmax(180px, 1.5fr) 1fr 80px;
+      gap: 16px;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border-color);
+      align-items: center;
+      transition: background 0.15s ease;
+    }
+    .metas-team-row:last-child {
+      border-bottom: none;
+    }
+    .metas-team-row:hover {
+      background: var(--bg-subtle);
+    }
+
+    /* Coluna Seller */
+    .metas-seller-col {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+    .metas-seller-rank {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--bg-subtle);
+      color: var(--text-muted);
+      font-size: 10px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      border: 1px solid var(--border-color);
+    }
+    .metas-seller-rank.rank-1 {
+      background: #fef3c7;
+      border-color: #fcd34d;
+      color: #b45309;
+    }
+    .metas-seller-rank.rank-2 {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+      color: #64748b;
+    }
+    .metas-seller-rank.rank-3 {
+      background: #fef3c7;
+      border-color: #d97706;
+      color: #92400e;
+    }
+    .dark-mode .metas-seller-rank.rank-1 {
+      background: rgba(251, 191, 36, 0.2);
+      border-color: rgba(251, 191, 36, 0.4);
+      color: #fcd34d;
+    }
+    .dark-mode .metas-seller-rank.rank-2 {
+      background: rgba(148, 163, 184, 0.15);
+      border-color: rgba(148, 163, 184, 0.3);
+      color: #94a3b8;
+    }
+    .dark-mode .metas-seller-rank.rank-3 {
+      background: rgba(217, 119, 6, 0.2);
+      border-color: rgba(217, 119, 6, 0.4);
+      color: #fbbf24;
+    }
+    .metas-seller-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      object-fit: cover;
+      object-position: 50% 25%;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-color);
+      flex-shrink: 0;
+    }
+    .metas-seller-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+    .metas-seller-name {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text-main);
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .metas-seller-role {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 500;
+      line-height: 1.2;
+    }
+
+    /* Coluna Progresso */
+    .metas-progress-col {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .metas-progress-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .metas-progress-bar-bg {
+      flex: 1;
+      height: 8px;
+      background: var(--bg-subtle);
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+    }
+    .metas-progress-bar-fill {
+      height: 100%;
+      border-radius: inherit;
+      transition: width 0.4s ease;
+    }
+    .metas-progress-bar-fill--blue {
+      background: #3b82f6;
+    }
+    .metas-progress-bar-fill--green {
+      background: #22c55e;
+    }
+    .metas-progress-pct {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--text-main);
+      min-width: 42px;
+      text-align: right;
+    }
+    .metas-progress-pct--blue {
+      color: #3b82f6;
+    }
+    .metas-progress-pct--green {
+      color: #22c55e;
+    }
+
+    /* Coluna Média */
+    .metas-media-col {
+      text-align: right;
+    }
+    .metas-media-val {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+
+    /* Responsivo */
+    @media (max-width: 768px) {
+      .metas-table-header,
+      .metas-team-row {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      .metas-table-header-media,
+      .metas-media-col {
+        text-align: left;
+      }
+      .metas-progress-col {
+        padding-left: 32px;
+      }
+    }
+
