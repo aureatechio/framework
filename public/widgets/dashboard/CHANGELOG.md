@@ -36,7 +36,32 @@ Este arquivo registra **versão a versão** o que foi alterado no elemento publi
 
 ---
 
-## `wish-board` v193 — 2026-01-26
+## `wish-board` v194 — 2026-01-26
+
+- **Nome (Bubble)**: `wish-board`
+- **widget_slug (repo)**: `dashboard`
+- **Code version**: `git-7e2ba76`
+- **Manifesto**: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/_deploy_manifests/wish-board/v194/git-7e2ba76.json`
+- **URLs**:
+  - HTML: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/wish-board/v194/form.html`
+  - CSS: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/wish-board/v194/form.css`
+  - JS: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/wish-board/v194/form.js`
+
+### Mudanças (linha a linha)
+- `form.js` (linha 5458)
+  - **HOTFIX CRÍTICO**: Corrigido erro de sintaxe que quebrava o carregamento do dashboard
+  - Removida aspa extra: `.not('id_lead', 'is', null');` → `.not('id_lead', 'is', null);`
+  - Erro introduzido acidentalmente na v193 ao fazer edição manual
+
+### Resumo
+- **Hotfix Crítico: SyntaxError** - Dashboard estava quebrado desde v193 devido a erro de sintaxe. Corrigido imediatamente com deploy de emergência.
+
+### Nota
+Este hotfix corrige erro crítico da v193. A funcionalidade de filtro de diretores nas Propostas (v193) permanece ativa e funcional após a correção.
+
+---
+
+## `wish-board` v193 — 2026-01-26 ⚠️ QUEBRADO
 
 - **Nome (Bubble)**: `wish-board`
 - **widget_slug (repo)**: `dashboard`
