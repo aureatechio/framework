@@ -36,6 +36,42 @@ Este arquivo registra **versão a versão** o que foi alterado no elemento publi
 
 ---
 
+## `wish-board` v193 — 2026-01-26
+
+- **Nome (Bubble)**: `wish-board`
+- **widget_slug (repo)**: `dashboard`
+- **Code version**: `git-8d143a8`
+- **Manifesto**: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/_deploy_manifests/wish-board/v193/git-8d143a8.json`
+- **URLs**:
+  - HTML: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/wish-board/v193/form.html`
+  - CSS: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/wish-board/v193/form.css`
+  - JS: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/wish-board/v193/form.js`
+
+### Mudanças (linha a linha)
+- `form.js` (função `fetchFunnelData`, seção Propostas)
+  - **Filtro de diretores adicionado**: Substituída lógica simples pela lógica completa do KPI
+  - **Verificação diretores diretos**: Adiciona `if (directorIds.includes(p.id_vendedor)) return;`
+  - **Verificação diretores fallback**: Adiciona `if (directorIds.includes(l.vendedorResponsavel)) return;`
+  - **Estrutura de dados**: Usa `proposedLeadIdsBySeller` para agrupar por vendedor antes de excluir diretores
+  - **Fallback aprimorado**: Busca `vendedorResponsavel` e verifica se é diretor antes de incluir
+
+### Resumo
+- **Bugfix: Inconsistência Propostas (Funil vs KPI)** - Segunda correção de inconsistência. Propostas no funil não excluíam diretores, mas KPI sim. Agora ambos excluem diretores mantendo comportamento consistente.
+
+### Análise Completa de Inconsistências (v192 + v193)
+
+| Etapa do Funil | v191 | v192 | v193 |
+|----------------|------|------|------|
+| Leads Captados | ✅ OK | ✅ OK | ✅ OK |
+| Leads Qualificados | ✅ OK | ✅ OK | ✅ OK |
+| **Propostas** | ❌ Incluía diretores | ❌ Incluía diretores | ✅ Exclui diretores |
+| **Reuniões** | ❌ Incluía diretores | ✅ Exclui diretores | ✅ Exclui diretores |
+| Vendas | ✅ OK | ✅ OK | ✅ OK |
+
+**Conclusão**: Todas as etapas do funil agora têm comportamento consistente com os KPIs superiores.
+
+---
+
 ## `wish-board` v192 — 2026-01-26
 
 - **Nome (Bubble)**: `wish-board`
