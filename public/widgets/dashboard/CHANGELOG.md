@@ -36,6 +36,37 @@ Este arquivo registra **versão a versão** o que foi alterado no elemento publi
 
 ---
 
+## `wish-board` v187 — 2026-01-26
+
+- **Nome (Bubble)**: `wish-board`
+- **widget_slug (repo)**: `dashboard`
+- **Code version**: `git-6940eab`
+- **Manifesto**: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/_deploy_manifests/wish-board/v187/git-6940eab.json`
+- **URLs**:
+  - HTML: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/wish-board/v187/form.html`
+  - CSS: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/wish-board/v187/form.css`
+  - JS: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/wish-board/v187/form.js`
+
+### Mudanças (linha a linha)
+- `form.css` (linhas 1972-1982)
+  - **Scroll interno funcional**: Revertido para scroll interno (permite elemento à esquerda permanecer estático)
+  - Restaurado `height: 100%` e `overflow-y: auto` no `#dashboard-acelerai-v2`
+  - Adicionado `display: flex` e `flex-direction: column` no wrapper `[data-cdn-widget="dashboard"]` para garantir layout correto
+  - Adicionado `-webkit-overflow-scrolling: touch` para melhorar performance de scroll em dispositivos iOS
+  - Adicionado `overscroll-behavior-y: contain` para evitar scroll chain (propagação para o body)
+
+### Resumo
+- **Bugfix: Scroll Interno Funcional** - Dashboard agora usa scroll interno otimizado, mantendo elementos laterais estáticos. Requer que o HTML Element pai no Bubble tenha altura definida (ex: `height: 100vh`).
+
+### Nota Técnica
+Para funcionamento correto, o container pai no Bubble deve ter altura definida:
+```css
+/* HTML Element no Bubble */
+height: 100vh; /* ou altura fixa como 800px */
+```
+
+---
+
 ## `wish-board` v186 — 2026-01-26
 
 - **Nome (Bubble)**: `wish-board`
