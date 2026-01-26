@@ -36,6 +36,27 @@ Este arquivo registra **versão a versão** o que foi alterado no elemento publi
 
 ---
 
+## `wish-board` v188 — 2026-01-26
+
+- **Nome (Bubble)**: `wish-board`
+- **widget_slug (repo)**: `dashboard`
+- **Code version**: `git-3c2dd78`
+- **Manifesto**: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/_deploy_manifests/wish-board/v188/git-3c2dd78.json`
+- **URLs**:
+  - HTML: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/wish-board/v188/form.html`
+  - CSS: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/wish-board/v188/form.css`
+  - JS: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/wish-board/v188/form.js`
+
+### Mudanças (linha a linha)
+- `form.css` (linhas 51-55)
+  - **Conflito de overflow resolvido**: Removidas propriedades `height: auto` e `overflow: visible` da regra base do `#dashboard-acelerai-v2`
+  - Isso permite que as regras de scroll interno (linhas 1972-1982) funcionem corretamente sem conflito
+
+### Resumo
+- **Bugfix: Conflito de Overflow** - Removido conflito CSS que impedia o scroll interno de funcionar corretamente. O scroll agora deve funcionar em todo o dashboard, incluindo gráfico de faturamento.
+
+---
+
 ## `wish-board` v187 — 2026-01-26
 
 - **Nome (Bubble)**: `wish-board`
