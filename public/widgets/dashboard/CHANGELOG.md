@@ -36,6 +36,33 @@ Este arquivo registra **versão a versão** o que foi alterado no elemento publi
 
 ---
 
+## `wish-board` v191 — 2026-01-26
+
+- **Nome (Bubble)**: `wish-board`
+- **widget_slug (repo)**: `dashboard`
+- **Code version**: `git-50bc6b2`
+- **Manifesto**: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/_deploy_manifests/wish-board/v191/git-50bc6b2.json`
+- **URLs**:
+  - HTML: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/wish-board/v191/form.html`
+  - CSS: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/wish-board/v191/form.css`
+  - JS: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/wish-board/v191/form.js`
+
+### Mudanças (linha a linha)
+- `form.css` (linhas 1968-1974)
+  - **Scroll de página inteira**: Mudado de scroll interno para scroll natural da página
+  - `[data-cdn-widget="dashboard"]`: Removido `height: 100%`, `display: flex`, `flex-direction: column`
+  - `[data-cdn-widget="dashboard"]`: Adicionado `min-height: 100vh` para altura mínima
+  - `#dashboard-acelerai-v2`: Removido `height: 100%`, `overflow-y: auto`, `overflow-x: hidden`, `-webkit-overflow-scrolling`, `overscroll-behavior-y`
+  - `#dashboard-acelerai-v2`: Alterado para `height: auto` permitindo crescimento natural com o conteúdo
+
+### Resumo
+- **Feature: Scroll de Página Inteira** - Após múltiplas tentativas com scroll interno (v186-v190), mudança definitiva para scroll natural da página inteira por decisão do usuário. A página agora rola normalmente usando o scroll do navegador.
+
+### Contexto
+Após 6 versões testando scroll interno (v186-v190), identificamos que o scroll interno não atendia as necessidades do projeto. O scroll de página inteira oferece melhor compatibilidade e experiência de usuário.
+
+---
+
 ## `wish-board` v190 — 2026-01-26
 
 - **Nome (Bubble)**: `wish-board`
