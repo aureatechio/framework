@@ -1969,15 +1969,18 @@
         opacity: 1;
     }
 
-    /* Scroll natural da página (permite scroll total) */
+    /* Scroll interno do dashboard (elemento à esquerda permanece estático) */
     [data-cdn-widget="dashboard"] {
-      min-height: 100vh;
-      overflow: visible;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
     }
     #dashboard-acelerai-v2 {
-      height: auto;
-      overflow: visible;
+      height: 100%;
+      overflow-y: auto;
       overflow-x: hidden;
+      -webkit-overflow-scrolling: touch; /* Melhora scroll em iOS */
+      overscroll-behavior-y: contain; /* Evita scroll chain para o body */
     }
 
     /* --- FILTRO PERSONALIZADO (popover) --- */
