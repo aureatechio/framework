@@ -1966,17 +1966,11 @@
 
     /* Scroll interno do dashboard (elemento à esquerda permanece estático) */
     [data-cdn-widget="dashboard"] {
-      height: 100%;
-      display: flex;
-      flex-direction: column;
+      min-height: 100vh;
     }
     #dashboard-acelerai-v2 {
-      height: 100%;
-      overflow-y: auto;
-      overflow-x: hidden;
-      padding: 24px 20px; /* Movido da regra base para aqui */
-      -webkit-overflow-scrolling: touch; /* Melhora scroll em iOS */
-      overscroll-behavior-y: contain; /* Evita scroll chain para o body */
+      height: auto;
+      padding: 24px 20px;
     }
 
     /* --- FILTRO PERSONALIZADO (popover) --- */
