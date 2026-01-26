@@ -36,6 +36,56 @@ Este arquivo registra **versão a versão** o que foi alterado no elemento publi
 
 ---
 
+## `wish-board` v196 — 2026-01-26
+
+- **Nome (Bubble)**: `wish-board`
+- **widget_slug (repo)**: `dashboard`
+- **Code version**: `git-...` (a ser preenchido após deploy)
+- **Manifesto**: (a ser preenchido após deploy)
+- **URLs**:
+  - HTML: (a ser preenchido após deploy)
+  - CSS: (a ser preenchido após deploy)
+  - JS: (a ser preenchido após deploy)
+
+### Mudanças (linha a linha)
+- `form.js` (linha 5852)
+  - **HOTFIX CRÍTICO**: Corrigido cache que impedia filtro de agência funcionar
+  - Adicionado `|agency:${state.selectedAgencyId || 'all'}` na chave do cache
+  - **ANTES**: `const cacheKey = \`campSpend|${startYmd}|${endYmd}|cut:${cutoff?.cutoffYmdLocal || 'none'}\`;`
+  - **DEPOIS**: `const cacheKey = \`campSpend|${startYmd}|${endYmd}|cut:${cutoff?.cutoffYmdLocal || 'none'}|agency:${state.selectedAgencyId || 'all'}\`;`
+
+### Resumo
+**Hotfix Crítico: Cache de Investimento Meta Ads** - Corrige bug da v195 onde o filtro de agência não atualizava o investimento em marketing.
+
+**Problema (v195):**
+- Ao clicar em "MGS" no filtro de agência, o valor de "Investimento Mkt" permanecia o mesmo
+- Causa: Cache usava apenas data/cutoff como chave, ignorando agência selecionada
+- Cache de "Todos" era reutilizado quando usuário mudava para "MGS" ou "Aceleraí"
+- Resultado: CAC e ROAS incorretos (usavam investimento de todas agências com vendas filtradas)
+
+**Solução (v196):**
+- Cache agora inclui agência na chave: `|agency:mgs` / `|agency:acelerai` / `|agency:all`
+- Cada agência tem seu próprio cache independente
+- Ao mudar filtro, novo cache é criado com IDs corretos de campanhas Meta
+- Investimento, CAC e ROAS agora refletem corretamente a agência selecionada
+
+**Impacto:**
+- ✅ Filtro "Todos" → Investimento de todas as agências (soma)
+- ✅ Filtro "MGS" → Investimento apenas das 4 campanhas MGS
+- ✅ Filtro "Aceleraí" → Investimento apenas das 12 campanhas Aceleraí
+- ✅ CAC correto: Investimento filtrado / Vendas filtradas
+- ✅ ROAS correto: Faturamento filtrado / Investimento filtrado
+
+### Validação
+- Testar clicando em cada filtro (Todos → MGS → Aceleraí) e verificar que "Investimento Mkt" **muda** a cada clique
+- No console do navegador: `state.__metaChannelSpendCache.key` deve mostrar `|agency:a57b72c4-...` quando filtro MGS ativo
+- Comparar valores com Meta Ads Manager (filtrar por Campaign ID)
+
+### Nota Técnica
+Este hotfix complementa a v195 que implementou `META_CAMPAIGN_IDS_BY_AGENCY` e `getMetaCampaignIdsByAgency()`. A v195 já filtrava IDs corretamente, mas o cache impedia que novos dados fossem buscados ao mudar agência.
+
+---
+
 ## `wish-board` v195 — 2026-01-26
 
 - **Nome (Bubble)**: `wish-board`

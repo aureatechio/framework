@@ -5849,7 +5849,7 @@
             endYmd = eff.endYmd;
           }
           if (startYmd && endYmd && startYmd <= endYmd && META_ACCESS_TOKEN && META_AD_ACCOUNT_ID) {
-            const cacheKey = `campSpend|${startYmd}|${endYmd}|cut:${cutoff?.cutoffYmdLocal || 'none'}`;
+            const cacheKey = `campSpend|${startYmd}|${endYmd}|cut:${cutoff?.cutoffYmdLocal || 'none'}|agency:${state.selectedAgencyId || 'all'}`;
             const cache = state.__metaChannelSpendCache;
             if (cache && cache.key === cacheKey && cache.fetchedAt && (Date.now() - cache.fetchedAt) < META_SPEND_CACHE_MS) {
               spendLP = cache.landing;
