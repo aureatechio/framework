@@ -36,6 +36,57 @@ Este arquivo registra **versão a versão** o que foi alterado no elemento publi
 
 ---
 
+## `wish-board` v190 — 2026-01-26
+
+- **Nome (Bubble)**: `wish-board`
+- **widget_slug (repo)**: `dashboard`
+- **Code version**: `git-a38f9b9`
+- **Manifesto**: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/_deploy_manifests/wish-board/v190/git-a38f9b9.json`
+- **URLs**:
+  - HTML: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/wish-board/v190/form.html`
+  - CSS: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/wish-board/v190/form.css`
+  - JS: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/wish-board/v190/form.js`
+
+### Mudanças (linha a linha)
+- `form.css` (linhas 51-54, 1973-1979)
+  - **Padding ajustado**: Movido `padding: 24px 20px` da regra base (linha 52) para a regra de scroll específica do `#dashboard-acelerai-v2` (linha 1975)
+  - Isso evita conflito entre `height: 100%` e `padding`, permitindo que eventos de scroll wheel funcionem corretamente sobre todo o conteúdo
+
+### Resumo
+- **Bugfix: Mouse Wheel Scroll** - Ajuste de padding para permitir que scroll wheel funcione sobre o conteúdo, não apenas arrastando a scrollbar.
+
+---
+
+## `wish-board` v189 — 2026-01-26
+
+- **Nome (Bubble)**: `wish-board`
+- **widget_slug (repo)**: `dashboard`
+- **Code version**: `git-54a93c9`
+- **Manifesto**: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/_deploy_manifests/wish-board/v189/git-54a93c9.json`
+- **URLs**:
+  - HTML: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/wish-board/v189/form.html`
+  - CSS: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/wish-board/v189/form.css`
+  - JS: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/wish-board/v189/form.js`
+
+### Mudanças (linha a linha)
+- `form.css` (linhas 1297-1299)
+  - **Scrollbars tornadas visíveis**: Removidas linhas que ocultavam globalmente todas as scrollbars dentro do dashboard
+  - Removido: `#dashboard-acelerai-v2 ::-webkit-scrollbar { display: none; }`
+  - Removido: `#dashboard-acelerai-v2 { -ms-overflow-style: none; scrollbar-width: none; }`
+  - **Impacto**: Scrollbars agora são visíveis e acessíveis em:
+    - Scroll principal do dashboard
+    - Ranking de executivos (#ranking-list)
+    - Tabela de metas (#metas-team-table)
+    - Pipeline timeline (.pipeline-diagram-scroll)
+
+### Resumo
+- **Bugfix Crítico: Scrollbars Invisíveis** - Todas as scrollbars estavam ocultas globalmente, tornando o scroll inacessível mesmo quando configurado. Agora scrollbars são visíveis e funcionais.
+
+### Nota Técnica
+Este foi o problema que causou a falha das versões v186-v188. Mesmo com `overflow-y: auto` configurado corretamente, as scrollbars estavam sendo ocultadas por CSS global.
+
+---
+
 ## `wish-board` v188 — 2026-01-26
 
 - **Nome (Bubble)**: `wish-board`
