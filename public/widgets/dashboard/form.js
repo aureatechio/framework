@@ -985,6 +985,68 @@
         ACELERAI: '75f34688-c054-4519-a445-e350fe146870',
       };
 
+      // Mapeamento: Agência → IDs de Campanhas Meta (Facebook)
+      // Usado para segregar investimento/faturamento por agência nos filtros do header
+      const META_CAMPAIGN_IDS_BY_AGENCY = {
+        [AGENCY_IDS.MGS]: {
+          landingPage: [
+            '120239567789980521',
+            '120239566956730521',
+            '120239566738920521',
+            '120239495678940521'
+          ],
+          whatsapp: []
+        },
+        [AGENCY_IDS.ACELERAI]: {
+          landingPage: [
+            '120239333024630521',  // AUREA
+            '120239569742460521',
+            '120239483099680521',
+            '120239415394150521',
+            '120239371495570521',
+            '120239369908330521',
+            '120239333616050521',
+            '120239329104170521',
+            '120239128942210521',
+            '120235017912440521',
+            '120224643258900521',
+            '23861526663930520'
+          ],
+          whatsapp: []
+        }
+      };
+
+      /**
+       * Retorna IDs de campanhas Meta filtradas pela agência selecionada.
+       * @param {string} channelType - 'landingPage' ou 'whatsapp'
+       * @returns {string[]} Array de campaign IDs
+       */
+      function getMetaCampaignIdsByAgency(channelType) {
+        const agencyId = state && state.selectedAgencyId ? String(state.selectedAgencyId) : '';
+
+        // FILTRO DE AGÊNCIA:
+        // - state.selectedAgencyId vazio ('') = TODOS os IDs (todas agências)
+        // - state.selectedAgencyId = MGS UUID = apenas IDs da MGS
+        // - state.selectedAgencyId = Aceleraí UUID = apenas IDs da Aceleraí
+        // Isso garante que investimento, CAC e ROAS sejam calculados
+        // apenas com gastos da agência selecionada.
+
+        // Sem filtro = retorna TODOS os IDs (todas agências)
+        if (!agencyId) {
+          const allIds = [];
+          Object.values(META_CAMPAIGN_IDS_BY_AGENCY).forEach(agencyData => {
+            const ids = agencyData[channelType] || [];
+            allIds.push(...ids);
+          });
+          return allIds;
+        }
+
+        // Com filtro = retorna apenas IDs da agência selecionada
+        const agencyData = META_CAMPAIGN_IDS_BY_AGENCY[agencyId];
+        if (!agencyData) return [];
+        return agencyData[channelType] || [];
+      }
+
       function getSelectedAgencyLabel() {
         const id = state && state.selectedAgencyId ? String(state.selectedAgencyId) : '';
         if (!id) return '';
@@ -5793,16 +5855,24 @@
               spendLP = cache.landing;
               spendWPP = cache.whatsapp;
             } else {
-              // Landing Page: usar campanha específica 120239333024630521
-              const idsLP = ['120239333024630521'];
-              
-              // WhatsApp: buscar da tabela campanhaTrafego (mantém lógica original)
+              // Landing Page: IDs filtrados por agência
+              const idsLP = getMetaCampaignIdsByAgency('landingPage');
+
+              // WhatsApp: buscar da tabela campanhaTrafego e filtrar por agência
               const { data: campRows } = await sbClient
                 .from('campanhaTrafego')
                 .select('idcampanha, tipocampanha')
                 .not('idcampanha', 'is', null);
-              const all = campRows || [];
-              const idsWPP = all.filter(r => norm(r && r.tipocampanha).includes('whats')).map(r => r && r.idcampanha);
+              const allCampaigns = campRows || [];
+              const wppFromTable = allCampaigns
+                .filter(r => norm(r && r.tipocampanha).includes('whats'))
+                .map(r => r && r.idcampanha);
+
+              // Intersecção: IDs do banco QUE também estão no mapeamento da agência
+              const idsWPPByAgency = getMetaCampaignIdsByAgency('whatsapp');
+              const idsWPP = idsWPPByAgency.length > 0
+                ? wppFromTable.filter(id => idsWPPByAgency.includes(String(id)))
+                : wppFromTable;
 
               spendLP = await fetchSpendByCampaignIds(idsLP, startYmd, endYmd);
               spendWPP = await fetchSpendByCampaignIds(idsWPP, startYmd, endYmd);

@@ -36,6 +36,64 @@ Este arquivo registra **versão a versão** o que foi alterado no elemento publi
 
 ---
 
+## `wish-board` v195 — 2026-01-26
+
+- **Nome (Bubble)**: `wish-board`
+- **widget_slug (repo)**: `dashboard`
+- **Code version**: `git-...` (a ser preenchido após deploy)
+- **Manifesto**: (a ser preenchido após deploy)
+- **URLs**:
+  - HTML: (a ser preenchido após deploy)
+  - CSS: (a ser preenchido após deploy)
+  - JS: (a ser preenchido após deploy)
+
+### Mudanças (linha a linha)
+- `form.js` (linhas 987-1052)
+  - **Constante META_CAMPAIGN_IDS_BY_AGENCY adicionada**: Mapeamento de agência → IDs de campanhas Meta (Facebook)
+  - MGS: 4 campanhas Landing Page mapeadas (`120239567789980521`, `120239566956730521`, `120239566738920521`, `120239495678940521`)
+  - Aceleraí: 12 campanhas Landing Page mapeadas (incluindo AUREA `120239333024630521`)
+  - Arrays vazios para WhatsApp (sem IDs específicos por agência ainda)
+
+- `form.js` (linhas 1053-1089)
+  - **Função getMetaCampaignIdsByAgency() adicionada**: Helper que retorna IDs de campanhas filtrados por `state.selectedAgencyId`
+  - Quando `selectedAgencyId` está vazio: retorna TODOS os IDs (todas agências)
+  - Quando `selectedAgencyId` = MGS: retorna apenas IDs da MGS
+  - Quando `selectedAgencyId` = Aceleraí: retorna apenas IDs da Aceleraí
+
+- `form.js` (função `fetchChannelData`, linhas ~5850-5872)
+  - **Landing Page**: Substituído ID fixo `['120239333024630521']` por `getMetaCampaignIdsByAgency('landingPage')`
+  - **WhatsApp**: Mantida query de `campanhaTrafego`, mas adicionada intersecção com IDs mapeados por agência
+  - Lógica: Se `idsWPPByAgency` tem itens, filtra apenas IDs que estão no mapeamento; caso contrário usa todos
+
+### Resumo
+**Filtro de Agência para Campanhas Meta Ads** - O filtro de agência no header (MGS / Aceleraí / Todos) agora filtra corretamente:
+- ✅ Investimento em marketing (gastos Meta Ads) por agência
+- ✅ CAC calculado corretamente: Investimento filtrado / Vendas filtradas
+- ✅ ROAS calculado corretamente: Faturamento filtrado / Investimento filtrado
+- ✅ Performance por Canal (Landing Page e WhatsApp) segregada por agência
+
+**Antes (INCORRETO):**
+- Filtro MGS mostrava: Investimento TODAS agências / Vendas só MGS = CAC inflado ❌
+- Filtro Aceleraí mostrava: Faturamento só Aceleraí / Investimento TODAS agências = ROAS deflacionado ❌
+
+**Depois (CORRETO):**
+- Filtro MGS mostra: Investimento só MGS / Vendas só MGS = CAC correto ✅
+- Filtro Aceleraí mostra: Faturamento só Aceleraí / Investimento só Aceleraí = ROAS correto ✅
+
+### Impacto nos KPIs
+- **Investimento Mkt**: Agora reflete apenas gastos da agência selecionada
+- **CAC**: Agora calcula corretamente (investimento e vendas da mesma agência)
+- **ROAS**: Agora calcula corretamente (faturamento e investimento da mesma agência)
+- **Performance por Canal**: Landing Page e WhatsApp mostram dados segregados por agência
+
+### Validação Recomendada
+1. Testar filtro "Todos" → Investimento deve ser soma de todas agências
+2. Testar filtro "MGS" → Verificar que apenas 4 campanhas são contabilizadas
+3. Testar filtro "Aceleraí" → Verificar que 12 campanhas (incluindo AUREA) são contabilizadas
+4. Comparar valores com Meta Ads Manager para validar correção
+
+---
+
 ## `wish-board` v194 — 2026-01-26
 
 - **Nome (Bubble)**: `wish-board`
