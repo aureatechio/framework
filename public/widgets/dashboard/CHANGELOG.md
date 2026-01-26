@@ -36,6 +36,42 @@ Este arquivo registra **versão a versão** o que foi alterado no elemento publi
 
 ---
 
+## `wish-board` v192 — 2026-01-26
+
+- **Nome (Bubble)**: `wish-board`
+- **widget_slug (repo)**: `dashboard`
+- **Code version**: `git-9dc0c07`
+- **Manifesto**: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/_deploy_manifests/wish-board/v192/git-9dc0c07.json`
+- **URLs**:
+  - HTML: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/wish-board/v192/form.html`
+  - CSS: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/wish-board/v192/form.css`
+  - JS: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/wish-board/v192/form.js`
+
+### Mudanças (linha a linha)
+- `form.js` (função `fetchFunnelData`)
+  - **Filtro de diretores adicionado**: Busca IDs de diretores no início da função (linhas após 5421)
+  - **Query de reuniões**: Adiciona campo `vendedor` ao select da tabela `agendamento` (linha 5493)
+  - **Exclusão de diretores**: Filtra reuniões removendo diretores antes da contagem (linhas 5498-5500)
+  - Aplicado mesmo filtro que já existia no KPI de reuniões para manter consistência
+
+### Resumo
+- **Bugfix: Inconsistência Funil vs KPI de Reuniões** - Corrigido problema onde o funil de vendas mostrava número diferente de reuniões comparado ao KPI superior quando filtro de vendedor estava selecionado. O funil agora exclui reuniões de diretores, igual ao KPI.
+
+### Contexto Técnico
+**Problema identificado:**
+- KPI de reuniões (cards superiores): Excluía reuniões de diretores desde sempre
+- Funil de vendas: **NÃO** excluía reuniões de diretores
+
+**Resultado:**
+- Com filtro "Todos": Números alinhados (ambos excluíam diretores)
+- Com filtro "Diretor": KPI mostrava 0, funil mostrava reuniões do diretor (inconsistência)
+
+**Solução aplicada:**
+- Funil agora exclui reuniões de diretores independente do filtro selecionado
+- Ambos (KPI e Funil) agora têm comportamento consistente
+
+---
+
 ## `wish-board` v191 — 2026-01-26
 
 - **Nome (Bubble)**: `wish-board`
