@@ -40,12 +40,12 @@ Este arquivo registra **versão a versão** o que foi alterado no elemento publi
 
 - **Nome (Bubble)**: `wish-board`
 - **widget_slug (repo)**: `dashboard`
-- **Code version**: `git-...` (a ser preenchido após deploy)
-- **Manifesto**: (a ser preenchido após deploy)
+- **Code version**: `git-e504f62`
+- **Manifesto**: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/_deploy_manifests/wish-board/v196/git-e504f62.json`
 - **URLs**:
-  - HTML: (a ser preenchido após deploy)
-  - CSS: (a ser preenchido após deploy)
-  - JS: (a ser preenchido após deploy)
+  - HTML: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/wish-board/v196/form.html`
+  - CSS: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/wish-board/v196/form.css`
+  - JS: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/wish-board/v196/form.js`
 
 ### Mudanças (linha a linha)
 - `form.js` (linha 5852)
