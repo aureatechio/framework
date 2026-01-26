@@ -5455,7 +5455,7 @@
           let qProps = sbClient
             .from('imagemProposta')
             .select('id_lead, id_vendedor')
-            .not('id_lead', 'is', null');
+            .not('id_lead', 'is', null);
           qProps = applyCutoffTimestamp(qProps, 'created_at').gte('created_at', start).lte('created_at', end);
           if (state.selectedSeller) {
             qProps = qProps.or(`id_vendedor.eq.${state.selectedSeller},id_vendedor.is.null`);
