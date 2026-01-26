@@ -1294,10 +1294,6 @@
     .bg-gray-300 { background-color: #cbd5e1; }
     .mt-\[-60px\] { margin-top: -60px; }
 
-    /* Hide Scrollbar Global */
-    #dashboard-acelerai-v2 ::-webkit-scrollbar { display: none; }
-    #dashboard-acelerai-v2 { -ms-overflow-style: none; scrollbar-width: none; }
-
     /* Other Helper Classes from previous version needed for other components */
     .sla-card { padding: 16px; border-radius: var(--radius-xl); border: 1px solid transparent; display: flex; flex-direction: column; background: var(--bg-card); box-shadow: var(--shadow-sm); }
     
