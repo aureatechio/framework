@@ -49,9 +49,8 @@
       
       /* Reset */
       font-family: var(--font-family); color: var(--text-main); background: var(--bg-background);
-      box-sizing: border-box; width: 100%; height: auto; position: relative; padding: 24px 20px;
+      box-sizing: border-box; width: 100%; position: relative; padding: 24px 20px;
       line-height: 1.5; -webkit-font-smoothing: antialiased;
-      overflow: visible;
       transition: background 0.3s ease, color 0.3s ease;
     }
 
