@@ -5455,38 +5455,64 @@
           let qProps = sbClient
             .from('imagemProposta')
             .select('id_lead, id_vendedor')
-            .not('id_lead', 'is', null);
+            .not('id_lead', 'is', null');
           qProps = applyCutoffTimestamp(qProps, 'created_at').gte('created_at', start).lte('created_at', end);
-        if (state.selectedSeller) {
+          if (state.selectedSeller) {
             qProps = qProps.or(`id_vendedor.eq.${state.selectedSeller},id_vendedor.is.null`);
           }
           const { data: props } = await qProps;
           const propsFiltered = await filterRowsByAgencyViaLeadId((props || []), (p) => p && p.id_lead);
 
-          if (!state.selectedSeller) {
-            countPropostas = new Set((propsFiltered || []).map(p => p && p.id_lead).filter(Boolean)).size;
+          // Filtrar propostas de diretores e contar leads únicos (consistência com KPI)
+          const proposedLeadIdsBySeller = {};
+          const proposalsNeedingLeadFallback = [];
+
+          (propsFiltered || []).forEach(p => {
+            if (!p) return;
+            if (p.id_vendedor) {
+              // Excluir propostas de diretores (consistência com KPI)
+              if (directorIds.includes(p.id_vendedor)) return;
+              const sid = String(p.id_vendedor);
+              if (!proposedLeadIdsBySeller[sid]) proposedLeadIdsBySeller[sid] = new Set();
+              if (p.id_lead) proposedLeadIdsBySeller[sid].add(String(p.id_lead));
+            } else if (p.id_lead) {
+              proposalsNeedingLeadFallback.push(p);
+            }
+          });
+
+          // Fallback: buscar vendedorResponsavel dos leads sem id_vendedor
+          if (proposalsNeedingLeadFallback.length > 0) {
+            const leadIds = [...new Set(proposalsNeedingLeadFallback.map(p => p && p.id_lead).filter(Boolean))];
+            for (const chunk of chunkArray(leadIds, 500)) {
+              let qLeadFallback = sbClient
+                .from('leads')
+                .select('lead_id, vendedorResponsavel')
+                .in('lead_id', chunk);
+              qLeadFallback = applyAgencyFilterToLeadQuery(qLeadFallback);
+              const { data: leads } = await qLeadFallback;
+              (leads || []).forEach(l => {
+                if (!l || !l.lead_id || !l.vendedorResponsavel) return;
+                // Excluir se vendedorResponsavel é diretor (consistência com KPI)
+                if (directorIds.includes(l.vendedorResponsavel)) return;
+                const sid = String(l.vendedorResponsavel);
+                if (!proposedLeadIdsBySeller[sid]) proposedLeadIdsBySeller[sid] = new Set();
+                proposedLeadIdsBySeller[sid].add(String(l.lead_id));
+              });
+            }
+          }
+
+          // Se há filtro de vendedor, contar apenas leads desse vendedor
+          if (state.selectedSeller) {
+            const sellerLeads = proposedLeadIdsBySeller[state.selectedSeller];
+            countPropostas = sellerLeads ? sellerLeads.size : 0;
           } else {
-            const direct = new Set();
-            const needFallback = new Set();
-            (propsFiltered || []).forEach(p => {
-              if (!p || !p.id_lead) return;
-              if (p.id_vendedor === state.selectedSeller) direct.add(p.id_lead);
-              else if (!p.id_vendedor) needFallback.add(p.id_lead);
+            // Contar leads únicos globalmente
+            const allUniqueLeads = new Set();
+            Object.values(proposedLeadIdsBySeller).forEach(leadSet => {
+              leadSet.forEach(lid => allUniqueLeads.add(lid));
             });
-            if (needFallback.size > 0) {
-              for (const chunk of chunkArray([...needFallback], 500)) {
-                let qLeadFallback = sbClient
-                  .from('leads')
-                  .select('lead_id')
-                  .in('lead_id', chunk)
-                  .eq('vendedorResponsavel', state.selectedSeller);
-                qLeadFallback = applyAgencyFilterToLeadQuery(qLeadFallback);
-                const { data: leads } = await qLeadFallback;
-                (leads || []).forEach(r => { if (r && r.lead_id) direct.add(r.lead_id); });
-                 }
-             }
-            countPropostas = direct.size;
-        }
+            countPropostas = allUniqueLeads.size;
+          }
         } catch (e) {}
 
         // 4. Reuniões
