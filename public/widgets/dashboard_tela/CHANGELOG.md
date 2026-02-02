@@ -1,5 +1,40 @@
 # Changelog — `dashboard_tela`
 
+## `dashboard_tela` v126 — 2026-02-02
+
+- **Nome (Bubble)**: `dashboard_tela`
+- **widget_slug (repo)**: `dashboard_tela`
+- **Code version**: `git-2b04fa2`
+- **Manifesto**: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/_deploy_manifests/dashboard_tela/v126/git-2b04fa2.json`
+- **URLs**:
+  - HTML: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/dashboard_tela/v126/form.html`
+  - CSS: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/dashboard_tela/v126/form.css`
+  - JS: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/dashboard_tela/v126/form.js`
+
+### Mudanças (linha a linha)
+
+- `public/widgets/dashboard_tela/form.js`
+  - **Linhas 3150-3154**: Alterado cálculo do modo semestral para mostrar próximos 6 meses:
+    - Antes: `new Date(y, m - 5, 1)` - iniciava 6 meses atrás (últimos 6 meses)
+    - Depois: `new Date(y, m, 1)` - inicia no mês atual
+    - Antes: `new Date(y, m + 1, 0)` - terminava no último dia do mês atual
+    - Depois: `new Date(y, m + 6, 0)` - termina no último dia do 6º mês futuro
+    - Exemplo: Em fev/2026, antes mostrava set/2025-fev/2026, agora mostra fev/2026-jul/2026
+
+### Resumo
+
+Mudança importante no comportamento do gráfico de faturamento em modo semestral. Agora mostra os **próximos 6 meses** (incluindo o mês atual) ao invés dos últimos 6 meses. Isso é mais adequado para um gráfico de "Evolução do Faturamento" com meta, pois permite visualizar:
+
+1. **Posição atual**: Onde está o faturamento hoje
+2. **Meta futura**: Onde precisa chegar nos próximos meses
+3. **Projeção**: Tendência de crescimento para atingir a meta
+
+**Exemplo:**
+- **Antes (últimos 6 meses)**: Set/2025 → Fev/2026 (dados históricos)
+- **Depois (próximos 6 meses)**: Fev/2026 → Jul/2026 (evolução e meta futura)
+
+---
+
 ## `dashboard_tela` v125 — 2026-02-02
 
 - **Nome (Bubble)**: `dashboard_tela`
