@@ -1,5 +1,46 @@
 # Changelog — `dashboard_tela`
 
+## `dashboard_tela` v128 — 2026-02-02
+
+- **Nome (Bubble)**: `dashboard_tela`
+- **widget_slug (repo)**: `dashboard_tela`
+- **Code version**: `git-f850375`
+- **Manifesto**: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/_deploy_manifests/dashboard_tela/v128/git-f850375.json`
+- **URLs**:
+  - HTML: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/dashboard_tela/v128/form.html`
+  - CSS: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/dashboard_tela/v128/form.css`
+  - JS: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/dashboard_tela/v128/form.js`
+
+### Mudanças (linha a linha)
+
+- `public/widgets/dashboard_tela/form.js`
+  - **Linhas 6817-6832**: Corrigida função `getDefaultIdx()` para calcular posição do marcador "hoje" em modo mensal:
+    - Antes: Sempre retornava 0 (janeiro) quando não era modo diário
+    - Depois: Calcula índice correto baseado no mês atual (YYYY-MM)
+    - Adiciona fallback inteligente usando `currentMonth` se a busca no array falhar
+    - Exemplo: Em fevereiro, marcador agora aparece em fevereiro ao invés de janeiro
+
+### Resumo
+
+Hotfix crítico para corrigir o posicionamento do marcador "hoje" no gráfico de faturamento em modo semestral (mensal). O problema ocorria porque:
+
+1. **Problema**: O gráfico em modo semestral (jan-jul) usa formato mensal (isYearly=true), com `rawDates` contendo `["2026-01", "2026-02", ..., "2026-07"]`
+2. **Bug**: A função `getDefaultIdx()` só calculava o índice correto para modo diário, retornando sempre 0 (janeiro) para modo mensal
+3. **Sintoma**: Marcador "hoje" aparecia sempre em janeiro, mesmo estando em fevereiro
+
+**Solução implementada:**
+- Detecta se é modo mensal vs diário
+- Para modo mensal: busca chave no formato YYYY-MM (ex: "2026-02")
+- Para modo diário: mantém busca no formato YYYY-MM-DD (ex: "2026-02-02")
+- Fallback inteligente usando `new Date().getMonth()` se a busca falhar
+
+**Resultado:**
+- Em fevereiro: marcador aparece em fevereiro ✅
+- Em março: marcador aparece em março ✅
+- E assim por diante...
+
+---
+
 ## `dashboard_tela` v127 — 2026-02-02
 
 - **Nome (Bubble)**: `dashboard_tela`
