@@ -1,5 +1,43 @@
 # Changelog — `dashboard_tela`
 
+## `dashboard_tela` v123 — 2026-02-02
+
+- **Nome (Bubble)**: `dashboard_tela`
+- **widget_slug (repo)**: `dashboard_tela`
+- **Code version**: `git-08b7bf6`
+- **Manifesto**: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/_deploy_manifests/dashboard_tela/v123/git-08b7bf6.json`
+- **URLs**:
+  - HTML: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/dashboard_tela/v123/form.html`
+  - CSS: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/dashboard_tela/v123/form.css`
+  - JS: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/dashboard_tela/v123/form.js`
+
+### Mudanças (linha a linha)
+
+- `public/widgets/dashboard_tela/form.js`
+  - **Linhas 3735-3737**: Atualizado comentário para refletir que gauge agora respeita filtro de data
+  - **Linha 3738**: Renomeada variável para `targetRevenueMonthly` para clareza
+  - **Linhas 3741-3751**: Adicionada lógica para ajustar meta baseada no filtro selecionado:
+    - `semester`: meta mensal x 6
+    - `year`: meta mensal x 12
+  - **Linhas 3754-3755**: Simplificada lógica para usar `currentRevenue`/`prevRevenue` que já respeitam o filtro
+  - **Linhas 3743-3780 (removidas)**: Removida lógica antiga que forçava busca mensal independente do filtro
+  - **Linhas 6454-6471**: Adicionada atualização dinâmica do label do gauge:
+    - Semestre: "Meta Semestral (6 meses)"
+    - Ano: "Meta Anual (2026)"
+    - Mês: "Meta de [Mês Atual]"
+
+### Resumo
+
+Correção importante para fazer o velocímetro/gauge respeitar o filtro de período selecionado. Anteriormente, o gauge SEMPRE mostrava dados mensais, independente do filtro (comentário explícito: "SEMPRE MENSAL"). Agora:
+
+1. **Dados corretos**: Quando filtro está em "Semestre", o gauge mostra faturamento dos últimos 6 meses
+2. **Meta ajustada**: Meta mensal é multiplicada por 6 (semestre) ou 12 (ano) automaticamente
+3. **Label dinâmico**: O texto acima do gauge atualiza para refletir o período (ex: "Meta Semestral (6 meses)")
+
+Isso resolve o problema reportado onde o gauge iniciava zerado quando o filtro era semestral, pois estava comparando faturamento de 6 meses com meta de 1 mês apenas.
+
+---
+
 ## `dashboard_tela` v122 — 2026-02-02
 
 - **Nome (Bubble)**: `dashboard_tela`
