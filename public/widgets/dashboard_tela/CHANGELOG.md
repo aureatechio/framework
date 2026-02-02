@@ -1,5 +1,45 @@
 # Changelog — `dashboard_tela`
 
+## `dashboard_tela` v124 — 2026-02-02
+
+- **Nome (Bubble)**: `dashboard_tela`
+- **widget_slug (repo)**: `dashboard_tela`
+- **Code version**: `git-fd10ffd`
+- **Manifesto**: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/_deploy_manifests/dashboard_tela/v124/git-fd10ffd.json`
+- **URLs**:
+  - HTML: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/dashboard_tela/v124/form.html`
+  - CSS: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/dashboard_tela/v124/form.css`
+  - JS: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/dashboard_tela/v124/form.js`
+
+### Mudanças (linha a linha)
+
+- `public/widgets/dashboard_tela/form.js`
+  - **Linhas 2261-2273**: Adicionada sincronização automática do `revenueChartMode` com `dateFilter`:
+    - Quando o filtro do header é alterado para `month`, `semester` ou `year`, o gráfico de faturamento é automaticamente ajustado para o mesmo modo
+    - Os botões do gráfico (Mês/Semestre/Ano) são atualizados visualmente para refletir a seleção
+  - **Linha 3257**: Removido fallback problemático que usava `dataCurrRows` (baseado no filtro do header) quando `monthRowsFiltered` estava vazio:
+    - Antes: `let chartLeads = (monthRowsFiltered && monthRowsFiltered.length) ? monthRowsFiltered : (dataCurrRows || []);`
+    - Depois: `let chartLeads = monthRowsFiltered || [];`
+    - Garante que o gráfico sempre use dados do `chartRange` correto (baseado em `revenueChartMode`)
+
+### Resumo
+
+Correção crítica para sincronizar o gráfico de faturamento com o filtro do header. Anteriormente, os dois controles eram completamente independentes:
+
+**Problema anterior:**
+- Filtro do header em "Semestre" (6 meses de dados)
+- Gráfico de faturamento em "Mês" (1 mês de dados)
+- Resultado: Linhas "Realizado" e "Ano Passado" mostravam dados de apenas 1 mês ao invés de 6 meses
+
+**Solução implementada:**
+1. **Sincronização automática**: Quando o usuário muda o filtro do header para Semestre/Ano/Mês, o gráfico de faturamento automaticamente muda para o mesmo modo
+2. **Dados consistentes**: O gráfico sempre busca dados do período correto usando `chartRange` (sem fallback para dados do header)
+3. **UX melhorada**: Os botões do gráfico são atualizados visualmente para refletir a sincronização
+
+Agora, quando o dashboard carrega com filtro semestral (v121), tanto o gauge quanto o gráfico de faturamento mostram dados dos últimos 6 meses de forma consistente.
+
+---
+
 ## `dashboard_tela` v123 — 2026-02-02
 
 - **Nome (Bubble)**: `dashboard_tela`
