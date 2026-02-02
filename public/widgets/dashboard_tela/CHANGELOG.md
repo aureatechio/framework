@@ -1,5 +1,30 @@
 # Changelog — `dashboard_tela`
 
+## `dashboard_tela` v125 — 2026-02-02
+
+- **Nome (Bubble)**: `dashboard_tela`
+- **widget_slug (repo)**: `dashboard_tela`
+- **Code version**: `git-979afb2`
+- **Manifesto**: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/_deploy_manifests/dashboard_tela/v125/git-979afb2.json`
+- **URLs**:
+  - HTML: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/dashboard_tela/v125/form.html`
+  - CSS: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/dashboard_tela/v125/form.css`
+  - JS: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/dashboard_tela/v125/form.js`
+
+### Mudanças (linha a linha)
+
+- `public/widgets/dashboard_tela/form.js`
+  - **Linhas 3194-3195**: Simplificado cálculo do `lastYear` para sempre usar ano atual - 1:
+    - Antes: `return new Date(lastYearMonthStart).getFullYear()` - pegava o ano da data inicial do range deslocado
+    - Depois: `new Date().getFullYear() - 1` - sempre retorna ano atual - 1
+    - Exemplo: Em fev/2026 com filtro semestral (set/2025 a fev/2026), mostrava "2024" (incorreto), agora mostra "2025" (correto)
+
+### Resumo
+
+Hotfix para corrigir o label da linha "Ano Passado" no gráfico de faturamento. O cálculo anterior usava o ano da data inicial do range deslocado, o que causava confusão em modo semestral/anual. Agora sempre mostra o ano correto: ano atual - 1 (2025 quando estamos em 2026).
+
+---
+
 ## `dashboard_tela` v124 — 2026-02-02
 
 - **Nome (Bubble)**: `dashboard_tela`
