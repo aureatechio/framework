@@ -6736,6 +6736,56 @@
           series.push({ name: "Projeção", data: seriesProjecaoLocal });
         }
 
+        // v129: Projeção baseada nos últimos 15 dias (linha azul pontilhada)
+        let hasProjecao15d = false;
+        let seriesProjecao15dLocal = null;
+        try {
+          if ((mode === 'month' || mode === 'year') && !isYearly && rawDates && Array.isArray(rawDates) && rawDates.length > 1) {
+            // Apenas em modo diário (mês ou semestre com dias)
+            const todayKey = formatYmdLocal(new Date());
+            const todayIdx = rawDates.indexOf(todayKey);
+            const idx = (todayIdx >= 0) ? todayIdx : (rawDates.length - 1);
+
+            // Pegar os últimos 15 dias (ou menos se não houver 15 dias)
+            const last15DaysCount = Math.min(15, idx + 1);
+            const start15Idx = Math.max(0, idx - last15DaysCount + 1);
+
+            // Calcular soma dos últimos 15 dias
+            let sum15d = 0;
+            let validDays = 0;
+            for (let i = start15Idx; i <= idx; i++) {
+              const val = Number(seriesDataLocal[i]) || 0;
+              sum15d += val;
+              validDays++;
+            }
+
+            // Média diária dos últimos 15 dias
+            const avg15d = validDays > 0 ? (sum15d / validDays) : 0;
+
+            if (avg15d > 0 && idx < rawDates.length - 1) {
+              // Criar projeção do dia atual até o final
+              const totalDays = rawDates.length;
+              const daysRemaining = totalDays - idx - 1;
+              const revToDate = Number(seriesDataLocal[idx]) || 0;
+              const projectedTotal = revToDate + (avg15d * daysRemaining);
+              const denom = Math.max(1, (totalDays - 1) - idx);
+
+              seriesProjecao15dLocal = rawDates.map((_d, i) => {
+                if (i < idx) return null;
+                const t = (i - idx) / denom;
+                return revToDate + (projectedTotal - revToDate) * t;
+              });
+              hasProjecao15d = true;
+            }
+          }
+        } catch (e) {
+          hasProjecao15d = false;
+          seriesProjecao15dLocal = null;
+        }
+        if (hasProjecao15d && Array.isArray(seriesProjecao15dLocal)) {
+          series.push({ name: "Projeção 15d", data: seriesProjecao15dLocal });
+        }
+
         // Se não há faturamento no período (Realizado todo zero), mostrar Meta automaticamente
         // para evitar a sensação de “gráfico quebrado/vazio” em filtros curtos (Hoje/Semana).
         try {
@@ -7123,13 +7173,17 @@
             hover: { size: 6 }
           },
           colors: hasLastYear
-            ? (hasProjecao ? ['#3b82f6', '#ef4444', '#10b981', '#0ea5e9'] : ['#3b82f6', '#ef4444', '#10b981'])
-            : (hasProjecao ? ['#3b82f6', '#10b981', '#0ea5e9'] : ['#3b82f6', '#10b981']),
-          // Meta: smooth. Projeção: tracejada.
+            ? (hasProjecao15d
+                ? (hasProjecao ? ['#3b82f6', '#ef4444', '#10b981', '#0ea5e9', '#2563eb'] : ['#3b82f6', '#ef4444', '#10b981', '#2563eb'])
+                : (hasProjecao ? ['#3b82f6', '#ef4444', '#10b981', '#0ea5e9'] : ['#3b82f6', '#ef4444', '#10b981']))
+            : (hasProjecao15d
+                ? (hasProjecao ? ['#3b82f6', '#10b981', '#0ea5e9', '#2563eb'] : ['#3b82f6', '#10b981', '#2563eb'])
+                : (hasProjecao ? ['#3b82f6', '#10b981', '#0ea5e9'] : ['#3b82f6', '#10b981'])),
+          // Meta: smooth. Projeção: tracejada. Projeção 15d: tracejada azul.
           stroke: {
-            curve: series.map(s => (s && s.name === 'Projeção') ? 'straight' : 'smooth'),
+            curve: series.map(s => (s && (s.name === 'Projeção' || s.name === 'Projeção 15d')) ? 'straight' : 'smooth'),
             width: series.map(() => 2),
-            dashArray: series.map(s => (s && s.name === 'Projeção') ? 6 : 0)
+            dashArray: series.map(s => (s && (s.name === 'Projeção' || s.name === 'Projeção 15d')) ? 6 : 0)
           },
           fill: {
             type: 'gradient',
@@ -7212,7 +7266,7 @@
               }
               if (!(state && state.revenueChartSeriesVisible && state.revenueChartSeriesVisible.AnoPassado)) {
                 const names = revenueChart?.w?.globals?.seriesNames || [];
-                const lyName = names.find(n => n && n !== 'Realizado' && n !== 'Meta' && n !== 'Projeção') || null;
+                const lyName = names.find(n => n && n !== 'Realizado' && n !== 'Meta' && n !== 'Projeção' && n !== 'Projeção 15d') || null;
                 if (lyName) { try { revenueChart.hideSeries(lyName); } catch (e) {} }
               }
               if (!(state && state.revenueChartSeriesVisible && state.revenueChartSeriesVisible.Projecao)) {

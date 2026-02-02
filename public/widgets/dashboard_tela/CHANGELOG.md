@@ -1,5 +1,51 @@
 # Changelog — `dashboard_tela`
 
+## `dashboard_tela` v129 — 2026-02-02
+
+- **Nome (Bubble)**: `dashboard_tela`
+- **widget_slug (repo)**: `dashboard_tela`
+- **Code version**: `git-9df5bb3`
+- **Manifesto**: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/_deploy_manifests/dashboard_tela/v129/git-9df5bb3.json`
+- **URLs**:
+  - HTML: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/dashboard_tela/v129/form.html`
+  - CSS: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/dashboard_tela/v129/form.css`
+  - JS: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/dashboard_tela/v129/form.js`
+
+### Mudanças (linha a linha)
+
+- `public/widgets/dashboard_tela/form.js`
+  - **Linhas 6738-6785**: Adicionada nova projeção baseada nos últimos 15 dias
+    - Calcula média diária dos últimos 15 dias de vendas
+    - Projeta faturamento futuro baseado nessa média
+    - Cria nova série "Projeção 15d" com dados projetados
+    - Aplica apenas em modo diário (filtros mês/semestre)
+  - **Linhas 7125-7133**: Atualizada configuração de cores e stroke do gráfico
+    - Adiciona cor azul (#2563eb) para série "Projeção 15d"
+    - Configura linha pontilhada (dashArray: 6) para a nova projeção
+    - Mantém linha reta (straight) ao invés de suave (smooth)
+  - **Linha 7269**: Atualizada busca de séries para excluir "Projeção 15d"
+
+### Resumo
+
+Implementação de linha azul pontilhada de projeção de faturamento baseada na média dos últimos 15 dias.
+
+**Funcionalidade:**
+- **Cálculo**: Calcula a média diária das vendas dos últimos 15 dias (ou menos se não houver 15 dias de dados)
+- **Projeção**: Projeta o faturamento futuro do dia atual até o final do período usando essa média
+- **Visual**: Linha azul (#2563eb) pontilhada que complementa a projeção existente (azul claro)
+- **Contexto**: Fornece visão de curto prazo baseada em tendência recente vs. projeção geral baseada em todo o período
+
+**Exemplo:**
+- Se vendas dos últimos 15 dias = R$ 150k (média de R$ 10k/dia)
+- E faltam 20 dias no período
+- Projeção 15d = Faturamento atual + (R$ 10k × 20 dias)
+
+**Diferença entre projeções:**
+- **Projeção** (azul claro): Baseada em todos os dias do período até hoje
+- **Projeção 15d** (azul escuro pontilhado): Baseada apenas nos últimos 15 dias (tendência recente)
+
+---
+
 ## `dashboard_tela` v128 — 2026-02-02
 
 - **Nome (Bubble)**: `dashboard_tela`
