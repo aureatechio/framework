@@ -3148,9 +3148,9 @@
             return { start: s, end: e };
           }
           if (revenueMode === 'semester') {
-            // v125+: Próximos 6 meses (incluindo mês atual) ao invés de últimos 6 meses
-            const s = new Date(y, m, 1, 0, 0, 0, 0).toISOString();
-            const e = new Date(y, m + 6, 0, 23, 59, 59, 999).toISOString();
+            // v127: Janeiro até Julho (7 meses fixos do ano) - alinhado ao semestre comercial
+            const s = new Date(y, 0, 1, 0, 0, 0, 0).toISOString(); // 01/janeiro
+            const e = new Date(y, 7, 0, 23, 59, 59, 999).toISOString(); // 31/julho
             return { start: s, end: e };
           }
           // month (default)
