@@ -1,5 +1,45 @@
 # Changelog — `dashboard_tela`
 
+## `dashboard_tela` v127 — 2026-02-02
+
+- **Nome (Bubble)**: `dashboard_tela`
+- **widget_slug (repo)**: `dashboard_tela`
+- **Code version**: `git-f19fdda`
+- **Manifesto**: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/_deploy_manifests/dashboard_tela/v127/git-f19fdda.json`
+- **URLs**:
+  - HTML: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/dashboard_tela/v127/form.html`
+  - CSS: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/dashboard_tela/v127/form.css`
+  - JS: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/dashboard_tela/v127/form.js`
+
+### Mudanças (linha a linha)
+
+- `public/widgets/dashboard_tela/form.js`
+  - **Linhas 3150-3154**: Alterado modo semestral para período fixo janeiro-julho:
+    - Antes: `new Date(y, m, 1)` até `new Date(y, m + 6, 0)` - próximos 6 meses dinâmicos a partir do mês atual
+    - Depois: `new Date(y, 0, 1)` até `new Date(y, 7, 0)` - período fixo de 01/janeiro a 31/julho (7 meses)
+    - Exemplo: Em qualquer mês de 2026, sempre mostra jan/2026 a jul/2026
+
+### Resumo
+
+Ajuste importante no comportamento do modo semestral do gráfico de faturamento. Agora usa um **período fixo** de janeiro a julho (7 meses) ao invés de um período dinâmico de 6 meses a partir do mês atual.
+
+**Motivação:**
+- Alinha com o semestre comercial/fiscal padrão
+- Traz vendas desde o início do ano (janeiro)
+- Permite acompanhamento consistente da meta anual
+- Todos os usuários veem o mesmo período, independente do mês em que acessam
+
+**Comportamento:**
+- Janeiro: jan-jul
+- Fevereiro: jan-jul ✅
+- Março: jan-jul
+- Julho: jan-jul
+- Agosto: jan-jul (mostra período já finalizado)
+
+Este é o comportamento padrão esperado para um gráfico de evolução de faturamento alinhado ao calendário fiscal/comercial.
+
+---
+
 ## `dashboard_tela` v126 — 2026-02-02
 
 - **Nome (Bubble)**: `dashboard_tela`
