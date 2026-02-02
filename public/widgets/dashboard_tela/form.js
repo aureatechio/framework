@@ -6816,11 +6816,24 @@
         // - Caixa estilo tooltip: overlay HTML, posicionada acima do ponto do dia atual.
         const getDefaultIdx = () => {
           try {
-            if (rawDates && Array.isArray(rawDates) && rawDates.length > 0 && isDaily) {
-              const todayKey = formatYmdLocal(new Date());
-              const idx = rawDates.indexOf(todayKey);
-              if (idx >= 0) return idx;
-              return rawDates.length - 1;
+            if (rawDates && Array.isArray(rawDates) && rawDates.length > 0) {
+              if (isDaily) {
+                // Modo diário: busca data exata YYYY-MM-DD
+                const todayKey = formatYmdLocal(new Date());
+                const idx = rawDates.indexOf(todayKey);
+                if (idx >= 0) return idx;
+                return rawDates.length - 1;
+              } else {
+                // Modo mensal: busca mês YYYY-MM
+                const now = new Date();
+                const todayMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                const idx = rawDates.indexOf(todayMonthKey);
+                if (idx >= 0) return idx;
+                // Fallback: usar índice do mês atual (0-11) se estiver dentro do range
+                const currentMonth = now.getMonth();
+                if (currentMonth < rawDates.length) return currentMonth;
+                return rawDates.length - 1;
+              }
             }
             return 0;
           } catch (e) {
