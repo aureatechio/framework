@@ -995,7 +995,14 @@
             '120239566738920521',
             '120239495678940521'
           ],
-          whatsapp: []
+          // Para investimento (Meta) do canal WhatsApp, usamos a mesma allowlist de campanhas
+          // para garantir que o gasto respeite o filtro do header.
+          whatsapp: [
+            '120239567789980521',
+            '120239566956730521',
+            '120239566738920521',
+            '120239495678940521'
+          ]
         },
         [AGENCY_IDS.ACELERAI]: {
           landingPage: [
@@ -1012,7 +1019,21 @@
             '120224643258900521',
             '23861526663930520'
           ],
-          whatsapp: []
+          // AUREA continua dentro de Aceleraí (não é um filtro separado no header)
+          whatsapp: [
+            '120239333024630521',  // AUREA
+            '120239569742460521',
+            '120239483099680521',
+            '120239415394150521',
+            '120239371495570521',
+            '120239369908330521',
+            '120239333616050521',
+            '120239329104170521',
+            '120239128942210521',
+            '120235017912440521',
+            '120224643258900521',
+            '23861526663930520'
+          ]
         }
       };
 
@@ -1023,6 +1044,19 @@
        */
       function getMetaCampaignIdsByAgency(channelType) {
         const agencyId = state && state.selectedAgencyId ? String(state.selectedAgencyId) : '';
+
+        const normalizeIds = (ids) => {
+          const out = [];
+          const seen = new Set();
+          (Array.isArray(ids) ? ids : []).forEach((x) => {
+            const id = String(x || '').trim();
+            if (!id) return;
+            if (seen.has(id)) return;
+            seen.add(id);
+            out.push(id);
+          });
+          return out;
+        };
 
         // FILTRO DE AGÊNCIA:
         // - state.selectedAgencyId vazio ('') = TODOS os IDs (todas agências)
@@ -1038,13 +1072,13 @@
             const ids = agencyData[channelType] || [];
             allIds.push(...ids);
           });
-          return allIds;
+          return normalizeIds(allIds);
         }
 
         // Com filtro = retorna apenas IDs da agência selecionada
         const agencyData = META_CAMPAIGN_IDS_BY_AGENCY[agencyId];
         if (!agencyData) return [];
-        return agencyData[channelType] || [];
+        return normalizeIds(agencyData[channelType] || []);
       }
 
       function getSelectedAgencyLabel() {
@@ -1837,33 +1871,98 @@
           // Se o cutoff “empurrou” o início além do fim, não há período válido => gasto 0
           if (startYmd && endYmd && startYmd > endYmd) {
             state.marketingInvestment = 0;
-            state.__metaSpendCache = { key: `empty|${startYmd}|${endYmd}|${state.selectedSeller || 'all'}|cut:${cutoff?.cutoffYmdLocal || 'none'}`, value: 0, fetchedAt: Date.now() };
+            state.__metaSpendCache = { key: `empty|${startYmd}|${endYmd}|${state.selectedSeller || 'all'}|cut:${cutoff?.cutoffYmdLocal || 'none'}|agency:${state.selectedAgencyId || 'all'}`, value: 0, fetchedAt: Date.now() };
             return;
           }
 
-          const cacheKey = `${startYmd}|${endYmd}|${state.selectedSeller || 'all'}|cut:${cutoff?.cutoffYmdLocal || 'none'}`;
+          // Investimento Mkt deve respeitar a allowlist de campaign.id (por agência / Todos)
+          const idsInvest = (() => {
+            try {
+              const ids = [
+                ...(getMetaCampaignIdsByAgency('landingPage') || []),
+                ...(getMetaCampaignIdsByAgency('whatsapp') || []),
+              ];
+              // dedup/normaliza (String/trim)
+              const out = [];
+              const seen = new Set();
+              ids.forEach((x) => {
+                const id = String(x || '').trim();
+                if (!id) return;
+                if (seen.has(id)) return;
+                seen.add(id);
+                out.push(id);
+              });
+              return out;
+            } catch (e) {
+              return [];
+            }
+          })();
+
+          // Se não houver campanhas mapeadas para esta agência (ou para o conjunto "Todos"), gasto = 0
+          if (!idsInvest.length) {
+            state.marketingInvestment = 0;
+            state.marketingInvestmentPrev = 0;
+            state.__metaSpendCache = {
+              key: `empty|${startYmd}|${endYmd}|${state.selectedSeller || 'all'}|cut:${cutoff?.cutoffYmdLocal || 'none'}|agency:${state.selectedAgencyId || 'all'}`,
+              value: 0,
+              fetchedAt: Date.now()
+            };
+            // Também zera o período anterior para manter vs mês consistente
+            const prevStartYmdTmp = toYmdLocal(new Date(prevRange.start));
+            const prevEndYmdTmp = toYmdLocal(new Date(prevRange.end));
+            if (prevStartYmdTmp && prevEndYmdTmp) {
+              state.__metaSpendCachePrev = {
+                key: `empty|${prevStartYmdTmp}|${prevEndYmdTmp}|${state.selectedSeller || 'all'}|cut:${cutoff?.cutoffYmdLocal || 'none'}|agency:${state.selectedAgencyId || 'all'}`,
+                value: 0,
+                fetchedAt: Date.now()
+              };
+            }
+            return;
+          }
+
+          const cacheKey = `${startYmd}|${endYmd}|${state.selectedSeller || 'all'}|cut:${cutoff?.cutoffYmdLocal || 'none'}|agency:${state.selectedAgencyId || 'all'}`;
           const cache = state.__metaSpendCache;
           if (cache && cache.key === cacheKey && cache.fetchedAt && (Date.now() - cache.fetchedAt) < META_SPEND_CACHE_MS) {
             if (typeof cache.value === 'number' && Number.isFinite(cache.value)) {
               state.marketingInvestment = cache.value;
             }
           } else {
-            const url = new URL(`https://graph.facebook.com/${META_GRAPH_VERSION}/${META_AD_ACCOUNT_ID}/insights`);
-            url.searchParams.set('fields', 'spend,account_currency');
-            url.searchParams.set('limit', '1');
-            url.searchParams.set('time_range', JSON.stringify({ since: startYmd, until: endYmd }));
-            url.searchParams.set('access_token', META_ACCESS_TOKEN);
+            // Com filtro por campaign.id, o Meta pode retornar várias linhas (por ad/campaign).
+            // Somamos tudo com paginação para obter o gasto total filtrado.
+            const fetchSpendByCampaignIds = async (campaignIds, ymdStart, ymdEnd) => {
+              const ids = (campaignIds || []).map(x => String(x || '').trim()).filter(Boolean);
+              if (!ids.length) return 0;
+              let total = 0;
 
-            const res = await fetch(url.toString(), { method: 'GET', mode: 'cors' });
-            if (!res.ok) {
-              const txt = await res.text().catch(() => '');
-              throw new Error(`Meta insights HTTP ${res.status}: ${txt}`);
-            }
-            const json = await res.json();
-            const row = (json && Array.isArray(json.data) && json.data.length > 0) ? json.data[0] : null;
-            const spend = row && row.spend != null ? Number(String(row.spend).replace(',', '.')) : 0;
-            const spendVal = (Number.isFinite(spend) && spend >= 0) ? spend : 0;
+              const buildUrl = () => {
+                const url = new URL(`https://graph.facebook.com/${META_GRAPH_VERSION}/${META_AD_ACCOUNT_ID}/insights`);
+                url.searchParams.set('fields', 'spend');
+                url.searchParams.set('limit', '500');
+                url.searchParams.set('time_range', JSON.stringify({ since: ymdStart, until: ymdEnd }));
+                url.searchParams.set('filtering', JSON.stringify([{ field: 'campaign.id', operator: 'IN', value: ids }]));
+                url.searchParams.set('access_token', META_ACCESS_TOKEN);
+                return url;
+              };
 
+              let nextUrl = buildUrl().toString();
+              while (nextUrl) {
+                const res = await fetch(nextUrl, { method: 'GET', mode: 'cors' });
+                if (!res.ok) {
+                  const txt = await res.text().catch(() => '');
+                  throw new Error(`Meta insights HTTP ${res.status}: ${txt}`);
+                }
+                const json = await res.json();
+                const data = (json && Array.isArray(json.data)) ? json.data : [];
+                data.forEach(row => {
+                  const spend = row && row.spend != null ? Number(String(row.spend).replace(',', '.')) : 0;
+                  if (Number.isFinite(spend) && spend >= 0) total += spend;
+                });
+                nextUrl = (json && json.paging && json.paging.next) ? json.paging.next : '';
+              }
+              return total;
+            };
+
+            const spendVal = await fetchSpendByCampaignIds(idsInvest, startYmd, endYmd);
             state.marketingInvestment = spendVal;
             state.__metaSpendCache = { key: cacheKey, value: spendVal, fetchedAt: Date.now() };
           }
@@ -1879,11 +1978,11 @@
 
           if (prevStartYmd && prevEndYmd && prevStartYmd > prevEndYmd) {
             state.marketingInvestmentPrev = 0;
-            state.__metaSpendCachePrev = { key: `empty|${prevStartYmd}|${prevEndYmd}|${state.selectedSeller || 'all'}|cut:${cutoff?.cutoffYmdLocal || 'none'}`, value: 0, fetchedAt: Date.now() };
+            state.__metaSpendCachePrev = { key: `empty|${prevStartYmd}|${prevEndYmd}|${state.selectedSeller || 'all'}|cut:${cutoff?.cutoffYmdLocal || 'none'}|agency:${state.selectedAgencyId || 'all'}`, value: 0, fetchedAt: Date.now() };
             return;
           }
 
-          const prevKey = `${prevStartYmd}|${prevEndYmd}|${state.selectedSeller || 'all'}|cut:${cutoff?.cutoffYmdLocal || 'none'}`;
+          const prevKey = `${prevStartYmd}|${prevEndYmd}|${state.selectedSeller || 'all'}|cut:${cutoff?.cutoffYmdLocal || 'none'}|agency:${state.selectedAgencyId || 'all'}`;
           const prevCache = state.__metaSpendCachePrev;
           if (prevCache && prevCache.key === prevKey && prevCache.fetchedAt && (Date.now() - prevCache.fetchedAt) < META_SPEND_CACHE_MS) {
             if (typeof prevCache.value === 'number' && Number.isFinite(prevCache.value)) {
@@ -1891,23 +1990,41 @@
             }
             return;
           }
+          // Mesmo motivo do período atual: somar todas as linhas retornadas pelo Meta.
+          const fetchSpendByCampaignIdsPrev = async (campaignIds, ymdStart, ymdEnd) => {
+            const ids = (campaignIds || []).map(x => String(x || '').trim()).filter(Boolean);
+            if (!ids.length) return 0;
+            let total = 0;
 
-          const urlPrev = new URL(`https://graph.facebook.com/${META_GRAPH_VERSION}/${META_AD_ACCOUNT_ID}/insights`);
-          urlPrev.searchParams.set('fields', 'spend,account_currency');
-          urlPrev.searchParams.set('limit', '1');
-          urlPrev.searchParams.set('time_range', JSON.stringify({ since: prevStartYmd, until: prevEndYmd }));
-          urlPrev.searchParams.set('access_token', META_ACCESS_TOKEN);
+            const buildUrl = () => {
+              const url = new URL(`https://graph.facebook.com/${META_GRAPH_VERSION}/${META_AD_ACCOUNT_ID}/insights`);
+              url.searchParams.set('fields', 'spend');
+              url.searchParams.set('limit', '500');
+              url.searchParams.set('time_range', JSON.stringify({ since: ymdStart, until: ymdEnd }));
+              url.searchParams.set('filtering', JSON.stringify([{ field: 'campaign.id', operator: 'IN', value: ids }]));
+              url.searchParams.set('access_token', META_ACCESS_TOKEN);
+              return url;
+            };
 
-          const resPrev = await fetch(urlPrev.toString(), { method: 'GET', mode: 'cors' });
-          if (!resPrev.ok) {
-            const txt = await resPrev.text().catch(() => '');
-            throw new Error(`Meta insights(prev) HTTP ${resPrev.status}: ${txt}`);
-          }
-          const jsonPrev = await resPrev.json();
-          const rowPrev = (jsonPrev && Array.isArray(jsonPrev.data) && jsonPrev.data.length > 0) ? jsonPrev.data[0] : null;
-          const spendPrev = rowPrev && rowPrev.spend != null ? Number(String(rowPrev.spend).replace(',', '.')) : 0;
-          const spendPrevVal = (Number.isFinite(spendPrev) && spendPrev >= 0) ? spendPrev : 0;
+            let nextUrl = buildUrl().toString();
+            while (nextUrl) {
+              const res = await fetch(nextUrl, { method: 'GET', mode: 'cors' });
+              if (!res.ok) {
+                const txt = await res.text().catch(() => '');
+                throw new Error(`Meta insights(prev) HTTP ${res.status}: ${txt}`);
+              }
+              const json = await res.json();
+              const data = (json && Array.isArray(json.data)) ? json.data : [];
+              data.forEach(row => {
+                const spend = row && row.spend != null ? Number(String(row.spend).replace(',', '.')) : 0;
+                if (Number.isFinite(spend) && spend >= 0) total += spend;
+              });
+              nextUrl = (json && json.paging && json.paging.next) ? json.paging.next : '';
+            }
+            return total;
+          };
 
+          const spendPrevVal = await fetchSpendByCampaignIdsPrev(idsInvest, prevStartYmd, prevEndYmd);
           state.marketingInvestmentPrev = spendPrevVal;
           state.__metaSpendCachePrev = { key: prevKey, value: spendPrevVal, fetchedAt: Date.now() };
         } catch (e) {
@@ -4384,8 +4501,9 @@
                 scoreCount: 0,
                 proposals: 0,
                 meetings: 0,
-                sales: 0,       // faturamento (R$)
-                salesCount: 0,  // quantidade de vendas (count de compras)
+                sales: 0,       // faturamento (R$) - continua somando vendas + renovações
+                salesCount: 0,  // quantidade de vendas (apenas tipo_venda = 'Venda')
+                renewals: 0,    // quantidade de renovações (tipo_venda = 'Renovação')
                 cicloSum: 0,
                 cicloCount: 0,
                 frtSum: 0,
@@ -4490,7 +4608,7 @@
         // 4. Fetch Sales & Cycle
         // Vendas/faturamento por executivo: compras aprovadas (compras.valor_total) por data_compra
         let querySales = sbClient.from('compras')
-            .select('vendedoresponsavel, valor_total, leadid, data_compra, created_at');
+            .select('vendedoresponsavel, valor_total, leadid, data_compra, created_at, tipo_venda');
         querySales = applyApprovedPurchaseFilter(querySales);
         querySales = applyCutoffTimestamp(querySales, 'data_compra').gte('data_compra', start)
             .lte('data_compra', end);
@@ -4518,7 +4636,14 @@
             sales.forEach(s => {
                 const sellerId = s && s.vendedoresponsavel ? s.vendedoresponsavel : null;
                 if (sellerId && sellerMap[sellerId]) {
-                    sellerMap[sellerId].salesCount += 1; // 1 compra aprovada = 1 venda
+                    // Separar vendas por tipo
+                    if (s.tipo_venda === 'Venda') {
+                        sellerMap[sellerId].salesCount += 1;
+                    } else if (s.tipo_venda === 'Renovação') {
+                        sellerMap[sellerId].renewals += 1;
+                    }
+
+                    // Faturamento total continua somando ambos
                     sellerMap[sellerId].sales += parseCurrency(s.valor_total);
 
                     // Calculate Cycle: lead.created_at -> compra.data_compra
@@ -5281,6 +5406,7 @@
             if (key === 'proposals') return toNum(obj.proposals);
             if (key === 'meetings') return toNum(obj.meetings);
             if (key === 'sales') return toNum(obj.salesCount); // quantidade de vendas
+            if (key === 'renewals') return toNum(obj.renewals); // renovações
             if (key === 'revenue') return toNum(obj.sales); // faturamento total (R$)
             if (key === 'frt') return toNum(obj.avgFRT);
             if (key === 'cycle') return toNum(obj.avgCycle);
@@ -5363,6 +5489,12 @@
                         <i data-lucide="zap" size="10"></i> ${Number.isFinite(Number(r.salesCount)) ? Number(r.salesCount) : 0}
                     </div>
                     <div class="rank-metric-label" style="font-size: 8px; color: var(--text-muted); font-weight: 500;">Vendas</div>
+                </div>
+                <div class="rank-metric-pill" style="flex: 1; background: var(--bg-subtle); border: 1px solid var(--border-color); border-radius: 4px; padding: 4px 2px; display: flex; flex-direction: column; align-items: center; gap: 1px;">
+                    <div class="rank-metric-val" style="color:#10b981; font-weight: 700; font-size: 11px; display: flex; align-items: center; gap: 2px;">
+                        <i data-lucide="refresh-cw" size="10"></i> ${Number.isFinite(Number(r.renewals)) ? Number(r.renewals) : 0}
+                    </div>
+                    <div class="rank-metric-label" style="font-size: 8px; color: var(--text-muted); font-weight: 500;">Renovações</div>
                 </div>
                 <div class="rank-metric-pill" style="flex: 1; background: var(--bg-subtle); border: 1px solid var(--border-color); border-radius: 4px; padding: 4px 2px; display: flex; flex-direction: column; align-items: center; gap: 1px;">
                     <div class="rank-metric-val" style="color:var(--col-success); font-weight: 700; font-size: 11px; display: flex; align-items: center; gap: 2px;">
@@ -5866,12 +5998,13 @@
               const allCampaigns = campRows || [];
               const wppFromTable = allCampaigns
                 .filter(r => norm(r && r.tipocampanha).includes('whats'))
-                .map(r => r && r.idcampanha);
+                .map(r => String((r && r.idcampanha) || '').trim())
+                .filter(Boolean);
 
               // Intersecção: IDs do banco QUE também estão no mapeamento da agência
               const idsWPPByAgency = getMetaCampaignIdsByAgency('whatsapp');
               const idsWPP = idsWPPByAgency.length > 0
-                ? wppFromTable.filter(id => idsWPPByAgency.includes(String(id)))
+                ? wppFromTable.filter(id => idsWPPByAgency.includes(String(id || '').trim()))
                 : wppFromTable;
 
               spendLP = await fetchSpendByCampaignIds(idsLP, startYmd, endYmd);

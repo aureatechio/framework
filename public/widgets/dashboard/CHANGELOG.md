@@ -36,6 +36,93 @@ Este arquivo registra **versão a versão** o que foi alterado no elemento publi
 
 ---
 
+## `wish-board` v199 — 2026-02-02
+
+- **Nome (Bubble)**: `wish-board`
+- **widget_slug (repo)**: `dashboard`
+- **Code version**: *(será preenchido após deploy)*
+- **Manifesto**: *(será preenchido após deploy)*
+- **URLs**:
+  - HTML: *(será preenchido após deploy)*
+  - CSS: *(será preenchido após deploy)*
+  - JS: *(será preenchido após deploy)*
+
+### Mudanças (linha a linha)
+
+- `form.js` (fetchRankingData — linhas 4496-4510)
+  - Adicionado campo `renewals: 0` na inicialização do `sellerMap` para rastrear renovações separadamente
+
+- `form.js` (fetchRankingData — linha 4610)
+  - Adicionado `tipo_venda` no select da query de compras: `.select('..., tipo_venda')`
+
+- `form.js` (fetchRankingData — linhas 4635-4654)
+  - Modificada lógica de contagem de vendas para separar por tipo:
+    - `salesCount`: incrementa apenas quando `tipo_venda === 'Venda'`
+    - `renewals`: incrementa quando `tipo_venda === 'Renovação'`
+  - Faturamento total (`sales`) continua somando ambos os tipos
+
+- `form.js` (renderRanking — linhas 5465-5490)
+  - Adicionada quinta pill "Renovações" entre Vendas e Faturamento
+  - Ícone: `refresh-cw` (setas circulares)
+  - Cor: `#10b981` (verde esmeralda) para diferenciar de Vendas
+  - Valor exibido: `r.renewals` (quantidade de renovações)
+
+- `form.js` (renderRanking — linha 5399)
+  - Adicionado case `if (key === 'renewals') return toNum(obj.renewals);` na função de ordenação
+
+- `form.html` (dropdown de ordenação — linha 337)
+  - Adicionada opção `<option value="renewals">Renovações</option>` após "Vendas"
+
+### Resumo
+
+**Separação de Vendas e Renovações no Ranking de Vendedores**
+
+O ranking de executivos agora distingue entre vendas novas e renovações:
+
+- **Vendas**: Conta apenas compras com `tipo_venda = 'Venda'`
+- **Renovações**: Nova métrica para compras com `tipo_venda = 'Renovação'`
+- **Faturamento**: Continua somando ambos os tipos (mantém compatibilidade)
+
+**Visualização:**
+- Cards de vendedores agora exibem 5 pills: Propostas | Reuniões | Vendas | **Renovações** | Faturamento
+- Cada pill usa flex: 1 (divide espaço igualmente)
+
+**Ordenação:**
+- Dropdown agora inclui opção "Renovações" para ordenar ranking por quantidade de renovações
+- Ordenação: descendente (maior número de renovações primeiro), tiebreaker por avgScore
+
+**Compatibilidade:**
+- Totalmente retrocompatível - não afeta dados ou funcionalidades existentes
+- Performance: impacto mínimo (uma coluna adicional no select)
+
+---
+
+## `wish-board` v198 — 2026-01-27
+
+- **Nome (Bubble)**: `wish-board`
+- **widget_slug (repo)**: `dashboard`
+- **Code version**: `git-1a14b58`
+- **Manifesto**: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/_deploy_manifests/wish-board/v198/git-1a14b58.json`
+- **URLs**:
+  - HTML: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/wish-board/v198/form.html`
+  - CSS: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/wish-board/v198/form.css`
+  - JS: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/wish-board/v198/form.js`
+
+### Mudanças (linha a linha)
+- `form.js` (filtro de agência → campanhas Meta Ads)
+  - Atualizado `META_CAMPAIGN_IDS_BY_AGENCY`: allowlist agora cobre `landingPage` **e** `whatsapp` por agência (MGS/Aceleraí). AUREA segue dentro de Aceleraí.
+  - `getMetaCampaignIdsByAgency(channelType)`: passou a **normalizar e deduplicar** IDs (String/trim) para evitar duplicatas e garantir consistência quando “Todos” estiver selecionado.
+  - `fetchChannelData()` (gasto por canal / WhatsApp): normalização de `idcampanha` vindo da tabela `campanhaTrafego` antes de intersectar com a allowlist (evita mismatch por whitespace/tipos).
+
+- `form.js` (KPI Investimento Mkt / CAC / ROAS)
+  - `fetchMarketingSpend()`: o KPI **Investimento Mkt** agora respeita o filtro do header usando `campaign.id IN [allowlist]` (união deduplicada de `landingPage` + `whatsapp`).
+  - `fetchMarketingSpend()`: quando há `filtering`, o Meta Insights pode retornar **múltiplas linhas/páginas** — o código agora **paginar e soma** `spend` para obter o total filtrado.
+  - `fetchMarketingSpend()`: cache agora varia por agência (`|agency:${state.selectedAgencyId || 'all'}`) para não “reaproveitar” valor de Todos ao trocar para MGS/Aceleraí.
+  - Comportamento de “Todos”: passa a refletir **somente a soma das campanhas da allowlist** (MGS + Aceleraí), não o total do ad account.
+
+### Resumo
+Correção e padronização do **Investimento em Marketing (Meta Ads)** por agência: o filtro de agência do header passou a refletir corretamente o gasto (e consequentemente CAC/ROAS), com allowlist completa e soma/paginação no Meta Insights.
+
 ## `wish-board` v196 — 2026-01-26
 
 - **Nome (Bubble)**: `wish-board`

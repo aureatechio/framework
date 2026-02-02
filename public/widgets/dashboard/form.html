@@ -1,3 +1,15 @@
+<!--
+  ============================================================================
+  WIDGET: wish-board (Dashboard Aceleraí) - HTML
+  ============================================================================
+  
+  DOCUMENTAÇÃO PARA IAs:
+  - docs/AGENTS_GUIDE.md  → Guia de Multi-Agentes
+  - PROJECT_DOC.md        → Contexto geral
+  - CHANGELOG.md          → Histórico de versões
+  
+  ============================================================================
+-->
 <div data-cdn-widget="dashboard">
 <div id="dashboard-acelerai-v2">
   <!-- HTML STRUCTURE -->
@@ -14,7 +26,10 @@
     </div>
 
     <!-- KPI Grid Skeleton -->
-    <section class="grid grid-cols-2 md-grid-cols-4 xl-grid-cols-9 mb-12">
+    <section class="grid grid-cols-2 md-grid-cols-4 lg-grid-cols-6 xl-grid-cols-6 mb-12">
+        <div class="kpi-card" style="height: 120px; border: none; box-shadow: none; background: transparent;"><div class="skeleton"></div></div>
+        <div class="kpi-card" style="height: 120px; border: none; box-shadow: none; background: transparent;"><div class="skeleton"></div></div>
+        <div class="kpi-card" style="height: 120px; border: none; box-shadow: none; background: transparent;"><div class="skeleton"></div></div>
         <div class="kpi-card" style="height: 120px; border: none; box-shadow: none; background: transparent;"><div class="skeleton"></div></div>
         <div class="kpi-card" style="height: 120px; border: none; box-shadow: none; background: transparent;"><div class="skeleton"></div></div>
         <div class="kpi-card" style="height: 120px; border: none; box-shadow: none; background: transparent;"><div class="skeleton"></div></div>
@@ -76,8 +91,13 @@
   <!-- 1. HEADER -->
   <header class="header-row">
     <div class="page-title">
-      <h1>Dashboard Aceleraí</h1>
-      <p class="text-muted text-xs font-medium mt-1">Vendas e Marketing • Dezembro 2024</p>
+      <div class="flex items-center gap-2">
+        <h1>Dashboard Aceleraí</h1>
+        <a href="https://github.com/aureatechio/framework/blob/main/docs/AGENTS_GUIDE.md" target="_blank" title="Guia de Agentes IA" class="agents-guide-link" style="color: var(--text-muted); opacity: 0.5; transition: opacity 0.2s;">
+          <i data-lucide="bot" size="16"></i>
+        </a>
+      </div>
+      <p id="dashboard-period-subtitle" class="text-muted text-xs font-medium mt-1">Vendas e Marketing • --</p>
     </div>
     
     <div class="controls justify-end">
@@ -89,6 +109,22 @@
         <i data-lucide="chevron-down" size="14" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); pointer-events:none; color:var(--text-muted);"></i>
       </div>
 
+      <!-- Agência (pills) -->
+      <div class="agency-segment" id="agency-selector" role="group" aria-label="Filtro de agência">
+        <button type="button" class="agency-segment-btn active" data-agency="" aria-pressed="true">Todos</button>
+        <button type="button" class="agency-segment-btn" data-agency="a57b72c4-dc6d-45cc-a1e3-1a0e2ba6c2a9" aria-pressed="false">MGS</button>
+        <button type="button" class="agency-segment-btn" data-agency="75f34688-c054-4519-a445-e350fe146870" aria-pressed="false">Aceleraí</button>
+      </div>
+
+      <!-- Select Agência (legado/compatibilidade): mantido oculto e sincronizado via JS -->
+      <div class="select-wrapper" style="display:none">
+        <select id="agency-select" class="custom-select">
+          <option value="">Todos</option>
+          <option value="a57b72c4-dc6d-45cc-a1e3-1a0e2ba6c2a9">MGS</option>
+          <option value="75f34688-c054-4519-a445-e350fe146870">Aceleraí</option>
+        </select>
+      </div>
+
       <!-- Filtros de Data (Pill Group) -->
       <div class="control-group">
         <button id="btn-today" class="control-btn-pill" onclick="setDateFilter('today')">Hoje</button>
@@ -96,7 +132,33 @@
         <button id="btn-month" class="control-btn-pill active" onclick="setDateFilter('month')">Mês</button>
         <button id="btn-semestre" class="control-btn-pill" onclick="setDateFilter('semester')">Semestre</button>
         <button id="btn-year" class="control-btn-pill" onclick="setDateFilter('year')">Ano</button>
-        <button id="btn-custom" class="control-btn-pill">Personalizado</button>
+        <button id="btn-custom" class="control-btn-pill" type="button" onclick="openCustomDatePicker()">Personalizado</button>
+
+        <!-- Popover: Filtro Personalizado -->
+        <div id="custom-date-popover" class="custom-date-popover" aria-hidden="true" style="display:none">
+          <div class="custom-date-title">Filtrar por período</div>
+          <div class="custom-date-row">
+            <label class="custom-date-label" for="custom-date-start">De</label>
+            <div class="custom-date-field">
+              <input id="custom-date-start" class="custom-date-input" type="date" />
+              <button class="custom-date-icon-btn" type="button" aria-label="Abrir calendário (data inicial)" onclick="openDatePicker('custom-date-start')">
+                <i data-lucide="calendar" size="14"></i>
+              </button>
+            </div>
+            <label class="custom-date-label" for="custom-date-end">Até</label>
+            <div class="custom-date-field">
+              <input id="custom-date-end" class="custom-date-input" type="date" />
+              <button class="custom-date-icon-btn" type="button" aria-label="Abrir calendário (data final)" onclick="openDatePicker('custom-date-end')">
+                <i data-lucide="calendar" size="14"></i>
+              </button>
+            </div>
+          </div>
+          <div class="custom-date-actions">
+            <button id="custom-date-apply" class="custom-date-btn custom-date-btn--primary" type="button">Aplicar</button>
+            <button id="custom-date-clear" class="custom-date-btn" type="button">Limpar</button>
+          </div>
+          <div class="custom-date-hint">Dica: ao aplicar, o botão “Personalizado” fica marcado com o período.</div>
+        </div>
       </div>
 
       <!-- Theme & Refresh -->
@@ -109,8 +171,8 @@
     </div>
   </header>
 
-  <!-- 2. KPI GRID (8 COLUMNS) -->
-  <section class="grid grid-cols-2 md-grid-cols-4 xl-grid-cols-8 mb-12" id="kpi-grid">
+  <!-- 2. KPI GRID -->
+  <section class="grid grid-cols-2 md-grid-cols-4 lg-grid-cols-6 xl-grid-cols-6 mb-12" id="kpi-grid">
     <!-- Injected by JS -->
   </section>
 
@@ -119,7 +181,7 @@
     <!-- Velocímetro -->
     <div class="card flex-col items-center relative" style="padding: 20px;">
       <div class="text-center mb-3 w-full">
-        <div class="section-title text-primary" style="font-size: 16px; margin-bottom: 2px;">Velocímetro do Mês</div>
+        <div class="section-title text-primary" style="font-size: 16px; margin-bottom: 2px;">Velocímetro</div>
         <div class="section-subtitle" id="gauge-month-label">Meta de Dezembro</div>
       </div>
 
@@ -167,10 +229,22 @@
             <div class="section-title">Evolução do Faturamento</div>
             <div class="section-subtitle">Comparativo mensal com meta</div>
         </div>
-        
-        <div class="flex gap-2">
-            <span id="rev-pill-realizado" class="text-xs font-medium px-2 py-1 rounded bg-blue-50 text-blue-600 border border-blue-100">Realizado</span>
-            <span id="rev-pill-meta" class="text-xs font-medium px-2 py-1 rounded bg-green-50 text-green-600 border border-green-100">Meta</span>
+        <div class="revenue-header-actions" aria-label="Controles do gráfico de faturamento">
+          <div class="control-group revenue-controls-group" aria-label="Período do gráfico">
+            <button class="control-btn-pill revenue-chip active" id="rev-mode-month" type="button">Mês</button>
+            <button class="control-btn-pill revenue-chip" id="rev-mode-semester" type="button">Semestre</button>
+            <button class="control-btn-pill revenue-chip" id="rev-mode-year" type="button">Ano</button>
+          </div>
+          <div class="control-group revenue-controls-group" aria-label="Linhas do gráfico">
+            <button class="control-btn-pill revenue-chip active" id="rev-toggle-realizado" type="button"><span class="rev-dot rev-dot--real" aria-hidden="true"></span>Realizado</button>
+            <button class="control-btn-pill revenue-chip active" id="rev-toggle-lastyear" type="button"><span class="rev-dot rev-dot--ly" aria-hidden="true"></span>Ano passado</button>
+            <button class="control-btn-pill revenue-chip active" id="rev-toggle-meta" type="button"><span class="rev-dot rev-dot--meta" aria-hidden="true"></span>Meta</button>
+            <button class="control-btn-pill revenue-chip active" id="rev-toggle-projecao" type="button" title="Projeção (Run Rate)"><span class="rev-dot rev-dot--proj" aria-hidden="true"></span>Projeção</button>
+          </div>
+          <div class="control-group revenue-controls-group" aria-label="Zoom e marcador">
+            <button class="control-btn-pill revenue-chip icon-only" id="rev-zoom-toggle" type="button" title="Zoom por seleção"><i data-lucide="zoom-in"></i></button>
+            <button class="control-btn-pill revenue-chip icon-only active" id="rev-toggle-today" type="button" title="Mostrar legenda"><i data-lucide="text"></i></button>
+          </div>
         </div>
       </div>
       <div id="revenue-chart" style="width: 100%;"></div>
@@ -192,7 +266,7 @@
       <div class="meeting-card today">
         <div class="icon-box"><i data-lucide="calendar"></i></div>
         <div class="grow">
-          <div class="text-xs font-medium mb-0.5 opacity-80" style="color:#3b82f6">Hoje</div>
+          <div class="text-xs font-medium mb-0.5 opacity-80" style="color:#3b82f6" id="meetings-label-a">Hoje</div>
           <div class="count" id="meetings-today">--</div>
         </div>
       </div>
@@ -200,7 +274,7 @@
       <div class="meeting-card week">
         <div class="icon-box"><i data-lucide="calendar-days"></i></div>
         <div class="grow">
-          <div class="text-xs font-medium mb-0.5 opacity-80" style="color:var(--text-muted)">Esta semana</div>
+          <div class="text-xs font-medium mb-0.5 opacity-80" style="color:var(--text-muted)" id="meetings-label-b">Esta semana</div>
           <div class="count" id="meetings-week">--</div>
         </div>
       </div>
@@ -208,7 +282,7 @@
       <div class="meeting-card month">
         <div class="icon-box"><i data-lucide="calendar-range"></i></div>
         <div class="grow">
-          <div class="text-xs font-medium mb-0.5 opacity-80" style="color:#16a34a">Este mês</div>
+          <div class="text-xs font-medium mb-0.5 opacity-80" style="color:#16a34a" id="meetings-label-c">Este mês</div>
           <div class="count" id="meetings-month">--</div>
         </div>
       </div>
@@ -239,8 +313,8 @@
     </div>
   </section>
 
-  <!-- 5. RANKING & FUNNEL -->
-  <section class="grid grid-cols-1 xl-grid-cols-2 gap-6 mb-12">
+  <!-- 5. RANKING & METAS -->
+  <section class="grid grid-cols-1 xl-grid-cols-2 gap-6 mb-12" style="margin-top: 24px;">
     <div class="card">
       <div class="flex justify-between mb-4 items-center ranking-header">
           <div class="ranking-header-left">
@@ -261,6 +335,8 @@
                 <option value="proposals">Propostas</option>
                 <option value="meetings">Reuniões</option>
                 <option value="sales">Vendas</option>
+                <option value="renewals">Renovações</option>
+                <option value="revenue">Faturamento total</option>
                 <option value="frt">FRT</option>
                 <option value="cycle">Ciclo</option>
               </select>
@@ -270,14 +346,18 @@
 
           <!-- Controls: Reuniões -->
           <div class="flex gap-2 items-center ranking-header-actions" id="ranking-controls-meetings" style="display:none">
-            <span class="control-btn-pill flex items-center gap-1" style="cursor:default"><i data-lucide="calendar" size="12"></i> <span id="meetings-tab-count">--</span></span>
-            <span class="control-btn-pill ranking-score-pill" style="font-size:10px; cursor:default">Score & IA</span>
+            <span class="control-btn-pill ranking-score-pill" style="cursor:default" title="Nota média (global) das reuniões no período filtrado">
+              <span id="meetings-score-avg" aria-label="Nota média das reuniões">--</span>
+              <span class="rank-score-avg-icon" title="Nota média das reuniões" aria-hidden="true">
+                <i data-lucide="star" size="14"></i>
+              </span>
+            </span>
           </div>
       </div>
 
       <!-- View: Executivos -->
       <div id="ranking-executives-view">
-        <div id="ranking-list" style="max-height: 420px; overflow-y: auto; padding-right: 4px;"></div>
+        <div id="ranking-list" style="max-height: 520px; overflow-y: auto; padding-right: 4px;"></div>
       </div>
 
       <!-- View: Reuniões -->
@@ -298,13 +378,83 @@
         </div>
       </div>
     </div>
-    <div class="card flex-col h-full">
-      <div class="section-title">Funil de Vendas</div>
-      <div id="funnel-bars" class="flex flex-col gap-4 grow py-2"></div>
+    <!-- METAS DE PROPOSTAS E REUNIÕES -->
+    <div class="card flex-col h-full" id="metas-section">
+      <!-- KPI Cards -->
+      <div class="grid grid-cols-1 md-grid-cols-2 gap-4 mb-4">
+        <!-- META DE PROPOSTAS -->
+        <div class="meta-kpi-card">
+          <div class="meta-kpi-header">
+            <div class="meta-kpi-info">
+              <div class="meta-kpi-title">META DE PROPOSTAS</div>
+              <div class="meta-kpi-numbers">
+                <span class="meta-kpi-current" id="meta-propostas-current">--</span>
+                <span class="meta-kpi-separator">/</span>
+                <span class="meta-kpi-target" id="meta-propostas-target">--</span>
+              </div>
+              <div class="meta-kpi-trend" id="meta-propostas-trend">
+                <i data-lucide="trending-up" size="14"></i>
+                <span id="meta-propostas-pct">--%</span> Concluído
+              </div>
+              <div class="meta-kpi-missing" id="meta-propostas-missing">Faltam -- propostas</div>
+            </div>
+            <div class="meta-kpi-donut meta-kpi-donut--blue" id="meta-propostas-donut" style="--chart-deg: 0deg;">
+              <div class="meta-kpi-donut-val" id="meta-propostas-donut-val">0%</div>
+            </div>
+          </div>
+        </div>
+        <!-- META DE REUNIÕES -->
+        <div class="meta-kpi-card">
+          <div class="meta-kpi-header">
+            <div class="meta-kpi-info">
+              <div class="meta-kpi-title">META DE REUNIÕES</div>
+              <div class="meta-kpi-numbers">
+                <span class="meta-kpi-current" id="meta-reunioes-current">--</span>
+                <span class="meta-kpi-separator">/</span>
+                <span class="meta-kpi-target" id="meta-reunioes-target">--</span>
+              </div>
+              <div class="meta-kpi-trend" id="meta-reunioes-trend">
+                <i data-lucide="trending-up" size="14"></i>
+                <span id="meta-reunioes-pct">--%</span> Concluído
+              </div>
+              <div class="meta-kpi-missing" id="meta-reunioes-missing">Faltam -- reuniões</div>
+            </div>
+            <div class="meta-kpi-donut meta-kpi-donut--green" id="meta-reunioes-donut" style="--chart-deg: 0deg;">
+              <div class="meta-kpi-donut-val" id="meta-reunioes-donut-val">0%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabela Performance Individual -->
+      <div class="metas-team-title-container flex justify-between items-center">
+        <div>
+          <div class="section-title">Performance Individual do Time</div>
+          <div class="section-subtitle" id="metas-team-subtitle">Progresso proporcional dos -- vendedores</div>
+        </div>
+        <div class="metas-legend">
+          <span><span class="metas-legend-dot--blue"></span> PROPOSTAS</span>
+          <span><span class="metas-legend-dot--green"></span> REUNIÕES</span>
+        </div>
+      </div>
+      <div class="metas-table-header">
+        <div>SELLERS</div>
+        <div>PROGRESSO DE METAS INDIVIDUAIS</div>
+        <div class="metas-table-header-media">MÉDIA</div>
+      </div>
+      <div id="metas-team-table" style="max-height: 320px; overflow-y: auto;"></div>
     </div>
   </section>
 
-  <!-- 6. CONVERSIONS & CHANNELS -->
+  <!-- 6. FUNNEL -->
+  <section class="card mb-12">
+    <div class="section-title mb-4">Funil de Vendas</div>
+    <div id="funnel-bars" class="flex flex-col gap-2 grow py-2">
+        <div class="text-xs text-muted text-center p-4">Carregando funil...</div>
+    </div>
+  </section>
+
+  <!-- 7. CONVERSIONS & CHANNELS -->
   <section class="grid grid-cols-1 xl-grid-cols-5 gap-6 mb-12 grid-no-stretch">
     <div class="card conversion-card flex-col items-center">
       <div class="section-title mb-2">Taxas de Conversão</div>
@@ -316,13 +466,13 @@
     </div>
   </section>
 
-  <!-- 7. SELLER PIPELINE TIMELINE -->
+  <!-- 8. SELLER PIPELINE TIMELINE -->
   <section class="card mb-12">
     <div class="section-title">Tempos por Etapa do Funil</div>
     <div id="pipeline-container" class="pipeline-diagram-scroll"></div>
   </section>
 
-  <!-- 8. BOTTOM METRICS -->
+  <!-- 9. BOTTOM METRICS -->
   <section class="card">
     <div class="section-title">Métricas de Eficiência</div>
     <div class="grid grid-cols-2 md-grid-cols-4 gap-4 text-center">
@@ -350,7 +500,10 @@
           </div>
         </div>
         <div class="meeting-modal-title">
-          <div class="meeting-modal-title-main" id="meeting-modal-title">Reunião</div>
+          <div class="meeting-modal-title-row">
+            <div class="meeting-modal-title-main" id="meeting-modal-title">Reunião</div>
+            <span id="meeting-modal-stage" class="meeting-modal-stage-pill" style="display:none">--</span>
+          </div>
           <div class="meeting-modal-sub" id="meeting-modal-subtitle">--</div>
         </div>
         <button class="meeting-modal-close" type="button" aria-label="Fechar" onclick="closeMeetingModal()">
