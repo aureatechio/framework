@@ -3732,52 +3732,26 @@
 
         renderKPIs();
 
-        // --- UPDATE GAUGE WITH REAL DATA (SEMPRE MENSAL) ---
-        // Regra: o Velocímetro do Mês NÃO respeita o filtro de data do cabeçalho;
-        // ele sempre calcula Mês Atual vs Meta Mensal e só respeita o filtro de vendedor.
-        const targetRevenue = await getGaugeTargetRevenueFromCrm(); // Meta Mensal (CRM) — vendedor selecionado ou global
+        // --- UPDATE GAUGE WITH REAL DATA ---
+        // v122+: O velocímetro agora respeita o filtro de data selecionado (month, semester, year)
+        // e ajusta a meta proporcionalmente (x6 para semestre, x12 para ano).
+        const targetRevenueMonthly = await getGaugeTargetRevenueFromCrm(); // Meta Mensal (CRM) — vendedor selecionado ou global
 
+        // Ajustar meta baseado no filtro atual
+        let targetRevenue = targetRevenueMonthly;
+        let periodMultiplier = 1; // meses no período
+
+        if (state.dateFilter === 'semester') {
+          periodMultiplier = 6;
+          targetRevenue = targetRevenueMonthly * 6;
+        } else if (state.dateFilter === 'year') {
+          periodMultiplier = 12;
+          targetRevenue = targetRevenueMonthly * 12;
+        }
+
+        // Usar dados já carregados (currentRevenue/prevRevenue respeitam o filtro atual)
         let gaugeCurrentRevenue = currentRevenue;
         let gaugePrevRevenue = prevRevenue;
-
-        if (state.dateFilter !== 'month') {
-          const monthRange = getDateRange('month');
-          const prevMonthRange = getPreviousDateRange('month');
-
-          let queryGaugeCurr = sbClient
-            .from('compras')
-            .select('valor_total');
-          queryGaugeCurr = applyApprovedPurchaseFilter(queryGaugeCurr);
-          queryGaugeCurr = applyCutoffTimestamp(queryGaugeCurr, 'data_compra').gte('data_compra', monthRange.start)
-            .lte('data_compra', monthRange.end);
-          queryGaugeCurr = applyCutoffTimestamp(queryGaugeCurr, 'created_at');
-
-          let queryGaugePrev = sbClient
-            .from('compras')
-            .select('valor_total');
-          queryGaugePrev = applyApprovedPurchaseFilter(queryGaugePrev);
-          queryGaugePrev = applyCutoffTimestamp(queryGaugePrev, 'data_compra').gte('data_compra', prevMonthRange.start)
-            .lte('data_compra', prevMonthRange.end);
-          queryGaugePrev = applyCutoffTimestamp(queryGaugePrev, 'created_at');
-
-          if (state.selectedSeller) {
-            queryGaugeCurr = queryGaugeCurr.eq('vendedoresponsavel', state.selectedSeller);
-            queryGaugePrev = queryGaugePrev.eq('vendedoresponsavel', state.selectedSeller);
-          }
-
-          const [{ data: dataGaugeCurr }, { data: dataGaugePrev }] = await Promise.all([
-            queryGaugeCurr,
-            queryGaugePrev
-          ]);
-
-          gaugeCurrentRevenue = dataGaugeCurr
-            ? dataGaugeCurr.reduce((acc, curr) => acc + parseCurrency(curr.valor_total), 0)
-            : 0;
-
-          gaugePrevRevenue = dataGaugePrev
-            ? dataGaugePrev.reduce((acc, curr) => acc + parseCurrency(curr.valor_total), 0)
-            : 0;
-        }
 
         const gaugePct = targetRevenue > 0 ? Math.min((gaugeCurrentRevenue / targetRevenue) * 100, 100) : 0;
         const missing = Math.max(targetRevenue - gaugeCurrentRevenue, 0);
@@ -6475,6 +6449,24 @@
         new ApexCharts(chartEl, options).render();
 
         // --- UPDATE TEXT OVERLAYS ---
+
+        // 0. Update gauge label based on current filter
+        const gaugeLabelEl = document.getElementById('gauge-month-label');
+        if (gaugeLabelEl) {
+          const now = new Date();
+          const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+                              'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+          const currentMonth = monthNames[now.getMonth()];
+          const currentYear = now.getFullYear();
+
+          if (state.dateFilter === 'semester') {
+            gaugeLabelEl.textContent = `Meta Semestral (6 meses)`;
+          } else if (state.dateFilter === 'year') {
+            gaugeLabelEl.textContent = `Meta Anual (${currentYear})`;
+          } else {
+            gaugeLabelEl.textContent = `Meta de ${currentMonth}`;
+          }
+        }
 
         // 1. Percentage
         const pctEl = document.getElementById('gauge-percentage');
