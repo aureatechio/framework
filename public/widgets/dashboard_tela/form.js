@@ -4874,7 +4874,7 @@
         renderConversion();
         renderChannels();
         renderPipeline();
-        try { renderGauge(); } catch(e) {}
+        // try { renderGauge(); } catch(e) {} // Comentado: gauge será renderizado com dados reais em fetchDataWithStamp()
         // NÃO renderizar o ApexCharts da receita aqui:
         // nesse momento o dashboard ainda pode estar oculto (skeleton/display:none),
         // e o chart pode nascer com width 0 e ficar “em branco”.
