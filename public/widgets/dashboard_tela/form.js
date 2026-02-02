@@ -2259,7 +2259,22 @@
 
         state.dateFilter = filter;
         try { setCustomButtonAppliedLabel(); } catch (e) {}
-        
+
+        // v123+: Sincronizar revenueChartMode com filtro do header (month/semester/year)
+        if (filter === 'month' || filter === 'semester' || filter === 'year') {
+          state.revenueChartMode = filter;
+          // Atualizar botões do gráfico de faturamento
+          try {
+            const revButtons = ['rev-mode-month', 'rev-mode-semester', 'rev-mode-year'];
+            revButtons.forEach(id => {
+              const btn = document.getElementById(id);
+              if (btn) btn.classList.remove('active');
+            });
+            const activeRevBtn = document.getElementById(`rev-mode-${filter}`);
+            if (activeRevBtn) activeRevBtn.classList.add('active');
+          } catch (e) {}
+        }
+
         // Reset manual dos botões do novo header (hardcoded IDs)
         const buttons = ['btn-today', 'btn-week', 'btn-month', 'btn-year', 'btn-semestre', 'btn-custom'];
         buttons.forEach(id => {
@@ -3239,7 +3254,8 @@
         // - meta: acumulada proporcional aos dias do mês (meta mensal / diasNoMês)
         try {
           // Gráfico: range independente do header (Mês/Semestre/Ano)
-          let chartLeads = (monthRowsFiltered && monthRowsFiltered.length) ? monthRowsFiltered : (dataCurrRows || []);
+          // v123+: Sempre usar monthRowsFiltered (chartRange) ao invés de fallback para dataCurrRows
+          let chartLeads = monthRowsFiltered || [];
 
           const mult = (revenueMode === 'semester') ? 6 : (revenueMode === 'year') ? 12 : 1;
           const metaTotalMode = (Number(monthlyMeta) || 0) * mult;
