@@ -3191,9 +3191,8 @@
         // Ano passado (mesmo range do gráfico, shift -1 ano)
         const lastYearMonthStart = __shiftIsoYear(chartRange.start, -1) || chartRange.start;
         const lastYearMonthEnd = __shiftIsoYear(chartRange.end, -1) || chartRange.end;
-        const lastYear = (() => {
-          try { return new Date(lastYearMonthStart).getFullYear(); } catch (e) { return (new Date().getFullYear() - 1); }
-        })();
+        // v124+: Usar ano atual - 1 para label, não o ano da data inicial do range
+        const lastYear = new Date().getFullYear() - 1;
 
         let qLY = sbClient
           .from('compras')
