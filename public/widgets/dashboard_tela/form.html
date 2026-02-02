@@ -1,0 +1,528 @@
+<div data-cdn-widget="dashboard">
+<div id="dashboard-acelerai-v2" class="dark-mode">
+  <!-- HTML STRUCTURE -->
+  
+  <!-- SKELETON SCREEN (Visible initially) -->
+  <div id="dashboard-skeleton">
+    <!-- Header Skeleton -->
+    <div class="header-row">
+       <div class="skeleton" style="width: 250px; height: 48px; border-radius: 8px;"></div>
+       <div class="flex gap-3">
+          <div class="skeleton" style="width: 180px; height: 36px; border-radius: 8px;"></div>
+          <div class="skeleton" style="width: 320px; height: 36px; border-radius: 8px;"></div>
+       </div>
+    </div>
+
+    <!-- KPI Grid Skeleton -->
+    <section class="grid grid-cols-2 md-grid-cols-4 lg-grid-cols-6 xl-grid-cols-6 mb-12">
+        <div class="kpi-card" style="height: 120px; border: none; box-shadow: none; background: transparent;"><div class="skeleton"></div></div>
+        <div class="kpi-card" style="height: 120px; border: none; box-shadow: none; background: transparent;"><div class="skeleton"></div></div>
+        <div class="kpi-card" style="height: 120px; border: none; box-shadow: none; background: transparent;"><div class="skeleton"></div></div>
+        <div class="kpi-card" style="height: 120px; border: none; box-shadow: none; background: transparent;"><div class="skeleton"></div></div>
+        <div class="kpi-card" style="height: 120px; border: none; box-shadow: none; background: transparent;"><div class="skeleton"></div></div>
+        <div class="kpi-card" style="height: 120px; border: none; box-shadow: none; background: transparent;"><div class="skeleton"></div></div>
+        <div class="kpi-card" style="height: 120px; border: none; box-shadow: none; background: transparent;"><div class="skeleton"></div></div>
+        <div class="kpi-card" style="height: 120px; border: none; box-shadow: none; background: transparent;"><div class="skeleton"></div></div>
+        <div class="kpi-card" style="height: 120px; border: none; box-shadow: none; background: transparent;"><div class="skeleton"></div></div>
+    </section>
+
+    <!-- Main Charts Skeleton (Velocímetro, Revenue, Meetings) -->
+    <section class="grid grid-cols-1 xl-grid-cols-5 gap-6 mb-12">
+        <!-- Velocímetro -->
+        <div class="card" style="height: 380px; border: none; box-shadow: none; background: transparent;"><div class="skeleton"></div></div>
+        <!-- Revenue Chart (3 cols) -->
+        <div class="card xl-col-span-3" style="height: 380px; border: none; box-shadow: none; background: transparent;"><div class="skeleton"></div></div>
+        <!-- Meetings -->
+        <div class="card" style="height: 380px; border: none; box-shadow: none; background: transparent;"><div class="skeleton"></div></div>
+    </section>
+
+    <!-- SLAs Skeleton -->
+    <section class="grid grid-cols-1 md-grid-cols-4 gap-4 mb-12">
+       <div class="skeleton" style="height: 110px; border-radius: 12px;"></div>
+       <div class="skeleton" style="height: 110px; border-radius: 12px;"></div>
+       <div class="skeleton" style="height: 110px; border-radius: 12px;"></div>
+       <div class="skeleton" style="height: 110px; border-radius: 12px;"></div>
+    </section>
+
+    <!-- Ranking & Funnel Skeleton -->
+    <section class="grid grid-cols-1 xl-grid-cols-2 gap-6 mb-12">
+        <div class="card" style="height: 500px; border: none; box-shadow: none; background: transparent;"><div class="skeleton"></div></div>
+        <div class="card" style="height: 500px; border: none; box-shadow: none; background: transparent;"><div class="skeleton"></div></div>
+    </section>
+
+    <!-- Conversions & Channels Skeleton -->
+    <section class="grid grid-cols-1 xl-grid-cols-5 gap-6 mb-12">
+        <div class="card" style="height: 300px; border: none; box-shadow: none; background: transparent;"><div class="skeleton"></div></div>
+        <div class="card xl-col-span-4" style="height: 300px; border: none; box-shadow: none; background: transparent;"><div class="skeleton"></div></div>
+    </section>
+
+    <!-- Pipeline Skeleton -->
+    <section class="card mb-12" style="height: 200px; border: none; box-shadow: none; background: transparent;">
+        <div class="skeleton"></div>
+    </section>
+    
+    <!-- Bottom Metrics Skeleton -->
+    <section class="grid grid-cols-2 md-grid-cols-4 gap-4 mb-12">
+       <div class="skeleton" style="height: 100px; border-radius: 12px;"></div>
+       <div class="skeleton" style="height: 100px; border-radius: 12px;"></div>
+       <div class="skeleton" style="height: 100px; border-radius: 12px;"></div>
+       <div class="skeleton" style="height: 100px; border-radius: 12px;"></div>
+    </section>
+  </div>
+
+  <!-- REAL CONTENT (Hidden initially) -->
+  <div id="dashboard-content" style="display: none;">
+  
+  <!-- 1. HEADER -->
+  <header class="header-row">
+    <div class="page-title">
+      <h1>Dashboard Aceleraí</h1>
+      <p id="dashboard-period-subtitle" class="text-muted text-xs font-medium mt-1">Vendas e Marketing • --</p>
+    </div>
+    
+    <div class="controls justify-end">
+       <!-- Select Vendedor estilizado -->
+      <div class="seller-filter">
+        <img id="seller-avatar" class="seller-avatar" alt="Foto do executivo" src="https://api.dicebear.com/7.x/avataaars/svg?seed=user" />
+        <div class="select-wrapper">
+          <select id="seller-select" class="custom-select">
+              <option value="">Todos os executivos</option>
+          </select>
+          <i data-lucide="chevron-down" size="14" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); pointer-events:none; color:var(--text-muted);"></i>
+        </div>
+      </div>
+
+      <!-- Agência (pills) -->
+      <div class="agency-segment" id="agency-selector" role="group" aria-label="Filtro de agência">
+        <button type="button" class="agency-segment-btn active" data-agency="" aria-pressed="true">Todos</button>
+        <button type="button" class="agency-segment-btn" data-agency="a57b72c4-dc6d-45cc-a1e3-1a0e2ba6c2a9" aria-pressed="false">MGS</button>
+        <button type="button" class="agency-segment-btn" data-agency="75f34688-c054-4519-a445-e350fe146870" aria-pressed="false">Aceleraí</button>
+      </div>
+
+      <!-- Select Agência (legado/compatibilidade): mantido oculto e sincronizado via JS -->
+      <div class="select-wrapper" style="display:none">
+        <select id="agency-select" class="custom-select">
+          <option value="">Todos</option>
+          <option value="a57b72c4-dc6d-45cc-a1e3-1a0e2ba6c2a9">MGS</option>
+          <option value="75f34688-c054-4519-a445-e350fe146870">Aceleraí</option>
+        </select>
+      </div>
+
+      <!-- Filtros de Data (Pill Group) -->
+      <div class="control-group">
+        <button id="btn-today" class="control-btn-pill" onclick="setDateFilter('today')">Hoje</button>
+        <button id="btn-week" class="control-btn-pill" onclick="setDateFilter('week')">Semana</button>
+        <button id="btn-month" class="control-btn-pill" onclick="setDateFilter('month')">Mês</button>
+        <button id="btn-semestre" class="control-btn-pill active" onclick="setDateFilter('semester')">Semestre</button>
+        <button id="btn-year" class="control-btn-pill" onclick="setDateFilter('year')">Ano</button>
+        <button id="btn-custom" class="control-btn-pill" type="button" onclick="openCustomDatePicker()">Personalizado</button>
+
+        <!-- Popover: Filtro Personalizado -->
+        <div id="custom-date-popover" class="custom-date-popover" aria-hidden="true" style="display:none">
+          <div class="custom-date-title">Filtrar por período</div>
+          <div class="custom-date-row">
+            <label class="custom-date-label" for="custom-date-start">De</label>
+            <div class="custom-date-field">
+              <input id="custom-date-start" class="custom-date-input" type="date" />
+              <button class="custom-date-icon-btn" type="button" aria-label="Abrir calendário (data inicial)" onclick="openDatePicker('custom-date-start')">
+                <i data-lucide="calendar" size="14"></i>
+              </button>
+            </div>
+            <label class="custom-date-label" for="custom-date-end">Até</label>
+            <div class="custom-date-field">
+              <input id="custom-date-end" class="custom-date-input" type="date" />
+              <button class="custom-date-icon-btn" type="button" aria-label="Abrir calendário (data final)" onclick="openDatePicker('custom-date-end')">
+                <i data-lucide="calendar" size="14"></i>
+              </button>
+            </div>
+          </div>
+          <div class="custom-date-actions">
+            <button id="custom-date-apply" class="custom-date-btn custom-date-btn--primary" type="button">Aplicar</button>
+            <button id="custom-date-clear" class="custom-date-btn" type="button">Limpar</button>
+          </div>
+          <div class="custom-date-hint">Dica: ao aplicar, o botão “Personalizado” fica marcado com o período.</div>
+        </div>
+      </div>
+
+      <!-- Theme & Refresh -->
+      <div class="control-group">
+         <button class="theme-toggle-btn" id="theme-sun" onclick="setTheme('light')" data-mode="light"><i data-lucide="sun" size="16"></i></button>
+         <button class="theme-toggle-btn active" id="theme-moon" onclick="setTheme('dark')" data-mode="dark"><i data-lucide="moon" size="16"></i></button>
+         <button class="theme-toggle-btn fullscreen-toggle-btn" id="btn-fullscreen" type="button" onclick="toggleFullScreen()" aria-label="Entrar em tela cheia" aria-pressed="false" title="Tela cheia">
+           <i data-lucide="maximize" size="16" id="fullscreen-icon"></i>
+         </button>
+      </div>
+      
+      <div class="badge-live"><div class="dot-pulse"></div> <span id="badge-live-text">Atualizado agora</span></div>
+    </div>
+  </header>
+
+  <!-- 2. KPI GRID (12 cards em 2 linhas: 6+6) -->
+  <section class="grid grid-cols-2 md-grid-cols-4 lg-grid-cols-6 xl-grid-cols-6 mb-12" id="kpi-grid">
+    <!-- Injected by JS -->
+  </section>
+
+  <!-- 3. MAIN CHARTS & MEETINGS -->
+  <section class="grid grid-cols-1 xl-grid-cols-5 gap-6 mb-12 main-charts-row">
+    <!-- Velocímetro -->
+    <div class="card flex-col items-center relative" style="padding: 20px;">
+      <div class="text-center mb-3 w-full">
+        <div class="section-title text-primary" style="font-size: 16px; margin-bottom: 2px;">Velocímetro do Mês</div>
+        <div class="section-subtitle" id="gauge-month-label">Meta de Dezembro</div>
+      </div>
+
+      <!-- Container Relativo para Gráfico e Texto Central -->
+      <div class="relative w-full flex justify-center" style="height: 200px; margin-bottom: 8px;">
+        <!-- Gráfico -->
+        <div id="gauge-chart" style="position: absolute; top: 0; left: 0; right: 0; display: flex; justify-content: center; z-index: 1;"></div>
+
+        <!-- Conteúdo Central (Overlay) -->
+        <div class="absolute inset-0 flex flex-col items-center justify-center pt-6 pointer-events-none z-10">
+          <div style="font-size: 48px; font-weight: 700; line-height: 1; letter-spacing: -0.02em;" id="gauge-percentage">--</div>
+          <div class="text-xs font-bold flex items-center gap-1 mt-2 px-2 py-1 rounded-full" id="gauge-trend" style="font-size: 11px;">
+            <i data-lucide="trending-up" size="11" id="gauge-trend-icon"></i> <span id="gauge-trend-text">--</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Info -->
+      <div class="text-center relative z-10 w-full">
+        <div class="gauge-legend" aria-label="Legenda do velocímetro">
+          <span class="gauge-legend-item"><span class="gauge-legend-dot gauge-legend-dot--actual"></span>Atual</span>
+          <span class="gauge-legend-item"><span class="gauge-legend-dot gauge-legend-dot--meta"></span>Meta</span>
+        </div>
+
+        <div style="font-size: 17px; font-weight: 700; margin-bottom: 6px;" id="gauge-values">
+          <span id="gauge-current" style="color: var(--text-main);">--</span>
+          <span class="text-muted font-normal" style="font-size: 14px; margin: 0 4px;">/</span>
+          <span id="gauge-target" style="color: var(--text-muted);">--</span>
+        </div>
+        <div class="text-xs text-muted mb-3" id="gauge-missing" style="font-size: 11px;">--</div>
+
+        <div class="gauge-status gauge-status--warning" id="gauge-status" role="status" aria-live="polite">
+          <span class="gauge-status-icon" aria-hidden="true">
+            <i data-lucide="alert-triangle" size="14" id="gauge-status-icon"></i>
+          </span>
+          <span class="gauge-status-text" id="gauge-status-text">--</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Revenue Chart -->
+    <div class="card xl-col-span-3 revenue-card">
+      <div class="flex justify-between items-start mb-4">
+        <div>
+            <div class="section-title">Evolução do Faturamento</div>
+            <div class="section-subtitle">Comparativo mensal com meta</div>
+        </div>
+
+        <div class="revenue-header-actions" aria-label="Controles do gráfico de faturamento">
+          <div class="control-group revenue-controls-group" aria-label="Período do gráfico">
+            <button class="control-btn-pill revenue-chip" id="rev-mode-month" type="button">Mês</button>
+            <button class="control-btn-pill revenue-chip active" id="rev-mode-semester" type="button">Semestre</button>
+            <button class="control-btn-pill revenue-chip" id="rev-mode-year" type="button">Ano</button>
+          </div>
+          <div class="control-group revenue-controls-group" aria-label="Linhas do gráfico">
+            <button class="control-btn-pill revenue-chip active" id="rev-toggle-realizado" type="button"><span class="rev-dot rev-dot--real" aria-hidden="true"></span>Realizado</button>
+            <button class="control-btn-pill revenue-chip active" id="rev-toggle-lastyear" type="button"><span class="rev-dot rev-dot--ly" aria-hidden="true"></span>Ano passado</button>
+            <button class="control-btn-pill revenue-chip active" id="rev-toggle-meta" type="button"><span class="rev-dot rev-dot--meta" aria-hidden="true"></span>Meta</button>
+            <button class="control-btn-pill revenue-chip active" id="rev-toggle-projecao" type="button" title="Projeção (Run Rate)"><span class="rev-dot rev-dot--proj" aria-hidden="true"></span>Projeção</button>
+          </div>
+          <div class="control-group revenue-controls-group" aria-label="Zoom e marcador">
+            <button class="control-btn-pill revenue-chip icon-only" id="rev-zoom-toggle" type="button" title="Zoom por seleção"><i data-lucide="zoom-in"></i></button>
+            <button class="control-btn-pill revenue-chip icon-only active" id="rev-toggle-today" type="button" title="Mostrar legenda"><i data-lucide="text"></i></button>
+          </div>
+        </div>
+      </div>
+      <div id="revenue-chart" style="width: 100%;"></div>
+    </div>
+
+    <!-- Meetings Card -->
+    <div class="card flex-col gap-2 bg-white" style="background: var(--bg-card)">
+      <div class="section-title mb-4">Reuniões</div>
+      
+      <div class="meeting-card now">
+        <div class="icon-box"><i data-lucide="video"></i></div>
+        <div class="grow">
+          <div class="text-xs font-medium mb-0.5 opacity-80" style="color:#ef4444">Acontecendo agora</div>
+          <div class="count" id="meetings-now">--</div>
+        </div>
+        <div class="dot-pulse" style="background:#ef4444"></div>
+      </div>
+      
+      <div class="meeting-card today">
+        <div class="icon-box"><i data-lucide="calendar"></i></div>
+        <div class="grow">
+          <div class="text-xs font-medium mb-0.5 opacity-80" style="color:#3b82f6" id="meetings-label-a">Hoje</div>
+          <div class="count" id="meetings-today">--</div>
+        </div>
+      </div>
+      
+      <div class="meeting-card week">
+        <div class="icon-box"><i data-lucide="calendar-days"></i></div>
+        <div class="grow">
+          <div class="text-xs font-medium mb-0.5 opacity-80" style="color:var(--text-muted)" id="meetings-label-b">Esta semana</div>
+          <div class="count" id="meetings-week">--</div>
+        </div>
+      </div>
+      
+      <div class="meeting-card month">
+        <div class="icon-box"><i data-lucide="calendar-range"></i></div>
+        <div class="grow">
+          <div class="text-xs font-medium mb-0.5 opacity-80" style="color:#16a34a" id="meetings-label-c">Este mês</div>
+          <div class="count" id="meetings-month">--</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. SLAs -->
+  <section class="grid grid-cols-1 md-grid-cols-4 gap-4 mb-12">
+    <div class="sla-card on-track">
+      <div class="flex justify-between items-center mb-2"><span class="text-xs font-bold flex gap-2"><i data-lucide="clock" size="14"></i> FRT Pré-vendas</span><i data-lucide="check-circle-2" size="14"></i></div>
+      <div class="text-2xl font-bold">15min <span class="text-sm opacity-70">/ 20min</span></div>
+      <div class="sla-bar-bg"><div class="sla-bar-fill" style="width: 75%"></div></div>
+    </div>
+    <div class="sla-card at-risk">
+      <div class="flex justify-between items-center mb-2"><span class="text-xs font-bold flex gap-2"><i data-lucide="clock" size="14"></i> Ciclo de Venda</span><i data-lucide="alert-triangle" size="14"></i></div>
+      <div class="text-2xl font-bold">2.2d <span class="text-sm opacity-70">/ 2d</span></div>
+      <div class="sla-bar-bg"><div class="sla-bar-fill" style="width: 100%"></div></div>
+    </div>
+    <div class="sla-card on-track">
+      <div class="flex justify-between items-center mb-2"><span class="text-xs font-bold flex gap-2"><i data-lucide="clock" size="14"></i> Tempo Proposta</span><i data-lucide="check-circle-2" size="14"></i></div>
+      <div class="text-2xl font-bold">4h <span class="text-sm opacity-70">/ 6h</span></div>
+      <div class="sla-bar-bg"><div class="sla-bar-fill" style="width: 66%"></div></div>
+    </div>
+    <div class="sla-card breached">
+      <div class="flex justify-between items-center mb-2"><span class="text-xs font-bold flex gap-2"><i data-lucide="clock" size="14"></i> Follow-up</span><i data-lucide="alert-triangle" size="14"></i></div>
+      <div class="text-2xl font-bold">28h <span class="text-sm opacity-70">/ 24h</span></div>
+      <div class="sla-bar-bg"><div class="sla-bar-fill" style="width: 100%"></div></div>
+    </div>
+  </section>
+
+  <!-- 5. RANKING & METAS -->
+  <section class="grid grid-cols-1 xl-grid-cols-2 gap-6 mb-12" style="margin-top: 24px;">
+    <div class="card">
+      <div class="flex justify-between mb-4 items-center ranking-header">
+          <div class="ranking-header-left">
+            <div class="section-title">Ranking</div>
+            <div class="ranking-tabs" role="tablist" aria-label="Alternar ranking">
+              <button class="ranking-tab-btn active" id="ranking-tab-executives" type="button" role="tab" aria-selected="true" onclick="setRankingTab('executives')">Executivos</button>
+              <button class="ranking-tab-btn" id="ranking-tab-meetings" type="button" role="tab" aria-selected="false" onclick="setRankingTab('meetings')">Reuniões</button>
+            </div>
+          </div>
+
+          <!-- Controls: Executivos -->
+          <div class="flex gap-2 items-center ranking-header-actions" id="ranking-controls-executives">
+            <span class="control-btn-pill flex items-center gap-1" style="cursor:default"><i data-lucide="users" size="12"></i> <span id="ranking-count">--</span></span>
+            <span class="control-btn-pill ranking-score-pill" style="font-size:10px; cursor:default">KWAY Score</span>
+            <div class="ranking-sort-wrap">
+              <select id="ranking-sort" class="ranking-sort-select" aria-label="Ordenar ranking">
+                <option value="score">Score</option>
+                <option value="proposals">Propostas</option>
+                <option value="meetings">Reuniões</option>
+                <option value="sales">Vendas</option>
+                <option value="revenue">Faturamento total</option>
+                <option value="frt">FRT</option>
+                <option value="cycle">Ciclo</option>
+              </select>
+              <i data-lucide="chevron-down" size="14" class="ranking-sort-icon"></i>
+            </div>
+          </div>
+
+          <!-- Controls: Reuniões -->
+          <div class="flex gap-2 items-center ranking-header-actions" id="ranking-controls-meetings" style="display:none">
+            <span class="control-btn-pill flex items-center gap-1" style="cursor:default"><i data-lucide="calendar" size="12"></i> <span id="meetings-tab-count">--</span></span>
+            <span class="control-btn-pill ranking-score-pill" style="font-size:10px; cursor:default">Score & IA</span>
+          </div>
+      </div>
+
+      <!-- View: Executivos -->
+      <div id="ranking-executives-view">
+        <div id="ranking-list" style="max-height: 520px; overflow-y: auto; padding-right: 4px;"></div>
+      </div>
+
+      <!-- View: Reuniões -->
+      <div id="ranking-meetings-view" style="display:none">
+        <div class="meetings-tab-wrap">
+          <div class="meetings-tab-section">
+            <div class="meetings-tab-title">Próximas reuniões</div>
+            <div id="meetings-upcoming" class="meetings-tab-list">
+              <div class="text-xs text-muted text-center p-4">Carregando reuniões...</div>
+            </div>
+          </div>
+          <div class="meetings-tab-section">
+            <div class="meetings-tab-title">Reuniões que já ocorreram</div>
+            <div id="meetings-past" class="meetings-tab-list">
+              <div class="text-xs text-muted text-center p-4">Carregando reuniões...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- METAS DE PROPOSTAS E REUNIÕES -->
+    <div class="card flex-col h-full" id="metas-section">
+      <!-- KPI Cards -->
+      <div class="grid grid-cols-1 md-grid-cols-2 gap-4 mb-4">
+        <!-- META DE PROPOSTAS -->
+        <div class="meta-kpi-card">
+          <div class="meta-kpi-header">
+            <div class="meta-kpi-info">
+              <div class="meta-kpi-title">META DE PROPOSTAS</div>
+              <div class="meta-kpi-numbers">
+                <span class="meta-kpi-current" id="meta-propostas-current">--</span>
+                <span class="meta-kpi-separator">/</span>
+                <span class="meta-kpi-target" id="meta-propostas-target">--</span>
+              </div>
+              <div class="meta-kpi-trend" id="meta-propostas-trend">
+                <i data-lucide="trending-up" size="14"></i>
+                <span id="meta-propostas-pct">--%</span> Concluído
+              </div>
+              <div class="meta-kpi-missing" id="meta-propostas-missing">Faltam -- propostas</div>
+            </div>
+            <div class="meta-kpi-donut meta-kpi-donut--blue" id="meta-propostas-donut" style="--chart-deg: 0deg;">
+              <div class="meta-kpi-donut-val" id="meta-propostas-donut-val">0%</div>
+            </div>
+          </div>
+        </div>
+        <!-- META DE REUNIÕES -->
+        <div class="meta-kpi-card">
+          <div class="meta-kpi-header">
+            <div class="meta-kpi-info">
+              <div class="meta-kpi-title">META DE REUNIÕES</div>
+              <div class="meta-kpi-numbers">
+                <span class="meta-kpi-current" id="meta-reunioes-current">--</span>
+                <span class="meta-kpi-separator">/</span>
+                <span class="meta-kpi-target" id="meta-reunioes-target">--</span>
+              </div>
+              <div class="meta-kpi-trend" id="meta-reunioes-trend">
+                <i data-lucide="trending-up" size="14"></i>
+                <span id="meta-reunioes-pct">--%</span> Concluído
+              </div>
+              <div class="meta-kpi-missing" id="meta-reunioes-missing">Faltam -- reuniões</div>
+            </div>
+            <div class="meta-kpi-donut meta-kpi-donut--green" id="meta-reunioes-donut" style="--chart-deg: 0deg;">
+              <div class="meta-kpi-donut-val" id="meta-reunioes-donut-val">0%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabela Performance Individual -->
+      <div class="metas-team-title-container flex justify-between items-center">
+        <div>
+          <div class="section-title">Performance Individual do Time</div>
+          <div class="section-subtitle" id="metas-team-subtitle">Progresso proporcional dos -- vendedores</div>
+        </div>
+        <div class="metas-legend">
+          <span><span class="metas-legend-dot--blue"></span> PROPOSTAS</span>
+          <span><span class="metas-legend-dot--green"></span> REUNIÕES</span>
+        </div>
+      </div>
+      <div class="metas-table-header">
+        <div>SELLERS</div>
+        <div>PROGRESSO DE METAS INDIVIDUAIS</div>
+        <div class="metas-table-header-media">MÉDIA</div>
+      </div>
+      <div id="metas-team-table" style="max-height: 320px; overflow-y: auto;"></div>
+    </div>
+  </section>
+
+  <!-- 6. FUNNEL -->
+  <section class="card mb-12">
+    <div class="section-title mb-4">Funil de Vendas</div>
+    <div id="funnel-bars" class="flex flex-col gap-2 grow py-2">
+        <div class="text-xs text-muted text-center p-4">Carregando funil...</div>
+    </div>
+  </section>
+
+  <!-- 7. CONVERSIONS & CHANNELS -->
+  <section class="grid grid-cols-1 xl-grid-cols-5 gap-6 mb-12 grid-no-stretch">
+    <div class="card conversion-card flex-col items-center">
+      <div class="section-title mb-2">Taxas de Conversão</div>
+      <div id="conversion-chart" style="width: 100%;"></div>
+    </div>
+    <div class="card xl-col-span-4 flex-col">
+      <div class="section-title">Performance por Canal</div>
+      <div class="grid grid-cols-1 md-grid-cols-4 gap-4" id="channel-grid"></div>
+    </div>
+  </section>
+
+  <!-- 7. SELLER PIPELINE TIMELINE -->
+  <section class="card mb-12">
+    <div class="section-title">Tempos por Etapa do Funil</div>
+    <div id="pipeline-container" class="pipeline-diagram-scroll"></div>
+  </section>
+
+  <!-- 8. BOTTOM METRICS -->
+  <section class="card">
+    <div class="section-title">Métricas de Eficiência</div>
+    <div class="grid grid-cols-2 md-grid-cols-4 gap-4 text-center">
+      <div class="p-4 bg-gray-50 rounded-xl" style="background:var(--bg-subtle)"><div class="text-3xl font-bold text-primary" id="eff-cycle-days">--</div><div class="text-xs text-muted">Dias de ciclo (vida)</div></div>
+      <div class="p-4 bg-gray-50 rounded-xl" style="background:var(--bg-subtle)"><div class="text-3xl font-bold text-success" id="eff-sla-overall">--%</div><div class="text-xs text-muted">SLA</div></div>
+      <div class="p-4 bg-gray-50 rounded-xl eff-nps-muted" style="background:var(--bg-subtle)"><div class="text-3xl font-bold text-primary" id="eff-nps-score">4.2</div><div class="text-xs text-muted">NPS Score</div></div>
+      <div class="p-4 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-center gap-3 text-left" style="background:var(--col-primary-light); border-color:var(--col-primary-light)">
+        <i data-lucide="target" class="text-primary" size="24"></i>
+        <div>
+          <div class="text-xs font-bold" style="color:var(--text-main)">Projeção</div>
+          <div class="text-lg font-bold text-primary" id="eff-projection-val">--</div>
+          <div class="text-xs text-muted" id="eff-projection-sub" style="margin-top: 2px;">--</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Modal: Detalhes de Reunião -->
+  <div id="meeting-modal" class="meeting-modal-overlay" style="display:none" aria-hidden="true">
+    <div class="meeting-modal-card" role="dialog" aria-modal="true" aria-label="Detalhes da reunião">
+      <div class="meeting-modal-header">
+        <div class="meeting-modal-score-wrap" aria-label="Score da reunião">
+          <div class="meeting-modal-score-donut" id="meeting-modal-score-donut" style="--chart-color: rgba(148,163,184,0.35); --chart-deg: 0deg;">
+            <div class="meeting-modal-score-donut-val" id="meeting-modal-score-donut-val">--</div>
+          </div>
+        </div>
+        <div class="meeting-modal-title">
+          <div class="meeting-modal-title-row">
+            <div class="meeting-modal-title-main" id="meeting-modal-title">Reunião</div>
+            <span id="meeting-modal-stage" class="meeting-modal-stage-pill" style="display:none">--</span>
+          </div>
+          <div class="meeting-modal-sub" id="meeting-modal-subtitle">--</div>
+        </div>
+        <button class="meeting-modal-close" type="button" aria-label="Fechar" onclick="closeMeetingModal()">
+          <i data-lucide="x" size="16"></i>
+        </button>
+      </div>
+      <div class="meeting-modal-body">
+        <div class="meeting-modal-grid">
+          <div class="meeting-modal-kv">
+            <div class="meeting-modal-k">Status</div>
+            <div class="meeting-modal-v" id="meeting-modal-status">--</div>
+          </div>
+          <div class="meeting-modal-kv">
+            <div class="meeting-modal-k">Executivo</div>
+            <div class="meeting-modal-v" id="meeting-modal-seller">--</div>
+          </div>
+          <div class="meeting-modal-kv">
+            <div class="meeting-modal-k">Lead</div>
+            <div class="meeting-modal-v" id="meeting-modal-lead">--</div>
+          </div>
+          <div class="meeting-modal-kv">
+            <div class="meeting-modal-k">Link</div>
+            <div class="meeting-modal-v" id="meeting-modal-link">--</div>
+          </div>
+        </div>
+
+        <div class="meeting-modal-note">
+          <div class="meeting-modal-note-title">Nota / Avaliação IA</div>
+          <div class="meeting-modal-note-body" id="meeting-modal-ai">Sem nota disponível.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  </div><!-- END REAL CONTENT -->
+
+  <!-- SCRIPTS -->
+  </div>
+</div>
