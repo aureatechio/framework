@@ -1,5 +1,27 @@
 # Changelog — `dashboard_tela`
 
+## `dashboard_tela` v122 — 2026-02-02
+
+- **Nome (Bubble)**: `dashboard_tela`
+- **widget_slug (repo)**: `dashboard_tela`
+- **Code version**: `git-a09b795`
+- **Manifesto**: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/_deploy_manifests/dashboard_tela/v122/git-a09b795.json`
+- **URLs**:
+  - HTML: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/dashboard_tela/v122/form.html`
+  - CSS: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/dashboard_tela/v122/form.css`
+  - JS: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/dashboard_tela/v122/form.js`
+
+### Mudanças (linha a linha)
+
+- `public/widgets/dashboard_tela/form.js`
+  - **Linha 4877**: Comentada chamada `renderGauge()` sem parâmetros durante inicialização do skeleton - Evita que o velocímetro apareça zerado (0%) antes dos dados serem carregados
+
+### Resumo
+
+Hotfix para corrigir velocímetro/gauge de meta iniciando em 0%. Removida a renderização inicial do gauge durante o skeleton/loading. Agora o velocímetro só aparece quando os dados reais são carregados via `fetchDataWithStamp()`, mostrando a porcentagem real da meta desde o início.
+
+---
+
 ## `dashboard_tela` v121 — 2026-02-02
 
 - **Nome (Bubble)**: `dashboard_tela`
