@@ -5491,7 +5491,7 @@
                     <div class="rank-metric-label" style="font-size: 8px; color: var(--text-muted); font-weight: 500;">Vendas</div>
                 </div>
                 <div class="rank-metric-pill" style="flex: 1; background: var(--bg-subtle); border: 1px solid var(--border-color); border-radius: 4px; padding: 4px 2px; display: flex; flex-direction: column; align-items: center; gap: 1px;">
-                    <div class="rank-metric-val" style="color:#10b981; font-weight: 700; font-size: 11px; display: flex; align-items: center; gap: 2px;">
+                    <div class="rank-metric-val" style="color:#14b8a6; font-weight: 700; font-size: 11px; display: flex; align-items: center; gap: 2px;">
                         <i data-lucide="refresh-cw" size="10"></i> ${Number.isFinite(Number(r.renewals)) ? Number(r.renewals) : 0}
                     </div>
                     <div class="rank-metric-label" style="font-size: 8px; color: var(--text-muted); font-weight: 500;">Renovações</div>

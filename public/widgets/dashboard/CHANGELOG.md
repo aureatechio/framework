@@ -36,6 +36,35 @@ Este arquivo registra **versão a versão** o que foi alterado no elemento publi
 
 ---
 
+## `wish-board` v200 — 2026-02-02
+
+- **Nome (Bubble)**: `wish-board`
+- **widget_slug (repo)**: `dashboard`
+- **Code version**: *(será preenchido após deploy)*
+- **Manifesto**: *(será preenchido após deploy)*
+- **URLs**:
+  - HTML: *(será preenchido após deploy)*
+  - CSS: *(será preenchido após deploy)*
+  - JS: *(será preenchido após deploy)*
+
+### Mudanças (linha a linha)
+
+- `form.js` (renderRanking — linha 5494)
+  - Alterada cor da pill "Renovações" de verde (`#10b981`) para azul-turquesa (`#14b8a6`)
+  - Melhora contraste visual: evita 3 pills verdes consecutivas
+  - Facilita distinção rápida entre Vendas (verde), Renovações (turquesa) e Faturamento (verde)
+
+### Resumo
+
+**Ajuste Visual: Cor da Métrica Renovações**
+
+Alterada a cor do ícone e valor de Renovações de verde esmeralda para azul-turquesa para melhorar a legibilidade e diferenciação visual no ranking de vendedores.
+
+**Antes:** Propostas (azul) | Reuniões (cinza) | Vendas (verde) | Renovações (verde) | Faturamento (verde)
+**Depois:** Propostas (azul) | Reuniões (cinza) | Vendas (verde) | Renovações (turquesa) | Faturamento (verde)
+
+---
+
 ## `wish-board` v199 — 2026-02-02
 
 - **Nome (Bubble)**: `wish-board`
