@@ -3148,8 +3148,9 @@
             return { start: s, end: e };
           }
           if (revenueMode === 'semester') {
-            const s = new Date(y, m - 5, 1, 0, 0, 0, 0).toISOString();
-            const e = new Date(y, m + 1, 0, 23, 59, 59, 999).toISOString();
+            // v125+: Próximos 6 meses (incluindo mês atual) ao invés de últimos 6 meses
+            const s = new Date(y, m, 1, 0, 0, 0, 0).toISOString();
+            const e = new Date(y, m + 6, 0, 23, 59, 59, 999).toISOString();
             return { start: s, end: e };
           }
           // month (default)
