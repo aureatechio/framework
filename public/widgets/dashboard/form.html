@@ -91,12 +91,7 @@
   <!-- 1. HEADER -->
   <header class="header-row">
     <div class="page-title">
-      <div class="flex items-center gap-2">
-        <h1>Dashboard Aceleraí</h1>
-        <a href="https://github.com/aureatechio/framework/blob/main/docs/AGENTS_GUIDE.md" target="_blank" title="Guia de Agentes IA" class="agents-guide-link" style="color: var(--text-muted); opacity: 0.5; transition: opacity 0.2s;">
-          <i data-lucide="bot" size="16"></i>
-        </a>
-      </div>
+      <h1>Dashboard Aceleraí</h1>
       <p id="dashboard-period-subtitle" class="text-muted text-xs font-medium mt-1">Vendas e Marketing • --</p>
     </div>
     
@@ -284,6 +279,14 @@
         <div class="grow">
           <div class="text-xs font-medium mb-0.5 opacity-80" style="color:#16a34a" id="meetings-label-c">Este mês</div>
           <div class="count" id="meetings-month">--</div>
+        </div>
+      </div>
+
+      <div class="meeting-card created-today">
+        <div class="icon-box"><i data-lucide="calendar-plus"></i></div>
+        <div class="grow">
+          <div class="text-xs font-medium mb-0.5 opacity-80" style="color:#8b5cf6">Criadas hoje</div>
+          <div class="count" id="meetings-created-today">--</div>
         </div>
       </div>
     </div>
