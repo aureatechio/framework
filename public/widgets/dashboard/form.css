@@ -1162,13 +1162,12 @@
 
     /* Meetings Sidebar Refined */
     .meeting-card {
-        padding: 14px;
+        padding: 12px 14px;
         border-radius: 12px;
         border: 1px solid transparent;
         display: flex;
         align-items: center;
-        gap: 16px;
-        margin-bottom: 12px;
+        gap: 14px;
         transition: all 0.2s;
         background: var(--bg-card);
     }
@@ -1189,7 +1188,11 @@
     .meeting-card.month { background: var(--col-success-light); border-color: #dcfce7; }
     .meeting-card.month .icon-box { background: #dcfce7; color: #16a34a; }
     .meeting-card.month .count { color: #16a34a; }
-    
+
+    .meeting-card.created-today { background: rgba(139,92,246,0.08); border-color: #ede9fe; }
+    .meeting-card.created-today .icon-box { background: #ede9fe; color: #8b5cf6; }
+    .meeting-card.created-today .count { color: #8b5cf6; }
+
     /* Dark Mode Meetings Fixes */
     .dark-mode .meeting-card.now { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.3); }
     .dark-mode .meeting-card.now .icon-box { background: rgba(239,68,68,0.2); }
@@ -1203,7 +1206,10 @@
 
     .dark-mode .meeting-card.month { background: rgba(34,197,94,0.15); border-color: rgba(34,197,94,0.3); }
     .dark-mode .meeting-card.month .icon-box { background: rgba(34,197,94,0.2); }
-    
+
+    .dark-mode .meeting-card.created-today { background: rgba(139,92,246,0.15); border-color: rgba(139,92,246,0.3); }
+    .dark-mode .meeting-card.created-today .icon-box { background: rgba(139,92,246,0.2); }
+
     .meeting-card .icon-box {
         width: 36px; height: 36px; border-radius: 8px;
         display: flex; align-items: center; justify-content: center;

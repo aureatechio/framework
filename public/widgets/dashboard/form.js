@@ -3631,28 +3631,36 @@
           ? (prevSales / countCaptadosPrev) * 100
           : 0;
 
-        // Query para contar Leads Ativos do período atual (com vendedor responsável)
-        let queryLeads = sbClient
-          .from('leads')
-          .select('lead_id', { count: 'exact', head: true })
-          .not('vendedorResponsavel', 'is', null)
-          ;
-        queryLeads = applyAgencyFilterToLeadQuery(queryLeads);
-        queryLeads = applyCutoffTimestamp(queryLeads, 'created_at').gte('created_at', start)
-          .lte('created_at', end);
-        if (state.selectedSeller) queryLeads = queryLeads.eq('vendedorResponsavel', state.selectedSeller);
-        const { count: countLeads } = await queryLeads;
+        // Oportunidades: leads DISTINTOS que passaram pela etapa Oportunidade (via loogsLeads)
+        // Período atual
+        const countLeads = await (async () => {
+          let q = sbClient
+            .from('loogsLeads')
+            .select('lead, vendedor_id')
+            .eq('etapa_posterior', ETAPA_OPORTUNIDADE_ID)
+            .not('lead', 'is', null);
+          q = applyCutoffTimestamp(q, 'created_at').gte('created_at', start).lte('created_at', end);
+          if (state.selectedSeller) q = q.eq('vendedor_id', state.selectedSeller);
+          const { data } = await q;
+          let rows = await filterRowsByAgencyViaLeadId((data || []), (r) => r && r.lead);
+          const uniqueLeads = new Set(rows.map(r => r && r.lead).filter(Boolean));
+          return uniqueLeads.size;
+        })();
 
-        // Query para contar Leads Ativos do período anterior (para comparação)
-        let queryLeadsPrev = sbClient
-          .from('leads')
-          .select('lead_id', { count: 'exact', head: true })
-          .not('vendedorResponsavel', 'is', null);
-        queryLeadsPrev = applyAgencyFilterToLeadQuery(queryLeadsPrev);
-        queryLeadsPrev = applyCutoffTimestamp(queryLeadsPrev, 'created_at').gte('created_at', prevRange.start)
-          .lte('created_at', prevRange.end);
-        if (state.selectedSeller) queryLeadsPrev = queryLeadsPrev.eq('vendedorResponsavel', state.selectedSeller);
-        const { count: countLeadsPrev } = await queryLeadsPrev;
+        // Período anterior (para comparação vs mês anterior)
+        const countLeadsPrev = await (async () => {
+          let q = sbClient
+            .from('loogsLeads')
+            .select('lead, vendedor_id')
+            .eq('etapa_posterior', ETAPA_OPORTUNIDADE_ID)
+            .not('lead', 'is', null);
+          q = applyCutoffTimestamp(q, 'created_at').gte('created_at', prevRange.start).lte('created_at', prevRange.end);
+          if (state.selectedSeller) q = q.eq('vendedor_id', state.selectedSeller);
+          const { data } = await q;
+          let rows = await filterRowsByAgencyViaLeadId((data || []), (r) => r && r.lead);
+          const uniqueLeads = new Set(rows.map(r => r && r.lead).filter(Boolean));
+          return uniqueLeads.size;
+        })();
 
         // --- Conversão de Oportunidades -> Vendas (no período): vendas / oportunidades ---
         const convOportunidadesPct = (countLeads && countLeads > 0)
@@ -5279,6 +5287,49 @@
         setTimeout(() => {
           try { window.dispatchEvent(new Event('resize')); } catch (e) {}
         }, 800);
+
+        // --- BUBBLE VISIBILITY GUARD ---
+        // Quando o widget nasce dentro de um container oculto no Bubble (display:none),
+        // TODO o elemento renderiza com dimensões zero e não recupera ao ficar visível.
+        // IntersectionObserver detecta a transição hidden→visible e re-renderiza TUDO.
+        try {
+          const dashRoot = document.getElementById('dashboard-acelerai-v2');
+          if (dashRoot && typeof IntersectionObserver !== 'undefined') {
+            let __visWasHidden = false;
+            const __visObs = new IntersectionObserver((entries) => {
+              try {
+                const entry = entries[0];
+                if (!entry) return;
+                if (!entry.isIntersecting) {
+                  __visWasHidden = true;
+                  return;
+                }
+                // Container ficou visível após ter estado oculto → re-renderizar TUDO
+                if (__visWasHidden) {
+                  __visWasHidden = false;
+                  setTimeout(() => {
+                    try { lucide.createIcons(); } catch (e) {}
+                    try { renderKPIs(); } catch (e) {}
+                    try { renderRanking(); } catch (e) {}
+                    try { renderMeetingsTab(); } catch (e) {}
+                    try { renderFunnel(); } catch (e) {}
+                    try { renderConversion(); } catch (e) {}
+                    try { renderChannels(); } catch (e) {}
+                    try { renderPipeline(); } catch (e) {}
+                    try { renderMetasSection(); } catch (e) {}
+                    try { renderGauge(); } catch (e) {}
+                    try { renderRevenue(state.revenueChartData); } catch (e) {}
+                    try { window.dispatchEvent(new Event('resize')); } catch (e) {}
+                    try { scheduleChartsResize('visibility'); } catch (e) {}
+                    // Re-fetch completo para garantir dados + layout corretos
+                    try { fetchDataWithStamp('visibility'); } catch (e) {}
+                  }, 150);
+                }
+              } catch (e) {}
+            }, { threshold: 0.01 });
+            __visObs.observe(dashRoot);
+          }
+        } catch (e) {}
 
         // Carregar dados reais (background) — não bloquear a exibição inicial
         Promise.all([
