@@ -3875,11 +3875,32 @@
             }).length;
         }
 
+        // "Criadas hoje": reuniões criadas no dia atual (created_at)
+        let countCreatedToday = 0;
+        try {
+          const todayStart = todayRange.startYmd + 'T00:00:00';
+          const todayEnd = todayRange.startYmd + 'T23:59:59.999';
+          let queryCreated = sbClient
+            .from('agendamento')
+            .select('leadId, vendedor, score_final, tipo_agendamento')
+            .not('leadId', 'is', null)
+            .gte('created_at', todayStart)
+            .lte('created_at', todayEnd);
+          if (state.selectedSeller) queryCreated = queryCreated.eq('vendedor', state.selectedSeller);
+          const { data: createdRows } = await queryCreated;
+          let rowsCreated = await filterRowsByAgencyViaLeadId((createdRows || []), (r) => r && r.leadId);
+          rowsCreated = (rowsCreated || []).filter(r => !directorIds.includes(r.vendedor));
+          // Só conta reuniões com score IA preenchido OU tipo Ligação
+          rowsCreated = rowsCreated.filter(isValidMeeting);
+          countCreatedToday = rowsCreated.length;
+        } catch (e) {}
+
         const setTxt = (id, val) => { const el = document.getElementById(id); if(el) el.innerText = val; };
         setTxt('meetings-now', countNow);
         setTxt('meetings-today', countTotal);
         setTxt('meetings-week', countFuture);
         setTxt('meetings-month', countPast);
+        setTxt('meetings-created-today', countCreatedToday);
       }
 
       async function fetchSLAs() {
