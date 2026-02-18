@@ -4750,8 +4750,8 @@
 
       // --- METAS DE PROPOSTAS E REUNIÕES ---
       // Default meta values (can be overridden by crm_metas_vendedores or params)
-      const DEFAULT_META_PROPOSTAS = 100;
-      const DEFAULT_META_REUNIOES = 50;
+      const DEFAULT_META_PROPOSTAS = 160;
+      const DEFAULT_META_REUNIOES = 80;
 
       async function fetchMetasData() {
         if (!sbClient) return;
