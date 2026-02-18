@@ -3682,16 +3682,17 @@
         // FILTRO: Exclui reuniões de vendedores que são diretores (diretorVendas = true)
         const meetingsRange = getMeetingsDateRange(state.dateFilter);
         
-        // Buscar lista de IDs de diretores para filtrar reuniões
+        // Buscar lista de IDs a excluir: diretores + usuários internos
+        // (alinhado com sellerMap do ranking de metas que só inclui usuarioInterno=false e não-diretores)
         let directorIds = [];
         try {
-          const { data: directors } = await sbClient
+          const { data: excluded } = await sbClient
             .from('vendedores')
             .select('id')
-            .eq('diretorVendas', true);
-          directorIds = (directors || []).map(d => d.id).filter(Boolean);
+            .or('diretorVendas.eq.true,usuarioInterno.eq.true');
+          directorIds = (excluded || []).map(d => d.id).filter(Boolean);
         } catch (e) {}
-        
+
         // --- REUNIÕES (KPI): conta reuniões com score IA preenchido OU tipo Ligação ---
         // Não filtra por statusReuniao (inclui canceladas). Exclui diretores.
         const countMeetingRowsForRange = async (startYmd, endYmd) => {
@@ -3969,16 +3970,16 @@
         const todayRange = getMeetingsDateRange('today');
         const periodRange = getMeetingsDateRange(state.dateFilter);
 
-        // Buscar lista de IDs de diretores para excluir das contagens
+        // Buscar lista de IDs a excluir: diretores + usuários internos
         let directorIds = [];
         try {
-          const { data: directors } = await sbClient
+          const { data: excluded } = await sbClient
             .from('vendedores')
             .select('id')
-            .eq('diretorVendas', true);
-          directorIds = (directors || []).map(d => d.id).filter(Boolean);
+            .or('diretorVendas.eq.true,usuarioInterno.eq.true');
+          directorIds = (excluded || []).map(d => d.id).filter(Boolean);
         } catch (e) {
-          console.warn('[Meetings] Erro ao buscar diretores:', e);
+          console.warn('[Meetings] Erro ao buscar excluídos:', e);
         }
 
         // Labels dinâmicos conforme regra do produto:
@@ -5595,14 +5596,14 @@
         const { start, end } = getDateRange(state.dateFilter);
         const meetingsRange = getMeetingsDateRange(state.dateFilter);
 
-        // Buscar lista de IDs de diretores para filtrar reuniões (consistência com KPI)
+        // Buscar lista de IDs a excluir: diretores + usuários internos
         let directorIds = [];
         try {
-          const { data: directors } = await sbClient
+          const { data: excluded } = await sbClient
             .from('vendedores')
             .select('id')
-            .eq('diretorVendas', true);
-          directorIds = (directors || []).map(d => d.id).filter(Boolean);
+            .or('diretorVendas.eq.true,usuarioInterno.eq.true');
+          directorIds = (excluded || []).map(d => d.id).filter(Boolean);
         } catch (e) {}
 
         // 1. Leads Captados
