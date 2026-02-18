@@ -4762,7 +4762,7 @@
           // 1. Fetch all sellers
           const { data: sellers } = await sbClient
             .from('vendedores')
-            .select('id, nome, perfil_img, diretorVendas')
+            .select('id, nome, perfil_img, diretorVendas, elegivel_rotacao')
             .eq('usuarioInterno', false);
 
           if (!sellers || sellers.length === 0) {
@@ -4785,6 +4785,7 @@
               name: s.nome || 'Sem nome',
               avatarUrl: s.perfil_img || null,
               role: s.cargo || 'Vendedor',
+              elegivelRotacao: s.elegivel_rotacao !== false,
               propostas: 0,
               reunioes: 0,
               metaPropostas: DEFAULT_META_PROPOSTAS,
@@ -4924,9 +4925,12 @@
             const avgPct = Number(((propostasPct + reunioesPct) / 2).toFixed(0));
 
             globalPropostasTotal += s.propostas;
-            globalPropostasMeta += s.metaPropostas;
             globalReunioesTotal += s.reunioes;
-            globalReunioesMeta += s.metaReunioes;
+            // Meta global: só soma vendedores elegíveis à rotação
+            if (s.elegivelRotacao) {
+              globalPropostasMeta += s.metaPropostas;
+              globalReunioesMeta += s.metaReunioes;
+            }
 
             sellersResult.push({
               id: s.id,
