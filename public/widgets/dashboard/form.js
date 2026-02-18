@@ -4000,9 +4000,8 @@
         try {
           let query = sbClient
             .from('agendamento')
-            .select('data, hora, leadId, statusReuniao, vendedor, score_final, tipo_agendamento')
+            .select('data, hora, leadId, vendedor')
             .not('leadId', 'is', null);
-          query = applyMeetingNotCanceledFilter(query);
           if (state.selectedSeller) query = query.eq('vendedor', state.selectedSeller);
           query = applyCutoffDateYmd(query, 'data').gte('data', periodRange.startYmd).lte('data', periodRange.endYmd);
 
@@ -4010,8 +4009,6 @@
           let rows = await filterRowsByAgencyViaLeadId((data || []), (r) => r && r.leadId);
           // Filtrar: excluir reuniões de diretores
           rows = (rows || []).filter(r => !directorIds.includes(r.vendedor));
-          // Filtrar: só conta reuniões com score preenchido OU tipo Ligação
-          rows = (rows || []).filter(isValidMeeting);
           const todayYmd = todayRange.startYmd;
 
           const cmpYmd = (a, b) => String(a || '').localeCompare(String(b || ''), 'en');
@@ -4034,8 +4031,8 @@
         }
 
         let countNow = 0;
-        // "Acontecendo agora": faz sentido manter apenas agendadas (não realizadas/canceladas)
-        let queryNow = sbClient.from('agendamento').select('hora, data, leadId, vendedor, score_final, tipo_agendamento').eq('statusReuniao', 'agendado');
+        // "Acontecendo agora": reuniões com status agendado na hora atual
+        let queryNow = sbClient.from('agendamento').select('hora, data, leadId, vendedor').eq('statusReuniao', 'agendado');
         queryNow = applyCutoffDateYmd(queryNow, 'data').eq('data', todayRange.startYmd);
         if (state.selectedSeller) queryNow = queryNow.eq('vendedor', state.selectedSeller);
         const { data: dataNow } = await queryNow;
@@ -4043,8 +4040,6 @@
             let rowsAgency = await filterRowsByAgencyViaLeadId((dataNow || []), (r) => r && r.leadId);
             // Filtrar: excluir reuniões de diretores
             rowsAgency = (rowsAgency || []).filter(r => !directorIds.includes(r.vendedor));
-            // Filtrar: só conta reuniões com score preenchido OU tipo Ligação
-            rowsAgency = (rowsAgency || []).filter(isValidMeeting);
             const currentHour = now.getHours();
             countNow = rowsAgency.filter(r => {
                 if(!r.hora) return false;
@@ -4060,11 +4055,10 @@
           const todayEnd = todayRange.startYmd + 'T23:59:59.999';
           let queryCreated = sbClient
             .from('agendamento')
-            .select('leadId, vendedor, score_final, tipo_agendamento')
+            .select('leadId, vendedor')
             .not('leadId', 'is', null)
             .gte('created_at', todayStart)
             .lte('created_at', todayEnd);
-          queryCreated = applyMeetingNotCanceledFilter(queryCreated);
           if (state.selectedSeller) queryCreated = queryCreated.eq('vendedor', state.selectedSeller);
           const { data: createdRows } = await queryCreated;
           let rowsCreated = await filterRowsByAgencyViaLeadId((createdRows || []), (r) => r && r.leadId);
