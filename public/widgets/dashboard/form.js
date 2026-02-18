@@ -4912,27 +4912,7 @@
           let globalReunioesTotal = 0;
           let globalReunioesMeta = 0;
 
-          // 5.1. Try to fetch global metas from crm_metas_geral_mes
-          try {
-            const { mes, ano } = getCrmMetaContext();
-            const { data: generalMetas } = await sbClient
-              .from('crm_metas_geral_mes')
-              .select('meta_geral_propostas, meta_geral_reunioes')
-              .eq('mes', mes);
-
-            if (generalMetas && generalMetas.length > 0) {
-              const row = generalMetas[0];
-              if (row.meta_geral_propostas !== undefined && row.meta_geral_propostas !== null) {
-                globalPropostasMeta = __toNumber(row.meta_geral_propostas) || 0;
-              }
-              if (row.meta_geral_reunioes !== undefined && row.meta_geral_reunioes !== null) {
-                globalReunioesMeta = __toNumber(row.meta_geral_reunioes) || 0;
-              }
-            }
-          } catch (e) {
-            console.error('Erro ao buscar metas gerais:', e);
-          }
-
+          // Meta global = soma das metas individuais de todos os vendedores
           const sellersResult = [];
           Object.values(sellerMap).forEach(s => {
             // Filter by selected seller if applicable
@@ -4944,14 +4924,9 @@
             const avgPct = Number(((propostasPct + reunioesPct) / 2).toFixed(0));
 
             globalPropostasTotal += s.propostas;
-            // Only add to global meta if we didn't get it from crm_metas_geral_mes
-            if (globalPropostasMeta === 0) {
-              globalPropostasMeta += s.metaPropostas;
-            }
+            globalPropostasMeta += s.metaPropostas;
             globalReunioesTotal += s.reunioes;
-            if (globalReunioesMeta === 0) {
-              globalReunioesMeta += s.metaReunioes;
-            }
+            globalReunioesMeta += s.metaReunioes;
 
             sellersResult.push({
               id: s.id,
