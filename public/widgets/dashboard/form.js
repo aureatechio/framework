@@ -3677,8 +3677,8 @@
         const roas = investment > 0 ? currentRevenue / investment : 0;
         const roasPrev = investmentPrev > 0 ? (prevRevenue / investmentPrev) : 0;
 
-        // --- REUNIÕES (KPI): contagem de linhas em agendamento no período (exclui Cancelada e diretores) ---
-        // NOTA: Usa getMeetingsDateRange para incluir reuniões futuras até fim do mês (igual ao card lateral)
+        // --- REUNIÕES (KPI): COUNT total de agendamentos no período (exclui diretores) ---
+        // Alinhado com performance.html: conta TODAS as reuniões sem filtrar canceladas ou score.
         // FILTRO: Exclui reuniões de vendedores que são diretores (diretorVendas = true)
         const meetingsRange = getMeetingsDateRange(state.dateFilter);
         
@@ -3692,97 +3692,46 @@
           directorIds = (directors || []).map(d => d.id).filter(Boolean);
         } catch (e) {}
         
+        // --- REUNIÕES AGENDADAS (KPI): COUNT total de agendamentos no período ---
+        // Alinhado com performance.html: conta TODAS as reuniões agendadas sem filtrar canceladas ou score.
+        // FILTRO: Exclui diretores, filtra por vendedor selecionado e agência. Usa range do header.
         const countMeetingRowsForRange = async (startYmd, endYmd) => {
           try {
             if (!startYmd || !endYmd) return 0;
 
             let q = sbClient
               .from('agendamento')
-              .select('leadId, statusReuniao, vendedor, score_final, tipo_agendamento')
+              .select('leadId, vendedor')
               .not('leadId', 'is', null);
             q = applyCutoffDateYmd(q, 'data').gte('data', startYmd).lte('data', endYmd);
-            q = applyMeetingNotCanceledFilter(q);
             if (state.selectedSeller) q = q.eq('vendedor', state.selectedSeller);
             const { data } = await q;
             const rows = await filterRowsByAgencyViaLeadId((data || []), (r) => r && r.leadId);
             // Excluir reuniões de diretores
-            let filteredRows = (rows || []).filter(r => !directorIds.includes(r.vendedor));
-            // Só conta reuniões com score preenchido OU tipo Ligação
-            filteredRows = filteredRows.filter(isValidMeeting);
+            const filteredRows = (rows || []).filter(r => !directorIds.includes(r.vendedor));
             return filteredRows.length;
           } catch (e) {
             return 0;
           }
         };
 
-        // --- PROPOSTAS (KPI): contagem de LEADS ÚNICOS com proposta no período ---
-        // FILTRO: Deduplicar por id_lead (1 proposta por lead, não conta múltiplas propostas do mesmo lead)
-        // FILTRO: Exclui propostas de diretores (alinhado com ranking de metas)
+        // --- PROPOSTAS (KPI): COUNT total de propostas no período ---
+        // Alinhado com performance.html: conta TODAS as propostas (imagemProposta) sem deduplicar por lead.
+        // FILTRO: Exclui propostas de diretores, filtra por vendedor selecionado e agência.
         const countProposalRowsForRange = async (rangeStartIso, rangeEndIso) => {
           try {
             let qProps = sbClient
               .from('imagemProposta')
-              .select('id_lead, id_vendedor')
-              .not('id_lead', 'is', null);
+              .select('id, id_vendedor, id_lead');
             qProps = applyCutoffTimestamp(qProps, 'created_at').gte('created_at', rangeStartIso).lte('created_at', rangeEndIso);
             if (state.selectedSeller) {
-              // reduz volume: propostas do vendedor OU sem id_vendedor (fallback por lead)
-              qProps = qProps.or(`id_vendedor.eq.${state.selectedSeller},id_vendedor.is.null`);
+              qProps = qProps.eq('id_vendedor', state.selectedSeller);
             }
             const { data: propsRaw } = await qProps;
-            const props = await filterRowsByAgencyViaLeadId((propsRaw || []), (p) => p && p.id_lead);
-
-            // Filtrar propostas de diretores e contar leads únicos por vendedor não-diretor
-            // (Mesmo comportamento do fetchMetasData - só conta proposta se o vendedor não é diretor)
-            const proposedLeadIdsBySeller = {};
-            const proposalsNeedingLeadFallback = [];
-
-            (props || []).forEach(p => {
-              if (!p) return;
-              if (p.id_vendedor) {
-                // Se é diretor, ignorar
-                if (directorIds.includes(p.id_vendedor)) return;
-                const sid = String(p.id_vendedor);
-                if (!proposedLeadIdsBySeller[sid]) proposedLeadIdsBySeller[sid] = new Set();
-                if (p.id_lead) proposedLeadIdsBySeller[sid].add(String(p.id_lead));
-              } else if (p.id_lead) {
-                proposalsNeedingLeadFallback.push(p);
-              }
-            });
-
-            // Fallback: buscar vendedorResponsavel dos leads sem id_vendedor
-            if (proposalsNeedingLeadFallback.length > 0) {
-              const leadIds = [...new Set(proposalsNeedingLeadFallback.map(p => p && p.id_lead).filter(Boolean))];
-              for (const chunk of chunkArray(leadIds, 500)) {
-                let qLead = sbClient
-                  .from('leads')
-                  .select('lead_id, vendedorResponsavel')
-                  .in('lead_id', chunk);
-                qLead = applyAgencyFilterToLeadQuery(qLead);
-                const { data: leads } = await qLead;
-                (leads || []).forEach(l => {
-                  if (!l || !l.lead_id || !l.vendedorResponsavel) return;
-                  // Se vendedorResponsavel é diretor, ignorar
-                  if (directorIds.includes(l.vendedorResponsavel)) return;
-                  const sid = String(l.vendedorResponsavel);
-                  if (!proposedLeadIdsBySeller[sid]) proposedLeadIdsBySeller[sid] = new Set();
-                  proposedLeadIdsBySeller[sid].add(String(l.lead_id));
-                });
-              }
-            }
-
-            // Se há filtro de vendedor, contar apenas leads desse vendedor
-            if (state.selectedSeller) {
-              const sellerLeads = proposedLeadIdsBySeller[state.selectedSeller];
-              return sellerLeads ? sellerLeads.size : 0;
-            }
-
-            // Contar leads únicos globalmente (mesmo lead em múltiplos vendedores conta 1x)
-            const allUniqueLeads = new Set();
-            Object.values(proposedLeadIdsBySeller).forEach(leadSet => {
-              leadSet.forEach(lid => allUniqueLeads.add(lid));
-            });
-            return allUniqueLeads.size;
+            let props = await filterRowsByAgencyViaLeadId((propsRaw || []), (p) => p && p.id_lead);
+            // Excluir propostas de diretores
+            props = (props || []).filter(p => p && p.id_vendedor && !directorIds.includes(p.id_vendedor));
+            return props.length;
           } catch (e) {
             return 0;
           }
@@ -4820,89 +4769,49 @@
             console.error('Erro ao buscar metas da tabela:', e);
           }
 
-          // 3. Fetch proposals count per seller (deduplicated by id_lead)
+          // 3. Fetch proposals COUNT per seller (total, sem deduplicar por lead)
+          // Alinhado com performance.html: conta TODAS as propostas por id_vendedor.
           let proposalsQuery = sbClient
             .from('imagemProposta')
-            .select('id_lead, id_vendedor');
+            .select('id, id_vendedor, id_lead');
           proposalsQuery = applyCutoffTimestamp(proposalsQuery, 'created_at')
             .gte('created_at', start)
             .lte('created_at', end);
           const { data: proposalsRaw } = await proposalsQuery;
           const proposals = await filterRowsByAgencyViaLeadId((proposalsRaw || []), (p) => p && p.id_lead);
 
-          // Count proposals per seller (dedup by id_lead)
-          const proposedLeadIdsBySeller = {};
-          const proposalsNeedingLeadFallback = [];
-
+          // Count proposals per seller (total count, not deduplicated)
+          const proposalCountBySeller = {};
           if (proposals && proposals.length > 0) {
             proposals.forEach(p => {
               if (p.id_vendedor) {
                 const sid = String(p.id_vendedor);
-                if (!proposedLeadIdsBySeller[sid]) proposedLeadIdsBySeller[sid] = new Set();
-                if (p.id_lead) proposedLeadIdsBySeller[sid].add(String(p.id_lead));
-              } else if (p.id_lead) {
-                proposalsNeedingLeadFallback.push(p);
+                proposalCountBySeller[sid] = (proposalCountBySeller[sid] || 0) + 1;
               }
             });
-
-            // Fallback: fetch leads.vendedorResponsavel for proposals without id_vendedor
-            const leadIds = proposalsNeedingLeadFallback.map(p => p.id_lead).filter(Boolean);
-            if (leadIds.length > 0) {
-              let q = sbClient
-                .from('leads')
-                .select('lead_id, vendedorResponsavel')
-                .in('lead_id', leadIds);
-              q = applyAgencyFilterToLeadQuery(q);
-              const { data: leads } = await q;
-
-              if (leads) {
-                const leadSellerMap = {};
-                leads.forEach(l => { if (l.lead_id && l.vendedorResponsavel) leadSellerMap[l.lead_id] = l.vendedorResponsavel; });
-
-                proposalsNeedingLeadFallback.forEach(p => {
-                  const sid = leadSellerMap[p.id_lead];
-                  if (sid) {
-                    if (!proposedLeadIdsBySeller[sid]) proposedLeadIdsBySeller[sid] = new Set();
-                    if (p.id_lead) proposedLeadIdsBySeller[sid].add(String(p.id_lead));
-                  }
-                });
-              }
-            }
           }
 
           // Apply proposal counts to sellerMap
           Object.keys(sellerMap).forEach(sid => {
-            const s = proposedLeadIdsBySeller[sid];
-            sellerMap[sid].propostas = s ? s.size : 0;
+            sellerMap[sid].propostas = proposalCountBySeller[sid] || 0;
           });
 
-          // 4. Fetch meetings count per seller (exclude cancelled)
+          // 4. Fetch meetings COUNT per seller (total, sem filtrar canceladas ou score)
+          // Alinhado com performance.html: conta TODAS as reuniões agendadas no período.
           let meetingsQuery = sbClient
             .from('agendamento')
-            .select('vendedor, leadId, statusReuniao, score_final, tipo_agendamento')
+            .select('vendedor, leadId')
             .not('leadId', 'is', null);
           meetingsQuery = applyCutoffDateYmd(meetingsQuery, 'data')
             .gte('data', meetRange.startYmd)
             .lte('data', meetRange.endYmd);
-          meetingsQuery = applyMeetingNotCanceledFilter(meetingsQuery);
           const { data: meetingsRaw } = await meetingsQuery;
           const meetings = await filterRowsByAgencyViaLeadId((meetingsRaw || []), (m) => m && m.leadId);
-
-          let globalReunioesRealizadas = 0;
-          let globalReunioesAgendadas = 0;
 
           if (meetings && meetings.length > 0) {
             meetings.forEach(m => {
               if (m.vendedor && sellerMap[m.vendedor]) {
-                // Só conta reuniões com score preenchido OU tipo Ligação
-                if (!isValidMeeting(m)) return;
-                const status = (m.statusReuniao || '').toLowerCase();
-                if (status !== 'cancelada') {
-                  globalReunioesRealizadas++;
-                  if (status === 'realizada') {
-                    sellerMap[m.vendedor].reunioes++;
-                  }
-                }
+                sellerMap[m.vendedor].reunioes++;
               }
             });
           }
@@ -4953,14 +4862,13 @@
           // Calculate global percentages
           // UX: percentuais sem casas decimais (ex.: "6%")
           const globalPropostasPct = globalPropostasMeta > 0 ? Math.min(100, Number(((globalPropostasTotal / globalPropostasMeta) * 100).toFixed(0))) : 0;
-          const globalReunioesPct = globalReunioesMeta > 0 ? Math.min(100, Number(((globalReunioesRealizadas / globalReunioesMeta) * 100).toFixed(0))) : 0;
+          const globalReunioesPct = globalReunioesMeta > 0 ? Math.min(100, Number(((globalReunioesTotal / globalReunioesMeta) * 100).toFixed(0))) : 0;
 
           state.metasData = {
             global: {
               propostas: { current: globalPropostasTotal, target: globalPropostasMeta, pct: globalPropostasPct },
               reunioes: { 
-                current: globalReunioesRealizadas, 
-                agendadas: globalReunioesAgendadas,
+                current: globalReunioesTotal,
                 target: globalReunioesMeta, 
                 pct: globalReunioesPct 
               }
