@@ -3692,23 +3692,24 @@
           directorIds = (directors || []).map(d => d.id).filter(Boolean);
         } catch (e) {}
         
-        // --- REUNIÕES AGENDADAS (KPI): COUNT total de agendamentos no período ---
-        // Alinhado com performance.html: conta TODAS as reuniões agendadas sem filtrar canceladas ou score.
-        // FILTRO: Exclui diretores, filtra por vendedor selecionado e agência. Usa range do header.
+        // --- REUNIÕES (KPI): conta reuniões com score IA preenchido OU tipo Ligação ---
+        // Não filtra por statusReuniao (inclui canceladas). Exclui diretores.
         const countMeetingRowsForRange = async (startYmd, endYmd) => {
           try {
             if (!startYmd || !endYmd) return 0;
 
             let q = sbClient
               .from('agendamento')
-              .select('leadId, vendedor')
+              .select('leadId, vendedor, score_final, tipo_agendamento')
               .not('leadId', 'is', null);
             q = applyCutoffDateYmd(q, 'data').gte('data', startYmd).lte('data', endYmd);
             if (state.selectedSeller) q = q.eq('vendedor', state.selectedSeller);
             const { data } = await q;
             const rows = await filterRowsByAgencyViaLeadId((data || []), (r) => r && r.leadId);
             // Excluir reuniões de diretores
-            const filteredRows = (rows || []).filter(r => !directorIds.includes(r.vendedor));
+            let filteredRows = (rows || []).filter(r => !directorIds.includes(r.vendedor));
+            // Só conta reuniões com score IA preenchido OU tipo Ligação
+            filteredRows = filteredRows.filter(isValidMeeting);
             return filteredRows.length;
           } catch (e) {
             return 0;
@@ -4000,7 +4001,7 @@
         try {
           let query = sbClient
             .from('agendamento')
-            .select('data, hora, leadId, vendedor')
+            .select('data, hora, leadId, vendedor, score_final, tipo_agendamento')
             .not('leadId', 'is', null);
           if (state.selectedSeller) query = query.eq('vendedor', state.selectedSeller);
           query = applyCutoffDateYmd(query, 'data').gte('data', periodRange.startYmd).lte('data', periodRange.endYmd);
@@ -4009,6 +4010,8 @@
           let rows = await filterRowsByAgencyViaLeadId((data || []), (r) => r && r.leadId);
           // Filtrar: excluir reuniões de diretores
           rows = (rows || []).filter(r => !directorIds.includes(r.vendedor));
+          // Só conta reuniões com score IA preenchido OU tipo Ligação
+          rows = rows.filter(isValidMeeting);
           const todayYmd = todayRange.startYmd;
 
           const cmpYmd = (a, b) => String(a || '').localeCompare(String(b || ''), 'en');
@@ -4032,7 +4035,7 @@
 
         let countNow = 0;
         // "Acontecendo agora": reuniões com status agendado na hora atual
-        let queryNow = sbClient.from('agendamento').select('hora, data, leadId, vendedor').eq('statusReuniao', 'agendado');
+        let queryNow = sbClient.from('agendamento').select('hora, data, leadId, vendedor, score_final, tipo_agendamento').eq('statusReuniao', 'agendado');
         queryNow = applyCutoffDateYmd(queryNow, 'data').eq('data', todayRange.startYmd);
         if (state.selectedSeller) queryNow = queryNow.eq('vendedor', state.selectedSeller);
         const { data: dataNow } = await queryNow;
@@ -4040,6 +4043,8 @@
             let rowsAgency = await filterRowsByAgencyViaLeadId((dataNow || []), (r) => r && r.leadId);
             // Filtrar: excluir reuniões de diretores
             rowsAgency = (rowsAgency || []).filter(r => !directorIds.includes(r.vendedor));
+            // Só conta reuniões com score IA preenchido OU tipo Ligação
+            rowsAgency = rowsAgency.filter(isValidMeeting);
             const currentHour = now.getHours();
             countNow = rowsAgency.filter(r => {
                 if(!r.hora) return false;
@@ -4055,7 +4060,7 @@
           const todayEnd = todayRange.startYmd + 'T23:59:59.999';
           let queryCreated = sbClient
             .from('agendamento')
-            .select('leadId, vendedor')
+            .select('leadId, vendedor, score_final, tipo_agendamento')
             .not('leadId', 'is', null)
             .gte('created_at', todayStart)
             .lte('created_at', todayEnd);
@@ -4063,6 +4068,8 @@
           const { data: createdRows } = await queryCreated;
           let rowsCreated = await filterRowsByAgencyViaLeadId((createdRows || []), (r) => r && r.leadId);
           rowsCreated = (rowsCreated || []).filter(r => !directorIds.includes(r.vendedor));
+          // Só conta reuniões com score IA preenchido OU tipo Ligação
+          rowsCreated = rowsCreated.filter(isValidMeeting);
           countCreatedToday = rowsCreated.length;
         } catch (e) {}
 
@@ -4790,11 +4797,10 @@
             sellerMap[sid].propostas = proposalCountBySeller[sid] || 0;
           });
 
-          // 4. Fetch meetings COUNT per seller (total, sem filtrar canceladas ou score)
-          // Alinhado com performance.html: conta TODAS as reuniões agendadas no período.
+          // 4. Fetch meetings per seller: conta reuniões com score IA OU tipo Ligação
           let meetingsQuery = sbClient
             .from('agendamento')
-            .select('vendedor, leadId')
+            .select('vendedor, leadId, score_final, tipo_agendamento')
             .not('leadId', 'is', null);
           meetingsQuery = applyCutoffDateYmd(meetingsQuery, 'data')
             .gte('data', meetRange.startYmd)
@@ -4805,6 +4811,8 @@
           if (meetings && meetings.length > 0) {
             meetings.forEach(m => {
               if (m.vendedor && sellerMap[m.vendedor]) {
+                // Só conta reuniões com score IA preenchido OU tipo Ligação
+                if (!isValidMeeting(m)) return;
                 sellerMap[m.vendedor].reunioes++;
               }
             });
