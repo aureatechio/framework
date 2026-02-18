@@ -850,11 +850,11 @@
 
       // DATA (Estado Global)
       let state = {
-        dateFilter: 'semester', // today, week, month, semester, year, custom
+        dateFilter: 'month', // today, week, month, semester, year, custom
         selectedSeller: null, // null = todos
         selectedAgencyId: '', // '' = Todos | UUID = filtra leads.agencia
         customRange: null, // { startYmd: 'YYYY-MM-DD', endYmd: 'YYYY-MM-DD' } quando dateFilter='custom'
-        revenueChartMode: 'semester', // month | semester | year (calendário)
+        revenueChartMode: 'month', // month | semester | year (calendário)
         revenueChartZoomEnabled: false,
         revenueChartShowTodayMarker: true,
         revenueChartSeriesVisible: { Realizado: true, AnoPassado: true, Meta: true, Projecao: true },
@@ -3453,28 +3453,36 @@
           ? (prevSales / countCaptadosPrev) * 100
           : 0;
 
-        // Query para contar Leads Ativos do período atual (com vendedor responsável)
-        let queryLeads = sbClient
-          .from('leads')
-          .select('lead_id', { count: 'exact', head: true })
-          .not('vendedorResponsavel', 'is', null)
-          ;
-        queryLeads = applyCutoffTimestamp(queryLeads, 'created_at').gte('created_at', start)
-          .lte('created_at', end);
-        if (state.selectedSeller) queryLeads = queryLeads.eq('vendedorResponsavel', state.selectedSeller);
-        queryLeads = applyAgencyFilterToLeadQuery(queryLeads);
-        const { count: countLeads } = await queryLeads;
+        // Oportunidades: leads DISTINTOS que passaram pela etapa Oportunidade (via loogsLeads)
+        // Período atual
+        const countLeads = await (async () => {
+          let q = sbClient
+            .from('loogsLeads')
+            .select('lead, vendedor_id')
+            .eq('etapa_posterior', ETAPA_OPORTUNIDADE_ID)
+            .not('lead', 'is', null);
+          q = applyCutoffTimestamp(q, 'created_at').gte('created_at', start).lte('created_at', end);
+          if (state.selectedSeller) q = q.eq('vendedor_id', state.selectedSeller);
+          const { data } = await q;
+          let rows = await filterRowsByAgencyViaLeadId((data || []), (r) => r && r.lead);
+          const uniqueLeads = new Set(rows.map(r => r && r.lead).filter(Boolean));
+          return uniqueLeads.size;
+        })();
 
-        // Query para contar Leads Ativos do período anterior (para comparação)
-        let queryLeadsPrev = sbClient
-          .from('leads')
-          .select('lead_id', { count: 'exact', head: true })
-          .not('vendedorResponsavel', 'is', null);
-        queryLeadsPrev = applyCutoffTimestamp(queryLeadsPrev, 'created_at').gte('created_at', prevRange.start)
-          .lte('created_at', prevRange.end);
-        if (state.selectedSeller) queryLeadsPrev = queryLeadsPrev.eq('vendedorResponsavel', state.selectedSeller);
-        queryLeadsPrev = applyAgencyFilterToLeadQuery(queryLeadsPrev);
-        const { count: countLeadsPrev } = await queryLeadsPrev;
+        // Período anterior (para comparação vs mês anterior)
+        const countLeadsPrev = await (async () => {
+          let q = sbClient
+            .from('loogsLeads')
+            .select('lead, vendedor_id')
+            .eq('etapa_posterior', ETAPA_OPORTUNIDADE_ID)
+            .not('lead', 'is', null);
+          q = applyCutoffTimestamp(q, 'created_at').gte('created_at', prevRange.start).lte('created_at', prevRange.end);
+          if (state.selectedSeller) q = q.eq('vendedor_id', state.selectedSeller);
+          const { data } = await q;
+          let rows = await filterRowsByAgencyViaLeadId((data || []), (r) => r && r.lead);
+          const uniqueLeads = new Set(rows.map(r => r && r.lead).filter(Boolean));
+          return uniqueLeads.size;
+        })();
 
         // --- Conversão de Oportunidades -> Vendas (no período): vendas / oportunidades ---
         const convOportunidadesPct = (countLeads && countLeads > 0)
