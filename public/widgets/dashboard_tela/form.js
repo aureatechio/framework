@@ -141,6 +141,186 @@
         return normalizeIds(agencyData[channelType] || []);
       }
 
+      // --- Cache e helper para buscar IDs de campanhas da tabela campanhaTrafego ---
+      const __campanhaTrafegoCacheByAgency = {}; // { [agencyId]: { data, fetchedAt } }
+      const CAMPANHA_TRAFEGO_CACHE_MS = 5 * 60 * 1000; // 5 min
+
+      /**
+       * Busca IDs de campanhas da tabela `campanhaTrafego` no Supabase, com cache 5min por agência.
+       * Fallback: se tabela vazia ou erro, usa hardcoded (getMetaCampaignIdsByAgency).
+       * @param {string} [agencyId] - UUID da agência selecionada ('' = todas)
+       * @returns {Promise<{ landing: string[], whatsapp: string[] }>}
+       */
+      async function fetchCampanhaTrafegoCampaignIds(agencyId) {
+        const key = agencyId || '__all__';
+        const norm = (s) => String(s || '').toLowerCase();
+
+        const normalizeIds = (ids) => {
+          const out = [];
+          const seen = new Set();
+          (Array.isArray(ids) ? ids : []).forEach((x) => {
+            const id = String(x || '').trim();
+            if (!id) return;
+            if (seen.has(id)) return;
+            seen.add(id);
+            out.push(id);
+          });
+          return out;
+        };
+
+        // Check cache
+        const cached = __campanhaTrafegoCacheByAgency[key];
+        if (cached && cached.fetchedAt && (Date.now() - cached.fetchedAt) < CAMPANHA_TRAFEGO_CACHE_MS) {
+          return cached.data;
+        }
+
+        try {
+          if (!sbClient) throw new Error('sbClient not ready');
+          const { data: campRows, error } = await sbClient
+            .from('campanhaTrafego')
+            .select('idcampanha, tipocampanha')
+            .not('idcampanha', 'is', null);
+          if (error) throw error;
+
+          const all = campRows || [];
+          if (!all.length) throw new Error('campanhaTrafego vazia');
+
+          let landingRaw = all
+            .filter(r => norm(r && r.tipocampanha).includes('landing'))
+            .map(r => r && r.idcampanha)
+            .filter(Boolean)
+            .map(x => String(x).trim())
+            .filter(Boolean);
+
+          let whatsappRaw = all
+            .filter(r => norm(r && r.tipocampanha).includes('whats'))
+            .map(r => r && r.idcampanha)
+            .filter(Boolean)
+            .map(x => String(x).trim())
+            .filter(Boolean);
+
+          // Se agencyId informado, intersectar com hardcoded (filtro de agência)
+          if (agencyId) {
+            const agencyData = META_CAMPAIGN_IDS_BY_AGENCY[agencyId];
+            if (agencyData) {
+              const hardLP = new Set((agencyData.landingPage || []).map(x => String(x).trim()));
+              const hardWPP = new Set((agencyData.whatsapp || []).map(x => String(x).trim()));
+              landingRaw = landingRaw.filter(id => hardLP.has(id));
+              whatsappRaw = whatsappRaw.filter(id => hardWPP.has(id));
+            } else {
+              landingRaw = [];
+              whatsappRaw = [];
+            }
+          }
+
+          const result = { landing: normalizeIds(landingRaw), whatsapp: normalizeIds(whatsappRaw) };
+          __campanhaTrafegoCacheByAgency[key] = { data: result, fetchedAt: Date.now() };
+          return result;
+        } catch (e) {
+          console.warn('[campanhaTrafego] fallback para hardcoded:', e && e.message);
+          // Fallback hardcoded
+          const result = {
+            landing: getMetaCampaignIdsByAgency('landingPage'),
+            whatsapp: getMetaCampaignIdsByAgency('whatsapp')
+          };
+          __campanhaTrafegoCacheByAgency[key] = { data: result, fetchedAt: Date.now() };
+          return result;
+        }
+      }
+
+      /**
+       * Fetch com retry e exponential backoff para chamadas ao Meta Graph API.
+       * Não retenta erros de autenticação (code 190).
+       * @param {string} url - URL completa do Graph API
+       * @param {number} [maxRetries=3] - Número máximo de tentativas
+       * @returns {Promise<Response>}
+       */
+      async function callMetaWithRetry(url, maxRetries = 3) {
+        let lastError;
+        for (let attempt = 0; attempt < maxRetries; attempt++) {
+          try {
+            const res = await fetch(url, { method: 'GET', mode: 'cors' });
+            if (res.ok) return res;
+            const txt = await res.text().catch(() => '');
+            // Auth error (190) — não retenta
+            if (res.status === 400 && txt.includes('190')) throw new Error(`Meta auth error: ${txt}`);
+            throw new Error(`Meta HTTP ${res.status}: ${txt}`);
+          } catch (e) {
+            lastError = e;
+            if (String(e.message).includes('190')) throw e; // não retenta auth
+            if (attempt < maxRetries - 1) {
+              const delay = Math.pow(2, attempt) * 1000; // 1s, 2s, 4s
+              console.warn(`[Meta retry] tentativa ${attempt + 1}/${maxRetries} falhou, retentando em ${delay}ms...`);
+              await new Promise(r => setTimeout(r, delay));
+            }
+          }
+        }
+        throw lastError;
+      }
+
+      // --- Token health check (Meta Ads) ---
+      let __tokenHealthCache = null; // { result, fetchedAt }
+      const TOKEN_HEALTH_CACHE_MS = 60 * 60 * 1000; // 1h
+
+      /**
+       * Verifica validade do token Meta via /debug_token. Cache de 1h.
+       * @returns {Promise<{ valid: boolean, daysRemaining: number|null }>}
+       */
+      async function checkMetaTokenHealth() {
+        if (__tokenHealthCache && __tokenHealthCache.fetchedAt && (Date.now() - __tokenHealthCache.fetchedAt) < TOKEN_HEALTH_CACHE_MS) {
+          return __tokenHealthCache.result;
+        }
+        if (!META_ACCESS_TOKEN) return { valid: false, daysRemaining: null };
+        try {
+          const url = `https://graph.facebook.com/debug_token?input_token=${META_ACCESS_TOKEN}&access_token=${META_ACCESS_TOKEN}`;
+          const res = await fetch(url, { method: 'GET', mode: 'cors' });
+          if (!res.ok) {
+            const result = { valid: false, daysRemaining: null };
+            __tokenHealthCache = { result, fetchedAt: Date.now() };
+            return result;
+          }
+          const json = await res.json();
+          const d = json && json.data;
+          const isValid = !!(d && d.is_valid);
+          let daysRemaining = null;
+          if (d && d.expires_at && d.expires_at > 0) {
+            const nowSec = Math.floor(Date.now() / 1000);
+            daysRemaining = Math.max(0, Math.floor((d.expires_at - nowSec) / 86400));
+          }
+          const result = { valid: isValid, daysRemaining };
+          __tokenHealthCache = { result, fetchedAt: Date.now() };
+          return result;
+        } catch (e) {
+          console.warn('[Meta token health] erro:', e && e.message);
+          return { valid: false, daysRemaining: null };
+        }
+      }
+
+      /**
+       * Exibe banner amber/vermelho fixo no topo do widget para alertar sobre token.
+       * @param {string} msg - Mensagem de alerta
+       * @param {'warning'|'error'} [level='warning']
+       */
+      function showMetaTokenWarning(msg, level) {
+        const bannerId = '__meta-token-warning-banner';
+        // Não duplicar
+        if (document.getElementById(bannerId)) return;
+        const isError = level === 'error';
+        const bg = isError ? '#dc2626' : '#d97706';
+        const banner = document.createElement('div');
+        banner.id = bannerId;
+        banner.style.cssText = `position:fixed;top:0;left:0;right:0;z-index:99999;background:${bg};color:#fff;padding:8px 16px;font-size:14px;font-family:sans-serif;display:flex;align-items:center;justify-content:space-between;`;
+        const span = document.createElement('span');
+        span.textContent = msg;
+        const btn = document.createElement('button');
+        btn.textContent = '\u2715';
+        btn.style.cssText = 'background:none;border:none;color:#fff;font-size:18px;cursor:pointer;padding:0 4px;';
+        btn.onclick = () => { banner.remove(); };
+        banner.appendChild(span);
+        banner.appendChild(btn);
+        document.body.appendChild(banner);
+      }
+
       function getSelectedAgencyLabel() {
         const id = state && state.selectedAgencyId ? String(state.selectedAgencyId) : '';
         if (!id) return '';
@@ -860,8 +1040,9 @@
         revenueChartSeriesVisible: { Realizado: true, AnoPassado: true, Meta: true, Projecao: true },
         revenueChartZoom: null, // { min:number, max:number } em ms (xaxis)
         revenueChartData: null, // cache do último chartData renderizado
-        marketingInvestment: 120000,
-        marketingInvestmentPrev: 0,
+        marketingInvestment: null,       // null = não carregado ainda (sem placeholder fake)
+        marketingInvestmentPrev: null,
+        __metaLoadState: 'idle',         // idle | loading | loaded | error
         __metaSpendCache: null,
         __metaSpendCachePrev: null,
         channelInvestments: { landing: 5000, whatsapp: 2000, outbound: 0, social: 0 },
@@ -887,8 +1068,8 @@
            // Linha 1 (6): Faturamento • Conversão Global • Conversão Oportunidades • Oportunidades • Propostas • Reuniões
            { id: KPI_IDS.FATURAMENTO, t:"Faturamento", v:"R$ --", i:"dollar-sign", bg:"icon-bg-blue", vs1: {v:0, l:"vs mês anterior", up:true}, vs2: {v:0, l:"vs meta", up:true}, vs3: {v:0, l:"vs ano ant", up:true} },
            { id: KPI_IDS.CONVERSAO, t:"Conversão Global", v:"--", i:"refresh-cw", bg:"icon-bg-green", vs1: { v: 0, l: "vs mês anterior", up: true }, vs2: { v: 0, l: "vs méd. pond.", up: true }, vs3: { v: 0, l: "vs ano ant", up: true } },
-           { id: KPI_IDS.CONV_OPORTUNIDADES, t:"Conversão Oportunidades", v:"--", i:"percent", bg:"icon-bg-cyan", vs1: { v: 0, l: "vs mês anterior", up: true }, vs2: { v: 0, l: "vs méd. pond.", up: true }, vs3: { v: 0, l: "vs ano ant", up: true } },
-           { id: KPI_IDS.OPORTUNIDADES, t:"Oportunidades", v:"--", i:"users", bg:"icon-bg-gray", vs1: { v: 0, l: "vs mês anterior", up: false }, vs2: { v: 0, l: "vs méd. pond.", up: true }, vs3: { v: 0, l: "vs ano ant", up: true } },
+           { id: KPI_IDS.CONV_OPORTUNIDADES, t:"Conversão Prioridade", v:"--", i:"percent", bg:"icon-bg-cyan", vs1: { v: 0, l: "vs mês anterior", up: true }, vs2: { v: 0, l: "vs méd. pond.", up: true }, vs3: { v: 0, l: "vs ano ant", up: true } },
+           { id: KPI_IDS.OPORTUNIDADES, t:"Leads Prioridade", v:"--", i:"users", bg:"icon-bg-gray", vs1: { v: 0, l: "vs mês anterior", up: false }, vs2: { v: 0, l: "vs méd. pond.", up: true }, vs3: { v: 0, l: "vs ano ant", up: true } },
            { id: KPI_IDS.PROPOSTAS, t:"Propostas", v:"--", i:"file-text", bg:"icon-bg-green", vs1: { v: 0, l: "vs mês anterior", up: true }, vs2: { v: 0, l: "vs méd. pond.", up: true }, vs3: { v: 0, l: "vs ano ant", up: true } },
            { id: KPI_IDS.REUNIOES, t:"Reuniões", v:"--", i:"video", bg:"icon-bg-gray", vs1: { v: 0, l: "vs mês anterior", up: true }, vs2: { v: 0, l: "vs méd. pond.", up: true }, vs3: { v: 0, l: "vs ano ant", up: true } },
 
@@ -1628,10 +1809,11 @@
       };
 
       const applyApprovedPurchaseFilter = (q) => {
-        // Alinhado ao `dashboard` (wish-board): filtro estrito por aprovado.
-        // Observação: o `dashboard` também filtra compras de teste quando a coluna `is_test` existir.
+        // Filtro de venda aprovada: vendaaprovada=true AND (checkout pago OU assinatura Clicksign concluída).
+        // Alinhado às métricas do Figma (Christian): "pagamento realizado ou assinatura realizada ou ambos".
         try {
-          let qq = q.eq('vendaaprovada', true);
+          let qq = q.eq('vendaaprovada', true)
+            .or('checkout_status.eq.pago,clicksign_status.eq.Assinado');
           if (__comprasIsTestSupported === true) {
             qq = applyNotTestPurchaseFilter(qq);
           }
@@ -1680,6 +1862,7 @@
       async function fetchMarketingSpend() {
         // Busca spend (Meta Ads) para o período do header e também para o período anterior,
         // para permitir comparativos "vs mês anterior" em Investimento/CAC/ROAS.
+        state.__metaLoadState = 'loading';
         try {
           const normalizeIds = (ids) => {
             const out = [];
@@ -1713,11 +1896,7 @@
 
             let nextUrl = buildUrl().toString();
             while (nextUrl) {
-              const res = await fetch(nextUrl, { method: 'GET', mode: 'cors' });
-              if (!res.ok) {
-                const txt = await res.text().catch(() => '');
-                throw new Error(`Meta insights(${errLabel}) HTTP ${res.status}: ${txt}`);
-              }
+              const res = await callMetaWithRetry(nextUrl);
               const json = await res.json();
               const data = (json && Array.isArray(json.data)) ? json.data : [];
               data.forEach(row => {
@@ -1744,6 +1923,7 @@
           // Se o cutoff “empurrou” o início além do fim, não há período válido => gasto 0
           if (startYmd && endYmd && startYmd > endYmd) {
             state.marketingInvestment = 0;
+            state.__metaLoadState = 'loaded';
             state.__metaSpendCache = {
               key: `empty|${startYmd}|${endYmd}|${state.selectedSeller || 'all'}|cut:${cutoff?.cutoffYmdLocal || 'none'}|agency:${state.selectedAgencyId || 'all'}`,
               value: 0,
@@ -1752,10 +1932,13 @@
             return;
           }
 
-          const idsInvest = normalizeIds(getMetaCampaignIdsByAgency('landingPage'));
+          // Merge landing + whatsapp (alinhado ao dashboard principal)
+          const { landing: idsLanding, whatsapp: idsWhatsapp } = await fetchCampanhaTrafegoCampaignIds(state.selectedAgencyId);
+          const idsInvest = normalizeIds([...idsLanding, ...idsWhatsapp]);
           if (!idsInvest.length) {
             state.marketingInvestment = 0;
             state.marketingInvestmentPrev = 0;
+            state.__metaLoadState = 'loaded';
             state.__metaSpendCache = {
               key: `empty|${startYmd}|${endYmd}|${state.selectedSeller || 'all'}|cut:${cutoff?.cutoffYmdLocal || 'none'}|agency:${state.selectedAgencyId || 'all'}`,
               value: 0,
@@ -1807,9 +1990,10 @@
           const spendPrevVal = await fetchSpendByCampaignIds(idsInvest, prevStartYmd, prevEndYmd, 'investPrev');
           state.marketingInvestmentPrev = spendPrevVal;
           state.__metaSpendCachePrev = { key: prevKey, value: spendPrevVal, fetchedAt: Date.now() };
+          state.__metaLoadState = 'loaded';
         } catch (e) {
+          state.__metaLoadState = 'error';
           console.error('Erro ao buscar Investimento Mkt (Meta Ads):', e);
-          // fallback: mantém valor anterior
         }
       }
 
@@ -3453,43 +3637,64 @@
           ? (prevSales / countCaptadosPrev) * 100
           : 0;
 
-        // Oportunidades: leads DISTINTOS que passaram pela etapa Oportunidade (via loogsLeads)
+        // Leads Prioridade: leads DISTINTOS com passou_prioridade = true (criados no período)
         // Período atual
         const countLeads = await (async () => {
           let q = sbClient
-            .from('loogsLeads')
-            .select('lead, vendedor_id')
-            .eq('etapa_posterior', ETAPA_OPORTUNIDADE_ID)
-            .not('lead', 'is', null);
-          q = applyCutoffTimestamp(q, 'created_at').gte('created_at', start).lte('created_at', end);
-          if (state.selectedSeller) q = q.eq('vendedor_id', state.selectedSeller);
-          const { data } = await q;
-          let rows = await filterRowsByAgencyViaLeadId((data || []), (r) => r && r.lead);
-          const uniqueLeads = new Set(rows.map(r => r && r.lead).filter(Boolean));
-          return uniqueLeads.size;
+            .from('leads')
+            .select('lead_id', { count: 'exact', head: true })
+            .eq('passou_prioridade', true);
+          q = applyCutoffTimestamp(q, 'created_at')
+            .gte('created_at', start)
+            .lte('created_at', end);
+          if (state.selectedSeller) q = q.eq('vendedorResponsavel', state.selectedSeller);
+          q = applyAgencyFilterToLeadQuery(q);
+          const { count } = await q;
+          return count || 0;
         })();
 
         // Período anterior (para comparação vs mês anterior)
         const countLeadsPrev = await (async () => {
           let q = sbClient
-            .from('loogsLeads')
-            .select('lead, vendedor_id')
-            .eq('etapa_posterior', ETAPA_OPORTUNIDADE_ID)
-            .not('lead', 'is', null);
-          q = applyCutoffTimestamp(q, 'created_at').gte('created_at', prevRange.start).lte('created_at', prevRange.end);
-          if (state.selectedSeller) q = q.eq('vendedor_id', state.selectedSeller);
-          const { data } = await q;
-          let rows = await filterRowsByAgencyViaLeadId((data || []), (r) => r && r.lead);
-          const uniqueLeads = new Set(rows.map(r => r && r.lead).filter(Boolean));
-          return uniqueLeads.size;
+            .from('leads')
+            .select('lead_id', { count: 'exact', head: true })
+            .eq('passou_prioridade', true);
+          q = applyCutoffTimestamp(q, 'created_at')
+            .gte('created_at', prevRange.start)
+            .lte('created_at', prevRange.end);
+          if (state.selectedSeller) q = q.eq('vendedorResponsavel', state.selectedSeller);
+          q = applyAgencyFilterToLeadQuery(q);
+          const { count } = await q;
+          return count || 0;
         })();
 
-        // --- Conversão de Oportunidades -> Vendas (no período): vendas / oportunidades ---
-        const convOportunidadesPct = (countLeads && countLeads > 0)
-          ? (currentSales / countLeads) * 100
+        // --- Conversão Prioridade: (Vendas de leads com passou_prioridade=true) / (Total de vendas) × 100 ---
+        // Cruzar leadids das vendas com leads.passou_prioridade = true
+        const vendasLeadIds = [...new Set((dataCurrRows || []).map(r => r.leadid).filter(Boolean))];
+        let countVendasPrioridade = 0;
+        for (const chunk of chunkArray(vendasLeadIds, 500)) {
+          const { count } = await sbClient.from('leads')
+            .select('lead_id', { count: 'exact', head: true })
+            .in('lead_id', chunk)
+            .eq('passou_prioridade', true);
+          countVendasPrioridade += (count || 0);
+        }
+        const convOportunidadesPct = currentSales > 0
+          ? (countVendasPrioridade / currentSales) * 100
           : 0;
-        const convOportunidadesPctPrev = (countLeadsPrev && countLeadsPrev > 0)
-          ? (prevSales / countLeadsPrev) * 100
+
+        // Período anterior
+        const vendasLeadIdsPrev = [...new Set((dataPrevRows || []).map(r => r.leadid).filter(Boolean))];
+        let countVendasPrioridadePrev = 0;
+        for (const chunk of chunkArray(vendasLeadIdsPrev, 500)) {
+          const { count } = await sbClient.from('leads')
+            .select('lead_id', { count: 'exact', head: true })
+            .in('lead_id', chunk)
+            .eq('passou_prioridade', true);
+          countVendasPrioridadePrev += (count || 0);
+        }
+        const convOportunidadesPctPrev = prevSales > 0
+          ? (countVendasPrioridadePrev / prevSales) * 100
           : 0;
 
         // --- REUNIÕES (KPI): conta reuniões com score IA preenchido OU tipo Ligação ---
@@ -3525,8 +3730,7 @@
           }
         };
 
-        // --- PROPOSTAS (KPI): COUNT total de propostas no período ---
-        // Alinhado com performance.html: conta TODAS as propostas (imagemProposta) sem deduplicar por lead.
+        // --- PROPOSTAS (KPI): COUNT de propostas no período, deduplicando por lead (1 proposta por lead) ---
         // FILTRO: Exclui propostas de diretores+internos, filtra por vendedor selecionado e agência.
         const countProposalRowsForRange = async (rangeStartIso, rangeEndIso) => {
           try {
@@ -3541,7 +3745,8 @@
             let props = await filterRowsByAgencyViaLeadId((propsRaw || []), (p) => p && p.id_lead);
             // Excluir propostas de diretores + internos
             props = (props || []).filter(p => p && p.id_vendedor && !directorIds.includes(p.id_vendedor));
-            return props.length;
+            // Deduplicar: contar apenas 1 proposta por lead
+            return new Set((props || []).map(p => p && p.id_lead).filter(Boolean)).size;
           } catch (e) {
             return 0;
           }
@@ -3562,12 +3767,16 @@
         })();
         const meetingsPrev = await countMeetingRowsForRange(meetingsPrevYmd.startYmd, meetingsPrevYmd.endYmd);
 
-        const investment = state.marketingInvestment;
-        const investmentPrev = state.marketingInvestmentPrev || 0;
-        const cac = currentSales > 0 ? investment / currentSales : 0;
-        const cacPrev = prevSales > 0 ? (investmentPrev / prevSales) : 0;
-        const roas = investment > 0 ? currentRevenue / investment : 0;
-        const roasPrev = investmentPrev > 0 ? (prevRevenue / investmentPrev) : 0;
+        const metaLoaded = state.__metaLoadState === 'loaded';
+        const investment = (typeof state.marketingInvestment === 'number' && Number.isFinite(state.marketingInvestment)) ? state.marketingInvestment : 0;
+        const investmentPrev = (typeof state.marketingInvestmentPrev === 'number' && Number.isFinite(state.marketingInvestmentPrev)) ? state.marketingInvestmentPrev : 0;
+        // CAC (dashboard_tela): (investimento_mkt + faturamento) / vendas
+        // Divergência INTENCIONAL do dashboard principal (que usa investimento / vendas).
+        // Métrica de negócio específica para este display TV.
+        const cac = (metaLoaded && currentSales > 0) ? (investment + currentRevenue) / currentSales : 0;
+        const cacPrev = (metaLoaded && prevSales > 0) ? ((investmentPrev + prevRevenue) / prevSales) : 0;
+        const roas = (metaLoaded && investment > 0) ? currentRevenue / investment : 0;
+        const roasPrev = (metaLoaded && investmentPrev > 0) ? (prevRevenue / investmentPrev) : 0;
 
         // --- KPI 0 (Faturamento) vs Meta (vs2) ---
         // No TV, este card sempre segue o MÊS do gráfico (compras) e compara até o dia atual.
@@ -3692,10 +3901,12 @@
         updateKPI(6, countCaptados || 0, countCaptadosPrev || 0, (v) => Number(v || 0).toLocaleString('pt-BR'));
         updateKPI(7, currentSales, prevSales, (v) => String(Math.round(Number(v) || 0)));
         updateKPI(8, currentTicket, prevTicket, formatCurrency);
-        updateKPI(9, investment, investmentPrev, formatCurrency);
+        const fmtMetaCurrency = (v) => metaLoaded ? formatCurrency(v) : 'R$ --';
+        const fmtMetaRoas = (v) => metaLoaded ? ((Number.isFinite(v) ? v.toFixed(2) : '0.00') + 'x') : '--';
+        updateKPI(9, investment, investmentPrev, fmtMetaCurrency);
         // CAC: menor é melhor no comparativo vs mês
-        updateKPI(10, cac, cacPrev, formatCurrency, { betterWhenLower: true });
-        updateKPI(11, roas, roasPrev, (v) => (Number.isFinite(v) ? v.toFixed(2) : '0.00') + "x");
+        updateKPI(10, cac, cacPrev, fmtMetaCurrency, { betterWhenLower: true });
+        updateKPI(11, roas, roasPrev, fmtMetaRoas);
 
         // KPI 0 vs3: sobrescreve o "mocado" e usa compras de 2025 no mesmo mês (até o dia atual).
         // Se ainda não chegou (qLY), mantém placeholder e será atualizado no callback do qLY.
@@ -3746,6 +3957,8 @@
         }
 
         // Usar dados já carregados (currentRevenue/prevRevenue respeitam o filtro atual)
+        // Nota: prevRevenue já vem recortado MTD (mês anterior até o mesmo dia) via getPreviousDateRange,
+        // então NÃO precisa de prorrateio adicional aqui.
         let gaugeCurrentRevenue = currentRevenue;
         let gaugePrevRevenue = prevRevenue;
 
@@ -3926,7 +4139,7 @@
         console.log(`FRT(hardcut): ${avgFRT}min SLA:${slaFRT}%`);
 
         // --- 2. Ciclo de Venda ---
-        // Novo cálculo: lead.created_at -> compras.data_compra (aprovada)
+        // Cálculo: primeira entrada na etapa Oportunidade -> compras.data_compra (aprovada)
         let qComprasCiclo = sbClient
           .from('compras')
           .select('leadid, data_compra, vendedoresponsavel, valor_total');
@@ -3939,32 +4152,39 @@
 
         const { data: comprasCiclo } = await qComprasCiclo;
 
-        // Buscar created_at dos leads envolvidos para calcular ciclo
-        const leadCreatedAtMap = {};
+        // Buscar primeira entrada na etapa Oportunidade por lead (t0)
+        const oportunidadeEntryByLead = {};
         const leadIdsCiclo = [...new Set((comprasCiclo || []).map(r => r && r.leadid).filter(Boolean))];
         for (const chunk of chunkArray(leadIdsCiclo, 500)) {
-          let qLeads = sbClient
-            .from('leads')
-            .select('lead_id, created_at')
-            .in('lead_id', chunk);
-          qLeads = applyCutoffTimestamp(qLeads, 'created_at');
-          const { data: leadsRows } = await qLeads;
-          (leadsRows || []).forEach(l => { if (l && l.lead_id && l.created_at) leadCreatedAtMap[l.lead_id] = l.created_at; });
+          let qOppEntry = sbClient
+            .from('loogsLeads')
+            .select('lead, created_at')
+            .eq('etapa_posterior', ETAPA_OPORTUNIDADE_ID)
+            .not('lead', 'is', null)
+            .in('lead', chunk)
+            .order('created_at', { ascending: true });
+          qOppEntry = applyCutoffTimestamp(qOppEntry, 'created_at');
+          const { data: oppRows } = await qOppEntry;
+          (oppRows || []).forEach(r => {
+            if (r && r.lead && r.created_at && !oportunidadeEntryByLead[r.lead]) {
+              oportunidadeEntryByLead[r.lead] = r.created_at; // primeira entrada
+            }
+          });
         }
 
         const leadsCiclo = (comprasCiclo || []).map(c => ({
-          created_at: leadCreatedAtMap[c.leadid],
+          opp_entry: oportunidadeEntryByLead[c.leadid],
           data_compra: c.data_compra
         }));
         let cicloTotalDays = 0;
         let cicloCount = 0;
         let cicloWithin = 0;
-        
+
         if (leadsCiclo) {
             leadsCiclo.forEach(l => {
-                if (!l || !l.created_at || !l.data_compra) return;
+                if (!l || !l.opp_entry || !l.data_compra) return;
                 const endT = new Date(l.data_compra);
-                const startT = new Date(l.created_at);
+                const startT = new Date(l.opp_entry);
                 const diffDays = (endT - startT) / (1000 * 60 * 60 * 24);
                 if (diffDays > 0) {
                     cicloTotalDays += diffDays;
@@ -3986,7 +4206,7 @@
         let propCount = 0;
         let propWithin = 0;
 
-        const PROPOSAL_STAGE_ID = 'a22c3ad3-6093-4c57-a633-da16a5b4514c';
+        const PROPOSAL_STAGE_ID = ETAPA_OPORTUNIDADE_ID; // Etapa Oportunidade como âncora (t0)
 
         try {
           // 1) Entradas na etapa dentro do range do header (t0 por lead = primeira entrada)
@@ -4740,18 +4960,26 @@
          // Best-effort: detectar se `compras.is_test` existe para filtrar compras de teste sem quebrar.
          try { await ensureComprasIsTestSupport(); } catch (e) {}
 
+         // Token health check (fire-and-forget)
+         checkMetaTokenHealth().then(health => {
+           if (!health.valid) showMetaTokenWarning('Token Meta Ads expirado. KPIs de investimento podem estar desatualizados.', 'error');
+           else if (health.daysRemaining !== null && health.daysRemaining <= 14) showMetaTokenWarning(`Token Meta Ads expira em ${health.daysRemaining} dia(s). Renove para evitar interrupção.`);
+         }).catch(() => {});
+
          // Dispara Meta Ads em background; quando chegar, atualiza apenas KPIs dependentes (Invest/CAC/ROAS).
          const marketingP = (async () => {
            try {
              await fetchMarketingSpend();
              const agg = state.__revenueAgg;
              if (!agg) return;
-             const investment = Number(state.marketingInvestment) || 0;
-             const investmentPrev = Number(state.marketingInvestmentPrev) || 0;
-             const cac = agg.currentSales > 0 ? investment / agg.currentSales : 0;
-             const cacPrev = agg.prevSales > 0 ? investmentPrev / agg.prevSales : 0;
-             const roas = investment > 0 ? agg.currentRevenue / investment : 0;
-             const roasPrev = investmentPrev > 0 ? agg.prevRevenue / investmentPrev : 0;
+             const metaOk = state.__metaLoadState === 'loaded';
+             const investment = (typeof state.marketingInvestment === 'number' && Number.isFinite(state.marketingInvestment)) ? state.marketingInvestment : 0;
+             const investmentPrev = (typeof state.marketingInvestmentPrev === 'number' && Number.isFinite(state.marketingInvestmentPrev)) ? state.marketingInvestmentPrev : 0;
+             // CAC (dashboard_tela): (investimento_mkt + faturamento) / vendas
+             const cac = (metaOk && agg.currentSales > 0) ? (investment + agg.currentRevenue) / agg.currentSales : 0;
+             const cacPrev = (metaOk && agg.prevSales > 0) ? (investmentPrev + agg.prevRevenue) / agg.prevSales : 0;
+             const roas = (metaOk && investment > 0) ? agg.currentRevenue / investment : 0;
+             const roasPrev = (metaOk && investmentPrev > 0) ? agg.prevRevenue / investmentPrev : 0;
 
              const updateKPI = (index, value, prevValue, formatFunc = (v)=>v, opts = {}) => {
                const betterWhenLower = !!opts.betterWhenLower;
@@ -4768,9 +4996,11 @@
                }
              };
 
-             updateKPI(6, investment, investmentPrev, formatCurrency);
-             updateKPI(7, cac, cacPrev, formatCurrency, { betterWhenLower: true });
-             updateKPI(8, roas, roasPrev, (v) => (Number.isFinite(v) ? v.toFixed(2) : '0.00') + 'x');
+             const fmtMetaCurr = (v) => metaOk ? formatCurrency(v) : 'R$ --';
+             const fmtMetaRoas = (v) => metaOk ? ((Number.isFinite(v) ? v.toFixed(2) : '0.00') + 'x') : '--';
+             updateKPI(6, investment, investmentPrev, fmtMetaCurr);
+             updateKPI(7, cac, cacPrev, fmtMetaCurr, { betterWhenLower: true });
+             updateKPI(8, roas, roasPrev, fmtMetaRoas);
              renderKPIs();
            } catch (e) {
              try { console.warn('Meta Ads (background) falhou:', e); } catch (_) {}
@@ -5329,14 +5559,15 @@
               if (!startYmd || !endYmd || startYmd > endYmd) return 0;
 
               const cutoffKey = `cut:${cutoff?.cutoffYmdLocal || 'none'}`;
-              const channelCacheKey = `campSpend|${startYmd}|${endYmd}|${cutoffKey}`;
+              const agencyKey = `agency:${state.selectedAgencyId || 'all'}`;
+              const channelCacheKey = `campSpend|${startYmd}|${endYmd}|${cutoffKey}|${agencyKey}`;
               const channelCache = state.__metaChannelSpendCache;
               if (channelCache && channelCache.key === channelCacheKey && channelCache.fetchedAt && (Date.now() - channelCache.fetchedAt) < META_SPEND_CACHE_MS) {
                 const cached = Number(channelCache.landingClicks);
                 return Number.isFinite(cached) && cached >= 0 ? cached : 0;
               }
 
-              const localKey = `lpClicks|${startYmd}|${endYmd}|${cutoffKey}`;
+              const localKey = `lpClicks|${startYmd}|${endYmd}|${cutoffKey}|${agencyKey}`;
               const localCache = state.__metaLPClicksCache;
               if (localCache && localCache.key === localKey && localCache.fetchedAt && (Date.now() - localCache.fetchedAt) < META_SPEND_CACHE_MS) {
                 const cached = Number(localCache.clicks);
@@ -5345,18 +5576,7 @@
 
               if (!META_ACCESS_TOKEN || !META_AD_ACCOUNT_ID) return 0;
 
-              const { data: campRows } = await sbClient
-                .from('campanhaTrafego')
-                .select('idcampanha, tipocampanha')
-                .not('idcampanha', 'is', null);
-
-              const all = campRows || [];
-              const idsLP = all
-                .filter(r => norm(r && r.tipocampanha).includes('landing'))
-                .map(r => r && r.idcampanha)
-                .filter(Boolean)
-                .map(x => String(x).trim())
-                .filter(Boolean);
+              const { landing: idsLP } = await fetchCampanhaTrafegoCampaignIds(state.selectedAgencyId);
 
               if (!idsLP.length) return 0;
 
@@ -5373,11 +5593,7 @@
               let clicksTotal = 0;
               let nextUrl = buildUrl().toString();
               while (nextUrl) {
-                const res = await fetch(nextUrl, { method: 'GET', mode: 'cors' });
-                if (!res.ok) {
-                  const txt = await res.text().catch(() => '');
-                  throw new Error(`Meta insights(lp clicks) HTTP ${res.status}: ${txt}`);
-                }
+                const res = await callMetaWithRetry(nextUrl);
                 const json = await res.json();
                 const data = (json && Array.isArray(json.data)) ? json.data : [];
                 data.forEach(row => {
@@ -5769,11 +5985,7 @@
 
           let nextUrl = buildUrl().toString();
           while (nextUrl) {
-            const res = await fetch(nextUrl, { method: 'GET', mode: 'cors' });
-            if (!res.ok) {
-              const txt = await res.text().catch(() => '');
-              throw new Error(`Meta insights(channel) HTTP ${res.status}: ${txt}`);
-            }
+            const res = await callMetaWithRetry(nextUrl);
             const json = await res.json();
             const data = (json && Array.isArray(json.data)) ? json.data : [];
             data.forEach(row => {
@@ -5801,7 +6013,7 @@
             endYmd = eff.endYmd;
           }
           if (startYmd && endYmd && startYmd <= endYmd && META_ACCESS_TOKEN && META_AD_ACCOUNT_ID) {
-            const cacheKey = `campSpend|${startYmd}|${endYmd}|cut:${cutoff?.cutoffYmdLocal || 'none'}`;
+            const cacheKey = `campSpend|${startYmd}|${endYmd}|cut:${cutoff?.cutoffYmdLocal || 'none'}|agency:${state.selectedAgencyId || 'all'}`;
             const cache = state.__metaChannelSpendCache;
             if (cache && cache.key === cacheKey && cache.fetchedAt && (Date.now() - cache.fetchedAt) < META_SPEND_CACHE_MS) {
               spendLP = cache.landing;
@@ -5809,13 +6021,7 @@
               clicksLP = cache.landingClicks;
               clicksWPP = cache.whatsappClicks;
             } else {
-              const { data: campRows } = await sbClient
-                .from('campanhaTrafego')
-                .select('idcampanha, tipocampanha')
-                .not('idcampanha', 'is', null);
-              const all = campRows || [];
-              const idsLP = all.filter(r => norm(r && r.tipocampanha).includes('landing')).map(r => r && r.idcampanha);
-              const idsWPP = all.filter(r => norm(r && r.tipocampanha).includes('whats')).map(r => r && r.idcampanha);
+              const { landing: idsLP, whatsapp: idsWPP } = await fetchCampanhaTrafegoCampaignIds(state.selectedAgencyId);
 
               const [lp, wpp] = await Promise.all([
                 fetchMetaInsightsByCampaignIds(idsLP, startYmd, endYmd),
@@ -6493,7 +6699,8 @@
 
           trendEl.className = `text-xs font-bold flex items-center gap-1 mt-2 px-2 py-1 rounded-full ${trendClass}`;
           trendEl.style.background = trendBg;
-          trendTextEl.textContent = (isPositive ? '+' : '') + Math.abs(trendVariation).toFixed(1) + '% vs mês anterior';
+          const trendLabel = (state && state.dateFilter === 'month') ? '% vs média mês ant.' : '% vs período anterior';
+          trendTextEl.textContent = (isPositive ? '+' : '') + Math.abs(trendVariation).toFixed(1) + trendLabel;
 
           // Update icon
           trendIconEl.setAttribute('data-lucide', trendIcon);
@@ -6551,7 +6758,7 @@
 
       // Helper function for compact currency formatting
       function formatCurrencyCompact(val) {
-        if (val >= 1000000) return 'R$ ' + (val / 1000000).toFixed(1) + 'M';
+        if (val >= 1000000) return 'R$ ' + (val / 1000000).toFixed(2) + 'M';
         if (val >= 1000) return 'R$ ' + (val / 1000).toFixed(0) + 'k';
         return formatCurrency(val);
       }
@@ -6726,55 +6933,8 @@
           series.push({ name: "Projeção", data: seriesProjecaoLocal });
         }
 
-        // v129: Projeção baseada nos últimos 15 dias (linha azul pontilhada)
-        let hasProjecao15d = false;
-        let seriesProjecao15dLocal = null;
-        try {
-          if ((mode === 'month' || mode === 'year') && !isYearly && rawDates && Array.isArray(rawDates) && rawDates.length > 1) {
-            // Apenas em modo diário (mês ou semestre com dias)
-            const todayKey = formatYmdLocal(new Date());
-            const todayIdx = rawDates.indexOf(todayKey);
-            const idx = (todayIdx >= 0) ? todayIdx : (rawDates.length - 1);
-
-            // Pegar os últimos 15 dias (ou menos se não houver 15 dias)
-            const last15DaysCount = Math.min(15, idx + 1);
-            const start15Idx = Math.max(0, idx - last15DaysCount + 1);
-
-            // Calcular soma dos últimos 15 dias
-            let sum15d = 0;
-            let validDays = 0;
-            for (let i = start15Idx; i <= idx; i++) {
-              const val = Number(seriesDataLocal[i]) || 0;
-              sum15d += val;
-              validDays++;
-            }
-
-            // Média diária dos últimos 15 dias
-            const avg15d = validDays > 0 ? (sum15d / validDays) : 0;
-
-            if (avg15d > 0 && idx < rawDates.length - 1) {
-              // Criar projeção do dia atual até o final
-              const totalDays = rawDates.length;
-              const daysRemaining = totalDays - idx - 1;
-              const revToDate = Number(seriesDataLocal[idx]) || 0;
-              const projectedTotal = revToDate + (avg15d * daysRemaining);
-              const denom = Math.max(1, (totalDays - 1) - idx);
-
-              seriesProjecao15dLocal = rawDates.map((_d, i) => {
-                if (i < idx) return null;
-                const t = (i - idx) / denom;
-                return revToDate + (projectedTotal - revToDate) * t;
-              });
-              hasProjecao15d = true;
-            }
-          }
-        } catch (e) {
-          hasProjecao15d = false;
-          seriesProjecao15dLocal = null;
-        }
-        if (hasProjecao15d && Array.isArray(seriesProjecao15dLocal)) {
-          series.push({ name: "Projeção 15d", data: seriesProjecao15dLocal });
-        }
+        // v129: Projeção 15d — OCULTADA (série desabilitada)
+        const hasProjecao15d = false;
 
         // Se não há faturamento no período (Realizado todo zero), mostrar Meta automaticamente
         // para evitar a sensação de “gráfico quebrado/vazio” em filtros curtos (Hoje/Semana).
