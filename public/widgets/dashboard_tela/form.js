@@ -4407,129 +4407,110 @@
         const slaProp = propCount > 0 ? Math.round((propWithin / propCount) * 100) : 0;
         console.log(`Proposta: ${avgProp}h (${propCount}) SLA:${slaProp}%`);
 
-        // --- 4. Follow-up ---
-        // Regra: tempo médio entre mudanças Follow1 -> Follow2 -> Follow3 (via loogsLeads etapas).
-        let followTotalHours = 0;
-        let followCount = 0;
-        let followWithin = 0;
+        // --- 4. Pós-Proposta ---
+        // Regra: tempo em horas úteis entre a última proposta (imagemProposta.created_at)
+        // e o fechamento da venda (compras.data_compra) para leads que compraram.
+        // Unidade exibida: dias úteis (horas / 10h por dia útil). SLA: <= 7 dias úteis.
+        let fechTotalDays = 0;
+        let fechCount = 0;
+        let fechWithin = 0;
 
-        // FOLLOW-UP (novo): medir por transições de etapa em loogsLeads e em HORAS ÚTEIS (09–19 seg–sex SP),
-        // ignorando 19h–9h e fins de semana.
-        // IDs (hardcoded, fornecidos): FLW1/2/3.
-        const FLW1_ID = 'dde9e8fa-142f-411b-b6f3-6c1f9f6cc0c9';
-        const FLW2_ID = '169eb74f-ee37-4b49-9848-6866fd3b8af9';
-        const FLW3_ID = 'f9e89423-7b32-4680-90aa-be7480a5dc0a';
-
-        // 1) Descobrir leads que entraram em algum FLW no período do header (critério do usuário)
-        const leadSet = new Set();
         try {
-          let qEnter = sbClient
-            .from('loogsLeads')
-            .select('lead')
-            .in('etapa_posterior', [FLW1_ID, FLW2_ID, FLW3_ID])
-            .not('lead', 'is', null);
-          qEnter = applyCutoffTimestamp(qEnter, 'created_at')
-            .gte('created_at', start)
-            .lte('created_at', end);
-          if (state.selectedSeller) qEnter = qEnter.eq('vendedor_id', state.selectedSeller);
+          // 1) Compras aprovadas no período
+          let qComprasFech = sbClient
+            .from('compras')
+            .select('leadid, data_compra, vendedoresponsavel');
+          qComprasFech = applyApprovedPurchaseFilter(qComprasFech);
+          qComprasFech = applyCutoffTimestamp(qComprasFech, 'data_compra')
+            .gte('data_compra', start)
+            .lte('data_compra', end);
+          if (state.selectedSeller) qComprasFech = qComprasFech.eq('vendedoresponsavel', state.selectedSeller);
 
-          const { data: enterRows } = await qEnter;
-          (enterRows || []).forEach(r => { if (r && r.lead) leadSet.add(String(r.lead)); });
-        } catch (e) {}
+          const { data: comprasFech } = await qComprasFech;
+          const comprasMap = {}; // leadid -> data_compra (ms)
+          (comprasFech || []).forEach(c => {
+            const lid = c && c.leadid ? String(c.leadid) : '';
+            if (!lid || !c.data_compra) return;
+            const ms = Date.parse(String(c.data_compra));
+            if (!Number.isFinite(ms)) return;
+            // Se tiver mais de uma compra do mesmo lead, usar a mais recente
+            const prev = comprasMap[lid];
+            if (prev && prev >= ms) return;
+            comprasMap[lid] = ms;
+          });
 
-        const leadIds = Array.from(leadSet);
-        if (leadIds.length) {
-          // 2) Buscar logs desses leads (lookback) para calcular:
-          // - 1ª entrada em cada FLW (global, não só dentro do período)
-          // - último log antes do FLW1 (para delta do FLW1)
-          const LOOKBACK_DAYS = 180;
-          const lookbackIso = (() => {
-            try {
-              const d = new Date(start);
-              if (Number.isNaN(d.getTime())) return start;
-              d.setUTCDate(d.getUTCDate() - LOOKBACK_DAYS);
-              return d.toISOString();
-            } catch (e) {
-              return start;
+          const fechLeadIds = Object.keys(comprasMap);
+          if (fechLeadIds.length) {
+            // 2) Buscar propostas desses leads com lookback
+            const lookbackDays = PIPELINE_LIMITS.proposalLookbackDays || 120;
+            const lookbackIso = (() => {
+              try {
+                const d = new Date(start);
+                if (Number.isNaN(d.getTime())) return start;
+                d.setUTCDate(d.getUTCDate() - lookbackDays);
+                return d.toISOString();
+              } catch (e) { return start; }
+            })();
+
+            const proposalsByLead = {}; // leadid -> [created_at_ms]
+            for (const chunk of chunkArray(fechLeadIds, 500)) {
+              let qProps = sbClient
+                .from('imagemProposta')
+                .select('created_at, id_lead')
+                .in('id_lead', chunk)
+                .not('id_lead', 'is', null);
+              qProps = applyCutoffTimestamp(qProps, 'created_at')
+                .gte('created_at', lookbackIso)
+                .lte('created_at', end);
+
+              const { data: propsRows } = await qProps;
+              (propsRows || []).forEach(p => {
+                const lid = p && p.id_lead ? String(p.id_lead) : '';
+                if (!lid || !p.created_at) return;
+                const tMs = Date.parse(String(p.created_at));
+                if (!Number.isFinite(tMs)) return;
+                if (!proposalsByLead[lid]) proposalsByLead[lid] = [];
+                proposalsByLead[lid].push(tMs);
+              });
             }
-          })();
 
-          const byLead = {}; // leadId -> { first1, first2, first3, lastBefore1 }
-          leadIds.forEach(id => { byLead[id] = { first1: null, first2: null, first3: null, lastBefore1: null }; });
+            // 3) Para cada compra: última proposta com created_at <= data_compra
+            const maxDays = PIPELINE_LIMITS.proposalToCloseMaxDays || 90;
+            const maxMs = maxDays * 24 * 60 * 60 * 1000;
 
-          for (const chunk of chunkArray(leadIds, 500)) {
-            let q = sbClient
-              .from('loogsLeads')
-              .select('created_at, lead, etapa_posterior, vendedor_id')
-              .in('lead', chunk)
-              .not('lead', 'is', null)
-              .order('created_at', { ascending: true });
-            q = applyCutoffTimestamp(q, 'created_at')
-              .gte('created_at', lookbackIso)
-              .lte('created_at', end);
-            if (state.selectedSeller) q = q.eq('vendedor_id', state.selectedSeller);
+            fechLeadIds.forEach(lid => {
+              const compraMsUtc = comprasMap[lid];
+              const proposals = proposalsByLead[lid];
+              if (!proposals || !proposals.length) return;
 
-            const { data: rows } = await q;
-            const lastTByLead = {}; // leadId -> last timestamp (ms) visto (para lastBefore1)
-            (rows || []).forEach(r => {
-              const lid = r && r.lead ? String(r.lead) : '';
-              const rec = lid && byLead[lid] ? byLead[lid] : null;
-              if (!rec || !r.created_at) return;
-              const t = Date.parse(String(r.created_at));
-              if (!Number.isFinite(t)) return;
+              // Última proposta antes ou no momento do fechamento
+              let lastPropMs = null;
+              proposals.forEach(tMs => {
+                if (tMs <= compraMsUtc) {
+                  if (lastPropMs === null || tMs > lastPropMs) lastPropMs = tMs;
+                }
+              });
+              if (lastPropMs === null) return;
 
-              const stage = r.etapa_posterior ? String(r.etapa_posterior) : '';
-              if (stage === FLW1_ID && rec.first1 === null) {
-                // lastBefore1 = último log antes do primeiro FLW1
-                const prev = lastTByLead[lid];
-                if (Number.isFinite(prev)) rec.lastBefore1 = prev;
-                rec.first1 = t;
+              // Outlier check (calendário)
+              if ((compraMsUtc - lastPropMs) > maxMs) return;
+
+              // Horas úteis → dias úteis (10h por dia)
+              const minutes = __businessMinutesBetweenWeekdaysMs(lastPropMs, compraMsUtc, __BUSINESS_HOURS_CFG);
+              const businessHours = minutes / 60;
+              const businessDays = businessHours / 10;
+              if (businessDays > 0) {
+                fechTotalDays += businessDays;
+                fechCount += 1;
+                if (businessDays <= 7) fechWithin += 1;
               }
-              if (stage === FLW2_ID && rec.first2 === null) rec.first2 = t;
-              if (stage === FLW3_ID && rec.first3 === null) rec.first3 = t;
-              lastTByLead[lid] = t;
             });
           }
+        } catch (e) {}
 
-          const startMs = Date.parse(String(start));
-          const endMs = Date.parse(String(end));
-
-          const addBusinessDiffHours = (fromMs, toMs) => {
-            if (!(Number.isFinite(fromMs) && Number.isFinite(toMs))) return;
-            if (!(toMs > fromMs)) return;
-            const minutes = __businessMinutesBetweenWeekdaysMs(fromMs, toMs, __BUSINESS_HOURS_CFG);
-            const h = minutes / 60;
-            if (h > 0 && h < 720) {
-              followTotalHours += h;
-              followCount += 1;
-              if (h <= 24) followWithin += 1;
-            }
-          };
-
-          Object.keys(byLead).forEach((lid) => {
-            const r = byLead[lid];
-            if (!r) return;
-
-            // FLW1: considera se a 1ª entrada no FLW1 ocorreu dentro do header
-            if (r.first1 !== null && Number.isFinite(startMs) && Number.isFinite(endMs) && r.first1 >= startMs && r.first1 <= endMs) {
-              addBusinessDiffHours(r.lastBefore1, r.first1);
-            }
-
-            // FLW2: considera se a 1ª entrada no FLW2 ocorreu dentro do header
-            if (r.first2 !== null && Number.isFinite(startMs) && Number.isFinite(endMs) && r.first2 >= startMs && r.first2 <= endMs) {
-              addBusinessDiffHours(r.first1, r.first2);
-            }
-
-            // FLW3: considera se a 1ª entrada no FLW3 ocorreu dentro do header
-            if (r.first3 !== null && Number.isFinite(startMs) && Number.isFinite(endMs) && r.first3 >= startMs && r.first3 <= endMs) {
-              addBusinessDiffHours(r.first2, r.first3);
-            }
-          });
-        }
-
-        const avgFollow = followCount > 0 ? Math.round(followTotalHours / followCount) : 0;
-        const slaFollow = followCount > 0 ? Math.round((followWithin / followCount) * 100) : 0;
-        console.log(`Follow: ${avgFollow}h (${followCount}) SLA:${slaFollow}%`);
+        const avgFech = fechCount > 0 ? +(fechTotalDays / fechCount).toFixed(1) : 0;
+        const slaFech = fechCount > 0 ? Math.round((fechWithin / fechCount) * 100) : 0;
+        console.log(`Fechamento: ${avgFech}d (${fechCount}) SLA:${slaFech}%`);
 
         // --- Renderizar ---
         const cards = document.querySelectorAll('.sla-card');
@@ -4549,13 +4530,13 @@
             updateCard(0, avgFRT, 'min', '20min', 20);
             updateCard(1, avgCiclo, 'd', '5d', 5);
             updateCard(2, avgProp, 'h', '6h', 6);
-            updateCard(3, avgFollow, 'h', '24h', 24);
+            updateCard(3, avgFech, 'd', '7d', 7);
         }
 
         // --- Eficiência (Dias de ciclo + SLA % agregado) ---
         try {
-          const totalCount = frtCount + cicloCount + propCount + followCount;
-          const totalWithin = frtWithin + cicloWithin + propWithin + followWithin;
+          const totalCount = frtCount + cicloCount + propCount + fechCount;
+          const totalWithin = frtWithin + cicloWithin + propWithin + fechWithin;
           const slaOverall = totalCount > 0 ? Math.round((totalWithin / totalCount) * 100) : 0;
 
           const cycleEl = document.getElementById('eff-cycle-days');
