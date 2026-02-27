@@ -141,89 +141,76 @@
         return normalizeIds(agencyData[channelType] || []);
       }
 
-      // --- Cache e helper para buscar IDs de campanhas da tabela campanhaTrafego ---
-      const __campanhaTrafegoCacheByAgency = {}; // { [agencyId]: { data, fetchedAt } }
-      const CAMPANHA_TRAFEGO_CACHE_MS = 5 * 60 * 1000; // 5 min
+      // --- Cache e helper para buscar IDs de campanhas via timeline_campanhas + name-matching Meta ---
+      let __timelineCampaignCache = {}; // { [key]: { data, fetchedAt } }
+      const TIMELINE_CAMPAIGN_CACHE_MS = 5 * 60 * 1000; // 5 min
 
       /**
-       * Busca IDs de campanhas da tabela `campanhaTrafego` no Supabase, com cache 5min por agência.
-       * Fallback: se tabela vazia ou erro, usa hardcoded (getMetaCampaignIdsByAgency).
-       * @param {string} [agencyId] - UUID da agência selecionada ('' = todas)
+       * Busca tags de `timeline_campanhas` (Supabase), lista campanhas Meta via API,
+       * faz name-matching e separa IDs por canal (heurística pelo nome).
+       * Fallback: se timeline vazia ou Meta falha, usa hardcoded (getMetaCampaignIdsByAgency).
+       * @param {string} [agencyId] - UUID da agência (usado apenas como cache key; não filtra campanhas Meta)
        * @returns {Promise<{ landing: string[], whatsapp: string[] }>}
        */
-      async function fetchCampanhaTrafegoCampaignIds(agencyId) {
+      async function fetchTimelineFilteredCampaignIds(agencyId) {
         const key = agencyId || '__all__';
-        const norm = (s) => String(s || '').toLowerCase();
-
-        const normalizeIds = (ids) => {
-          const out = [];
-          const seen = new Set();
-          (Array.isArray(ids) ? ids : []).forEach((x) => {
-            const id = String(x || '').trim();
-            if (!id) return;
-            if (seen.has(id)) return;
-            seen.add(id);
-            out.push(id);
-          });
-          return out;
-        };
-
-        // Check cache
-        const cached = __campanhaTrafegoCacheByAgency[key];
-        if (cached && cached.fetchedAt && (Date.now() - cached.fetchedAt) < CAMPANHA_TRAFEGO_CACHE_MS) {
+        const cached = __timelineCampaignCache[key];
+        if (cached && (Date.now() - cached.fetchedAt) < TIMELINE_CAMPAIGN_CACHE_MS) {
           return cached.data;
         }
 
         try {
           if (!sbClient) throw new Error('sbClient not ready');
-          const { data: campRows, error } = await sbClient
-            .from('campanhaTrafego')
-            .select('idcampanha, tipocampanha')
-            .not('idcampanha', 'is', null);
+
+          // 1. Buscar tags da timeline_campanhas
+          const { data: timelineRows, error } = await sbClient
+            .from('timeline_campanhas')
+            .select('id_campanha')
+            .not('id_campanha', 'is', null);
           if (error) throw error;
 
-          const all = campRows || [];
-          if (!all.length) throw new Error('campanhaTrafego vazia');
-
-          let landingRaw = all
-            .filter(r => norm(r && r.tipocampanha).includes('landing'))
-            .map(r => r && r.idcampanha)
-            .filter(Boolean)
-            .map(x => String(x).trim())
+          const tags = (timelineRows || [])
+            .map(r => String(r.id_campanha || '').trim())
             .filter(Boolean);
+          if (!tags.length) throw new Error('timeline_campanhas sem tags');
 
-          let whatsappRaw = all
-            .filter(r => norm(r && r.tipocampanha).includes('whats'))
-            .map(r => r && r.idcampanha)
-            .filter(Boolean)
-            .map(x => String(x).trim())
-            .filter(Boolean);
+          // 2. Buscar todas campanhas Meta
+          const metaCampaigns = await fetchAllMetaCampaigns();
+          if (!metaCampaigns.length) throw new Error('Meta retornou 0 campanhas');
 
-          // Se agencyId informado, intersectar com hardcoded (filtro de agência)
-          if (agencyId) {
-            const agencyData = META_CAMPAIGN_IDS_BY_AGENCY[agencyId];
-            if (agencyData) {
-              const hardLP = new Set((agencyData.landingPage || []).map(x => String(x).trim()));
-              const hardWPP = new Set((agencyData.whatsapp || []).map(x => String(x).trim()));
-              landingRaw = landingRaw.filter(id => hardLP.has(id));
-              whatsappRaw = whatsappRaw.filter(id => hardWPP.has(id));
+          // 3. Name-match: campanha Meta cujo nome contém algum tag da timeline
+          const matched = metaCampaigns.filter(c => {
+            const name = String(c.name || '');
+            return tags.some(tag => name.includes(tag));
+          });
+
+          // 4. Separar por canal (heurística pelo nome da campanha Meta)
+          const landing = [];
+          const whatsapp = [];
+          const seen = new Set();
+          matched.forEach(c => {
+            const id = String(c.id || '').trim();
+            if (!id || seen.has(id)) return;
+            seen.add(id);
+            const nameLower = String(c.name || '').toLowerCase();
+            if (nameLower.includes('whatsapp') || nameLower.includes('wpp')) {
+              whatsapp.push(id);
             } else {
-              landingRaw = [];
-              whatsappRaw = [];
+              landing.push(id);
             }
-          }
+          });
 
-          const result = { landing: normalizeIds(landingRaw), whatsapp: normalizeIds(whatsappRaw) };
-          __campanhaTrafegoCacheByAgency[key] = { data: result, fetchedAt: Date.now() };
+          const result = { landing, whatsapp };
+          __timelineCampaignCache[key] = { data: result, fetchedAt: Date.now() };
+          console.log(`[timeline] Matched ${matched.length} campanhas (${landing.length} LP + ${whatsapp.length} WPP) de ${metaCampaigns.length} total`);
           return result;
         } catch (e) {
-          console.warn('[campanhaTrafego] fallback para hardcoded:', e && e.message);
-          // Fallback hardcoded
+          console.warn('[timeline] fallback para hardcoded:', e && e.message);
           const result = {
             landing: getMetaCampaignIdsByAgency('landingPage'),
             whatsapp: getMetaCampaignIdsByAgency('whatsapp')
           };
-          __campanhaTrafegoCacheByAgency[key] = { data: result, fetchedAt: Date.now() };
+          __timelineCampaignCache[key] = { data: result, fetchedAt: Date.now() };
           return result;
         }
       }
@@ -256,6 +243,46 @@
           }
         }
         throw lastError;
+      }
+
+      // --- Cache e helper para buscar TODAS campanhas da conta Meta ---
+      let __metaCampaignsCache = null; // { campaigns: [], fetchedAt }
+      const META_CAMPAIGNS_CACHE_MS = 10 * 60 * 1000; // 10 min
+
+      /**
+       * Busca todas as campanhas da conta Meta via GET /{adAccountId}/campaigns.
+       * Paginação automática. Cache de 10min.
+       * @returns {Promise<Array<{id: string, name: string, status: string}>>}
+       */
+      async function fetchAllMetaCampaigns() {
+        if (__metaCampaignsCache && (Date.now() - __metaCampaignsCache.fetchedAt) < META_CAMPAIGNS_CACHE_MS) {
+          return __metaCampaignsCache.campaigns;
+        }
+        if (!META_ACCESS_TOKEN || !META_AD_ACCOUNT_ID) return [];
+
+        const campaigns = [];
+        const url = new URL(`https://graph.facebook.com/${META_GRAPH_VERSION}/${META_AD_ACCOUNT_ID}/campaigns`);
+        url.searchParams.set('access_token', META_ACCESS_TOKEN);
+        url.searchParams.set('fields', 'id,name,effective_status');
+        url.searchParams.set('limit', '500');
+
+        let nextUrl = url.toString();
+        while (nextUrl) {
+          const res = await callMetaWithRetry(nextUrl);
+          const json = await res.json();
+          const data = (json && Array.isArray(json.data)) ? json.data : [];
+          data.forEach(r => {
+            campaigns.push({
+              id: String(r.id || ''),
+              name: String(r.name || ''),
+              status: String(r.effective_status || r.status || 'UNKNOWN')
+            });
+          });
+          nextUrl = (json && json.paging && json.paging.next) ? json.paging.next : null;
+        }
+
+        __metaCampaignsCache = { campaigns, fetchedAt: Date.now() };
+        return campaigns;
       }
 
       // --- Token health check (Meta Ads) ---
@@ -1933,7 +1960,7 @@
           }
 
           // Merge landing + whatsapp (alinhado ao dashboard principal)
-          const { landing: idsLanding, whatsapp: idsWhatsapp } = await fetchCampanhaTrafegoCampaignIds(state.selectedAgencyId);
+          const { landing: idsLanding, whatsapp: idsWhatsapp } = await fetchTimelineFilteredCampaignIds(state.selectedAgencyId);
           const idsInvest = normalizeIds([...idsLanding, ...idsWhatsapp]);
           if (!idsInvest.length) {
             state.marketingInvestment = 0;
@@ -2725,6 +2752,7 @@
 
       function setSelectedAgency(id) {
         try { state.selectedAgencyId = String(id || ''); } catch (e) {}
+        __timelineCampaignCache = {};
         try {
           const sel = document.getElementById('agency-select');
           if (sel) sel.value = state.selectedAgencyId || '';
@@ -5576,7 +5604,7 @@
 
               if (!META_ACCESS_TOKEN || !META_AD_ACCOUNT_ID) return 0;
 
-              const { landing: idsLP } = await fetchCampanhaTrafegoCampaignIds(state.selectedAgencyId);
+              const { landing: idsLP } = await fetchTimelineFilteredCampaignIds(state.selectedAgencyId);
 
               if (!idsLP.length) return 0;
 
@@ -6021,7 +6049,7 @@
               clicksLP = cache.landingClicks;
               clicksWPP = cache.whatsappClicks;
             } else {
-              const { landing: idsLP, whatsapp: idsWPP } = await fetchCampanhaTrafegoCampaignIds(state.selectedAgencyId);
+              const { landing: idsLP, whatsapp: idsWPP } = await fetchTimelineFilteredCampaignIds(state.selectedAgencyId);
 
               const [lp, wpp] = await Promise.all([
                 fetchMetaInsightsByCampaignIds(idsLP, startYmd, endYmd),
