@@ -4963,8 +4963,7 @@
             console.error('Erro ao buscar metas da tabela:', e);
           }
 
-          // 3. Fetch proposals COUNT per seller (total, sem deduplicar por lead)
-          // Alinhado com performance.html: conta TODAS as propostas por id_vendedor.
+          // 3. Fetch proposals per seller (deduplicando por lead: 1 proposta por lead por vendedor)
           let proposalsQuery = sbClient
             .from('imagemProposta')
             .select('id, id_vendedor, id_lead');
@@ -4974,14 +4973,20 @@
           const { data: proposalsRaw } = await proposalsQuery;
           const proposals = await filterRowsByAgencyViaLeadId((proposalsRaw || []), (p) => p && p.id_lead);
 
-          // Count proposals per seller (total count, not deduplicated)
+          // Count proposals per seller (1 proposta por lead por vendedor)
           const proposalCountBySeller = {};
           if (proposals && proposals.length > 0) {
+            const seenByVendedor = {}; // vendedor_id -> Set<id_lead>
             proposals.forEach(p => {
-              if (p.id_vendedor) {
+              if (p.id_vendedor && p.id_lead) {
                 const sid = String(p.id_vendedor);
-                proposalCountBySeller[sid] = (proposalCountBySeller[sid] || 0) + 1;
+                const lid = String(p.id_lead);
+                if (!seenByVendedor[sid]) seenByVendedor[sid] = new Set();
+                seenByVendedor[sid].add(lid);
               }
+            });
+            Object.keys(seenByVendedor).forEach(sid => {
+              proposalCountBySeller[sid] = seenByVendedor[sid].size;
             });
           }
 
