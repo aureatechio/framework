@@ -5041,9 +5041,9 @@
 
              const fmtMetaCurr = (v) => metaOk ? formatCurrency(v) : 'R$ --';
              const fmtMetaRoas = (v) => metaOk ? ((Number.isFinite(v) ? v.toFixed(2) : '0.00') + 'x') : '--';
-             updateKPI(6, investment, investmentPrev, fmtMetaCurr);
-             updateKPI(7, cac, cacPrev, fmtMetaCurr, { betterWhenLower: true });
-             updateKPI(8, roas, roasPrev, fmtMetaRoas);
+             updateKPI(9, investment, investmentPrev, fmtMetaCurr);
+             updateKPI(10, cac, cacPrev, fmtMetaCurr, { betterWhenLower: true });
+             updateKPI(11, roas, roasPrev, fmtMetaRoas);
              renderKPIs();
            } catch (e) {
              try { console.warn('Meta Ads (background) falhou:', e); } catch (_) {}
