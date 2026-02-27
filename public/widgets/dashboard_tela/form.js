@@ -1878,8 +1878,9 @@
       }
 
       const applyNotTestPurchaseFilter = (q) => {
-        // "is not true" => inclui NULL e qualquer valor diferente de true
-        try { return q.or('is_test.is.null,is_test.neq.true'); } catch (e) { return q; }
+        // IS NOT TRUE => inclui NULL e FALSE, exclui apenas TRUE
+        // Usa .not('is_test','is',true) em vez de .or() para evitar conflito com outro .or() na mesma query
+        try { return q.not('is_test', 'is', true); } catch (e) { return q; }
       };
 
       const applyApprovedPurchaseFilter = (q) => {
