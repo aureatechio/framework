@@ -950,8 +950,9 @@
         revenueChartSeriesVisible: { Realizado: true, AnoPassado: true, Meta: true, Projecao: true },
         revenueChartZoom: null, // { min:number, max:number } em ms (xaxis)
         revenueChartData: null, // cache do último chartData renderizado
-        marketingInvestment: 120000,
-        marketingInvestmentPrev: 0,
+        marketingInvestment: null,
+        marketingInvestmentPrev: null,
+        __metaLoadState: 'idle',         // idle | loading | loaded | error
         __metaSpendCache: null,
         __metaSpendCachePrev: null,
         channelInvestments: { landing: 5000, whatsapp: 2000, outbound: 0, social: 0 },
@@ -973,11 +974,11 @@
           sellers: [] // [{ id, name, avatarUrl, role, propostasPct, reunioesPct, avgPct }]
         },
         kpis: [
-           // Linha 1 (6): Faturamento • Conversão Global • Conversão Oportunidades • Oportunidades • Propostas • Reuniões
+           // Linha 1 (6): Faturamento • Conversão Global • Conversão Prioridade • Leads Prioridade • Propostas • Reuniões
            { id: KPI_IDS.FATURAMENTO, t:"Faturamento", v:"R$ --", i:"dollar-sign", bg:"icon-bg-blue", vs1: {v:0, l:"vs mês anterior", up:true}, vs2: {v:0, l:"vs meta", up:true}, vs3: {v:0, l:"vs ano ant", up:true} },
            { id: KPI_IDS.CONVERSAO, t:"Conversão Global", v:"--", i:"refresh-cw", bg:"icon-bg-green", vs1: { v: 0, l: "vs mês anterior", up: true }, vs2: { v: 0, l: "vs méd. pond.", up: true }, vs3: { v: 0, l: "vs ano ant", up: true } },
-           { id: KPI_IDS.CONV_OPORTUNIDADES, t:"Conversão Oportunidades", v:"--", i:"percent", bg:"icon-bg-cyan", vs1: { v: 0, l: "vs mês anterior", up: true }, vs2: { v: 0, l: "vs méd. pond.", up: true }, vs3: { v: 0, l: "vs ano ant", up: true } },
-           { id: KPI_IDS.OPORTUNIDADES, t:"Oportunidades", v:"--", i:"users", bg:"icon-bg-gray", vs1: { v: 0, l: "vs mês anterior", up: false }, vs2: { v: 0, l: "vs méd. pond.", up: true }, vs3: { v: 0, l: "vs ano ant", up: true } },
+           { id: KPI_IDS.CONV_OPORTUNIDADES, t:"Conversão Prioridade", v:"--", i:"percent", bg:"icon-bg-cyan", vs1: { v: 0, l: "vs mês anterior", up: true }, vs2: { v: 0, l: "vs méd. pond.", up: true }, vs3: { v: 0, l: "vs ano ant", up: true } },
+           { id: KPI_IDS.OPORTUNIDADES, t:"Leads Prioridade", v:"--", i:"users", bg:"icon-bg-gray", vs1: { v: 0, l: "vs mês anterior", up: false }, vs2: { v: 0, l: "vs méd. pond.", up: true }, vs3: { v: 0, l: "vs ano ant", up: true } },
            { id: KPI_IDS.PROPOSTAS, t:"Propostas", v:"--", i:"file-text", bg:"icon-bg-green", vs1: { v: 0, l: "vs mês anterior", up: true }, vs2: { v: 0, l: "vs méd. pond.", up: true }, vs3: { v: 0, l: "vs ano ant", up: true } },
            { id: KPI_IDS.REUNIOES, t:"Reuniões", v:"--", i:"video", bg:"icon-bg-gray", vs1: { v: 0, l: "vs mês anterior", up: true }, vs2: { v: 0, l: "vs méd. pond.", up: true }, vs3: { v: 0, l: "vs ano ant", up: true } },
 
@@ -2062,6 +2063,7 @@
       async function fetchMarketingSpend() {
         // Busca spend total (Meta Ads) para o período do header e também para o período anterior,
         // para permitir comparativos "vs mês anterior" em Investimento/CAC/ROAS.
+        state.__metaLoadState = 'loading';
         try {
           const { start, end } = getDateRange(state.dateFilter);
           const prevRange = getPreviousDateRange(state.dateFilter);
@@ -2077,6 +2079,7 @@
           // Se o cutoff “empurrou” o início além do fim, não há período válido => gasto 0
           if (startYmd && endYmd && startYmd > endYmd) {
             state.marketingInvestment = 0;
+            state.__metaLoadState = 'loaded';
             state.__metaSpendCache = { key: `empty|${startYmd}|${endYmd}|${state.selectedSeller || 'all'}|cut:${cutoff?.cutoffYmdLocal || 'none'}|agency:${state.selectedAgencyId || 'all'}`, value: 0, fetchedAt: Date.now() };
             return;
           }
@@ -2095,6 +2098,7 @@
           if (!idsInvest.length) {
             state.marketingInvestment = 0;
             state.marketingInvestmentPrev = 0;
+            state.__metaLoadState = 'loaded';
             state.__metaSpendCache = {
               key: `empty|${startYmd}|${endYmd}|${state.selectedSeller || 'all'}|cut:${cutoff?.cutoffYmdLocal || 'none'}|agency:${state.selectedAgencyId || 'all'}`,
               value: 0,
@@ -2167,6 +2171,7 @@
 
           if (prevStartYmd && prevEndYmd && prevStartYmd > prevEndYmd) {
             state.marketingInvestmentPrev = 0;
+            state.__metaLoadState = 'loaded';
             state.__metaSpendCachePrev = { key: `empty|${prevStartYmd}|${prevEndYmd}|${state.selectedSeller || 'all'}|cut:${cutoff?.cutoffYmdLocal || 'none'}|agency:${state.selectedAgencyId || 'all'}`, value: 0, fetchedAt: Date.now() };
             return;
           }
@@ -2177,6 +2182,7 @@
             if (typeof prevCache.value === 'number' && Number.isFinite(prevCache.value)) {
               state.marketingInvestmentPrev = prevCache.value;
             }
+            state.__metaLoadState = 'loaded';
             return;
           }
           // Mesmo motivo do período atual: somar todas as linhas retornadas pelo Meta.
@@ -2212,7 +2218,9 @@
           const spendPrevVal = await fetchSpendByCampaignIdsPrev(idsInvest, prevStartYmd, prevEndYmd);
           state.marketingInvestmentPrev = spendPrevVal;
           state.__metaSpendCachePrev = { key: prevKey, value: spendPrevVal, fetchedAt: Date.now() };
+          state.__metaLoadState = 'loaded';
         } catch (e) {
+          state.__metaLoadState = 'error';
           console.error('Erro ao buscar Investimento Mkt (Meta Ads):', e);
           // fallback: mantém valor anterior
         }
@@ -3817,51 +3825,79 @@
           ? (prevSales / countCaptadosPrev) * 100
           : 0;
 
-        // Oportunidades: leads DISTINTOS que passaram pela etapa Oportunidade (via loogsLeads)
+        // Leads Prioridade: leads DISTINTOS com passou_prioridade = true (criados no período)
         // Período atual
         const countLeads = await (async () => {
           let q = sbClient
-            .from('loogsLeads')
-            .select('lead, vendedor_id')
-            .eq('etapa_posterior', ETAPA_OPORTUNIDADE_ID)
-            .not('lead', 'is', null);
-          q = applyCutoffTimestamp(q, 'created_at').gte('created_at', start).lte('created_at', end);
-          if (state.selectedSeller) q = q.eq('vendedor_id', state.selectedSeller);
-          const { data } = await q;
-          let rows = await filterRowsByAgencyViaLeadId((data || []), (r) => r && r.lead);
-          const uniqueLeads = new Set(rows.map(r => r && r.lead).filter(Boolean));
-          return uniqueLeads.size;
+            .from('leads')
+            .select('lead_id', { count: 'exact', head: true })
+            .eq('passou_prioridade', true);
+          q = applyNotImportedLeadFilter(q);
+          q = applyCutoffTimestamp(q, 'created_at')
+            .gte('created_at', start)
+            .lte('created_at', end);
+          if (state.selectedSeller) q = q.eq('vendedorResponsavel', state.selectedSeller);
+          q = applyAgencyFilterToLeadQuery(q);
+          const { count } = await q;
+          return count || 0;
         })();
 
         // Período anterior (para comparação vs mês anterior)
         const countLeadsPrev = await (async () => {
           let q = sbClient
-            .from('loogsLeads')
-            .select('lead, vendedor_id')
-            .eq('etapa_posterior', ETAPA_OPORTUNIDADE_ID)
-            .not('lead', 'is', null);
-          q = applyCutoffTimestamp(q, 'created_at').gte('created_at', prevRange.start).lte('created_at', prevRange.end);
-          if (state.selectedSeller) q = q.eq('vendedor_id', state.selectedSeller);
-          const { data } = await q;
-          let rows = await filterRowsByAgencyViaLeadId((data || []), (r) => r && r.lead);
-          const uniqueLeads = new Set(rows.map(r => r && r.lead).filter(Boolean));
-          return uniqueLeads.size;
+            .from('leads')
+            .select('lead_id', { count: 'exact', head: true })
+            .eq('passou_prioridade', true);
+          q = applyNotImportedLeadFilter(q);
+          q = applyCutoffTimestamp(q, 'created_at')
+            .gte('created_at', prevRange.start)
+            .lte('created_at', prevRange.end);
+          if (state.selectedSeller) q = q.eq('vendedorResponsavel', state.selectedSeller);
+          q = applyAgencyFilterToLeadQuery(q);
+          const { count } = await q;
+          return count || 0;
         })();
 
-        // --- Conversão de Oportunidades -> Vendas (no período): vendas / oportunidades ---
-        const convOportunidadesPct = (countLeads && countLeads > 0)
-          ? (currentSales / countLeads) * 100
-          : 0;
-        const convOportunidadesPctPrev = (countLeadsPrev && countLeadsPrev > 0)
-          ? (prevSales / countLeadsPrev) * 100
+        // --- Conversão Prioridade: (Vendas de leads com passou_prioridade=true) / (Total de vendas) × 100 ---
+        // Cruzar leadids das vendas com leads.passou_prioridade = true
+        const vendasLeadIds = [...new Set((dataCurrRows || []).map(r => r.leadid).filter(Boolean))];
+        let countVendasPrioridade = 0;
+        for (const chunk of chunkArray(vendasLeadIds, 500)) {
+          let qVP = sbClient.from('leads')
+            .select('lead_id', { count: 'exact', head: true })
+            .in('lead_id', chunk)
+            .eq('passou_prioridade', true);
+          qVP = applyNotImportedLeadFilter(qVP);
+          const { count } = await qVP;
+          countVendasPrioridade += (count || 0);
+        }
+        const convOportunidadesPct = currentSales > 0
+          ? (countVendasPrioridade / currentSales) * 100
           : 0;
 
-        const investment = state.marketingInvestment;
-        const investmentPrev = state.marketingInvestmentPrev || 0;
-        const cac = currentSales > 0 ? investment / currentSales : 0;
-        const cacPrev = prevSales > 0 ? (investmentPrev / prevSales) : 0;
-        const roas = investment > 0 ? currentRevenue / investment : 0;
-        const roasPrev = investmentPrev > 0 ? (prevRevenue / investmentPrev) : 0;
+        // Período anterior
+        const vendasLeadIdsPrev = [...new Set((dataPrevRows || []).map(r => r.leadid).filter(Boolean))];
+        let countVendasPrioridadePrev = 0;
+        for (const chunk of chunkArray(vendasLeadIdsPrev, 500)) {
+          let qVPP = sbClient.from('leads')
+            .select('lead_id', { count: 'exact', head: true })
+            .in('lead_id', chunk)
+            .eq('passou_prioridade', true);
+          qVPP = applyNotImportedLeadFilter(qVPP);
+          const { count } = await qVPP;
+          countVendasPrioridadePrev += (count || 0);
+        }
+        const convOportunidadesPctPrev = prevSales > 0
+          ? (countVendasPrioridadePrev / prevSales) * 100
+          : 0;
+
+        const metaLoaded = state.__metaLoadState === 'loaded';
+        const investment = (typeof state.marketingInvestment === 'number' && Number.isFinite(state.marketingInvestment)) ? state.marketingInvestment : 0;
+        const investmentPrev = (typeof state.marketingInvestmentPrev === 'number' && Number.isFinite(state.marketingInvestmentPrev)) ? state.marketingInvestmentPrev : 0;
+        const cac = (metaLoaded && currentSales > 0) ? (investment + currentRevenue) / currentSales : 0;
+        const cacPrev = (metaLoaded && prevSales > 0) ? ((investmentPrev + prevRevenue) / prevSales) : 0;
+        const roas = (metaLoaded && investment > 0) ? currentRevenue / investment : 0;
+        const roasPrev = (metaLoaded && investmentPrev > 0) ? (prevRevenue / investmentPrev) : 0;
 
         // --- REUNIÕES (KPI): COUNT total de agendamentos no período (exclui diretores) ---
         // Alinhado com performance.html: conta TODAS as reuniões sem filtrar canceladas ou score.
@@ -3919,7 +3955,8 @@
             let props = await filterRowsByAgencyViaLeadId((propsRaw || []), (p) => p && p.id_lead);
             // Excluir propostas de diretores
             props = (props || []).filter(p => p && p.id_vendedor && !directorIds.includes(p.id_vendedor));
-            return props.length;
+            // Deduplicando por lead (1 proposta por lead)
+            return new Set((props || []).map(p => p && p.id_lead).filter(Boolean)).size;
           } catch (e) {
             return 0;
           }
@@ -4360,7 +4397,7 @@
         let propTotalHours = 0;
         let propCount = 0;
         let propWithin = 0;
-        const PROPOSAL_STAGE_ID = 'a22c3ad3-6093-4c57-a633-da16a5b4514c';
+        const PROPOSAL_STAGE_ID = ETAPA_OPORTUNIDADE_ID; // Etapa Oportunidade como âncora (t0)
 
         try {
           // 1) Entradas na etapa dentro do range do header (t0 por lead = primeira entrada)
@@ -4389,14 +4426,7 @@
             entryByLead[lid] = { t0Ms, entryVendorId: r && r.vendedor_id ? String(r.vendedor_id) : null };
           });
 
-          let leadIds = Object.keys(entryByLead);
-          // Filtro por agência (por lead)
-          if (state && state.selectedAgencyId) {
-            try {
-              const map = await fetchLeadAgencyMap(leadIds);
-              leadIds = leadIds.filter((lid) => map.get(String(lid)) && String(map.get(String(lid))) === String(state.selectedAgencyId));
-            } catch (e) {}
-          }
+          const leadIds = Object.keys(entryByLead);
           if (leadIds.length) {
             // 2) Propostas (t1) podem ocorrer após o fim do período
             const nowIso = new Date().toISOString();
@@ -4494,137 +4524,110 @@
         const slaProp = propCount > 0 ? Math.round((propWithin / propCount) * 100) : 0;
         console.log(`Proposta: ${avgProp}h (${propCount}) SLA:${slaProp}%`);
 
-        // --- 4. Follow-up ---
-        // Regra (padrão B): horas úteis SP (seg–sex, 09–19), sem feriados.
-        // - considerar 1ª entrada em FLW1/2/3
-        // - usar prev_t1 (último evento antes do t1) para o delta do FLW1
-        // - incluir no cálculo somente se a 1ª entrada da etapa ocorreu dentro do período do header
-        let followTotalHours = 0;
-        let followCount = 0;
-        let followWithin = 0;
-
-        // IDs hardcoded (doc)
-        const follow1Id = 'dde9e8fa-142f-411b-b6f3-6c1f9f6cc0c9';
-        const follow2Id = '169eb74f-ee37-4b49-9848-6866fd3b8af9';
-        const follow3Id = 'f9e89423-7b32-4680-90aa-be7480a5dc0a';
+        // --- 4. Pós-Proposta ---
+        // Regra: tempo em horas úteis entre a última proposta (imagemProposta.created_at)
+        // e o fechamento da venda (compras.data_compra) para leads que compraram.
+        // Unidade exibida: dias úteis (horas / 10h por dia útil). SLA: <= 7 dias úteis.
+        let fechTotalDays = 0;
+        let fechCount = 0;
+        let fechWithin = 0;
 
         try {
-          const startT = new Date(start);
-          const endT = new Date(end);
-          if (!Number.isNaN(startT.getTime()) && !Number.isNaN(endT.getTime())) {
-            // 1) Candidatos: leads que entraram (1ª entrada) em FLW1/2/3 dentro do header
-            let qCandidates = sbClient
-              .from('loogsLeads')
-              .select('created_at, lead, etapa_posterior')
-              .in('etapa_posterior', [follow1Id, follow2Id, follow3Id])
-              .not('lead', 'is', null)
-              .order('created_at', { ascending: true });
-            qCandidates = applyCutoffTimestamp(qCandidates, 'created_at')
-              .gte('created_at', start)
-              .lte('created_at', end);
-            if (state.selectedSeller) qCandidates = qCandidates.eq('vendedor_id', state.selectedSeller);
+          // 1) Compras aprovadas no período
+          let qComprasFech = sbClient
+            .from('compras')
+            .select('leadid, data_compra, vendedoresponsavel');
+          qComprasFech = applyApprovedPurchaseFilter(qComprasFech);
+          qComprasFech = applyCutoffTimestamp(qComprasFech, 'data_compra')
+            .gte('data_compra', start)
+            .lte('data_compra', end);
+          if (state.selectedSeller) qComprasFech = qComprasFech.eq('vendedoresponsavel', state.selectedSeller);
 
-            const { data: candidates } = await qCandidates;
-            let candidateLeadIds = [...new Set((candidates || []).map(r => r && r.lead).filter(Boolean))];
-            if (state && state.selectedAgencyId && candidateLeadIds.length) {
+          const { data: comprasFech } = await qComprasFech;
+          const comprasMap = {}; // leadid -> data_compra (ms)
+          (comprasFech || []).forEach(c => {
+            const lid = c && c.leadid ? String(c.leadid) : '';
+            if (!lid || !c.data_compra) return;
+            const ms = Date.parse(String(c.data_compra));
+            if (!Number.isFinite(ms)) return;
+            // Se tiver mais de uma compra do mesmo lead, usar a mais recente
+            const prev = comprasMap[lid];
+            if (prev && prev >= ms) return;
+            comprasMap[lid] = ms;
+          });
+
+          const fechLeadIds = Object.keys(comprasMap);
+          if (fechLeadIds.length) {
+            // 2) Buscar propostas desses leads com lookback
+            const lookbackDays = PIPELINE_LIMITS.proposalLookbackDays || 120;
+            const lookbackIso = (() => {
               try {
-                const map = await fetchLeadAgencyMap(candidateLeadIds);
-                candidateLeadIds = candidateLeadIds.filter((lid) => map.get(String(lid)) && String(map.get(String(lid))) === String(state.selectedAgencyId));
-              } catch (e) {}
-            }
+                const d = new Date(start);
+                if (Number.isNaN(d.getTime())) return start;
+                d.setUTCDate(d.getUTCDate() - lookbackDays);
+                return d.toISOString();
+              } catch (e) { return start; }
+            })();
 
-            if (candidateLeadIds.length) {
-              // 2) Lookback para achar prev_t1 e primeiras entradas (180d)
-              const lookbackStart = (() => {
-                try {
-                  const lb = new Date(startT.getTime());
-                  lb.setDate(lb.getDate() - 180);
-                  return lb.toISOString();
-                } catch (e) {
-                  return start;
-                }
-              })();
+            const proposalsByLead = {}; // leadid -> [created_at_ms]
+            for (const chunk of chunkArray(fechLeadIds, 500)) {
+              let qProps = sbClient
+                .from('imagemProposta')
+                .select('created_at, id_lead')
+                .in('id_lead', chunk)
+                .not('id_lead', 'is', null);
+              qProps = applyCutoffTimestamp(qProps, 'created_at')
+                .gte('created_at', lookbackIso)
+                .lte('created_at', end);
 
-              const allLogsByLead = {};
-              for (const chunk of chunkArray(candidateLeadIds, 250)) {
-                let q = sbClient
-                  .from('loogsLeads')
-                  .select('created_at, lead, etapa_posterior')
-                  .in('lead', chunk)
-                  .not('lead', 'is', null)
-                  .order('created_at', { ascending: true });
-                q = applyCutoffTimestamp(q, 'created_at')
-                  .gte('created_at', lookbackStart)
-                  .lte('created_at', end);
-                if (state.selectedSeller) q = q.eq('vendedor_id', state.selectedSeller);
-
-                const { data } = await q;
-                (data || []).forEach(l => {
-                  if (!l || !l.lead || !l.created_at) return;
-                  const t = new Date(l.created_at);
-                  if (Number.isNaN(t.getTime())) return;
-                  allLogsByLead[l.lead] = allLogsByLead[l.lead] || [];
-                  allLogsByLead[l.lead].push({ t, stage: l.etapa_posterior || null });
-                });
-              }
-
-              // Helpers
-              const inHeader = (t) => {
-                if (!(t instanceof Date) || Number.isNaN(t.getTime())) return false;
-                return t.getTime() >= startT.getTime() && t.getTime() <= endT.getTime();
-              };
-              const addDiffHours = (a, b) => {
-                if (!a || !b) return;
-                const aMs = a instanceof Date ? a.getTime() : Date.parse(String(a));
-                const bMs = b instanceof Date ? b.getTime() : Date.parse(String(b));
-                const mins = __businessMinutesBetweenWeekdaysMs(aMs, bMs, __BUSINESS_HOURS_CFG);
-                const h = mins / 60;
-                if (h > 0 && h < 720) {
-                  followTotalHours += h;
-                  followCount += 1;
-                  if (h <= 24) followWithin += 1;
-                }
-              };
-
-              // 3) Por lead: t1/t2/t3 (primeira entrada) + prev_t1 e deltas
-              candidateLeadIds.forEach(leadId => {
-                const evts = (allLogsByLead[leadId] || []).slice().sort((a, b) => a.t - b.t);
-                if (!evts.length) return;
-
-                let t1 = null;
-                let t2 = null;
-                let t3 = null;
-
-                for (const e of evts) {
-                  if (!t1 && e.stage === follow1Id) t1 = e.t;
-                  else if (!t2 && e.stage === follow2Id) t2 = e.t;
-                  else if (!t3 && e.stage === follow3Id) t3 = e.t;
-                  if (t1 && t2 && t3) break;
-                }
-
-                // prev_t1 = último evento antes de t1
-                let prevT1 = null;
-                if (t1) {
-                  for (let i = 0; i < evts.length; i++) {
-                    const tt = evts[i].t;
-                    if (tt.getTime() < t1.getTime()) prevT1 = tt;
-                    else break;
-                  }
-                }
-
-                if (t1 && inHeader(t1)) addDiffHours(prevT1, t1); // delta FLW1 (prev -> t1)
-                if (t1 && t2 && inHeader(t2)) addDiffHours(t1, t2); // FLW1 -> FLW2
-                if (t2 && t3 && inHeader(t3)) addDiffHours(t2, t3); // FLW2 -> FLW3
+              const { data: propsRows } = await qProps;
+              (propsRows || []).forEach(p => {
+                const lid = p && p.id_lead ? String(p.id_lead) : '';
+                if (!lid || !p.created_at) return;
+                const tMs = Date.parse(String(p.created_at));
+                if (!Number.isFinite(tMs)) return;
+                if (!proposalsByLead[lid]) proposalsByLead[lid] = [];
+                proposalsByLead[lid].push(tMs);
               });
             }
-          }
-        } catch (e) {
-          console.error('[SLA] erro follow-up (horas úteis):', e);
-        }
 
-        const avgFollow = followCount > 0 ? Math.round(followTotalHours / followCount) : 0;
-        const slaFollow = followCount > 0 ? Math.round((followWithin / followCount) * 100) : 0;
-        console.log(`Follow: ${avgFollow}h (${followCount}) SLA:${slaFollow}%`);
+            // 3) Para cada compra: última proposta com created_at <= data_compra
+            const maxDays = PIPELINE_LIMITS.proposalToCloseMaxDays || 90;
+            const maxMs = maxDays * 24 * 60 * 60 * 1000;
+
+            fechLeadIds.forEach(lid => {
+              const compraMsUtc = comprasMap[lid];
+              const proposals = proposalsByLead[lid];
+              if (!proposals || !proposals.length) return;
+
+              // Última proposta antes ou no momento do fechamento
+              let lastPropMs = null;
+              proposals.forEach(tMs => {
+                if (tMs <= compraMsUtc) {
+                  if (lastPropMs === null || tMs > lastPropMs) lastPropMs = tMs;
+                }
+              });
+              if (lastPropMs === null) return;
+
+              // Outlier check (calendário)
+              if ((compraMsUtc - lastPropMs) > maxMs) return;
+
+              // Horas úteis → dias úteis (10h por dia)
+              const minutes = __businessMinutesBetweenWeekdaysMs(lastPropMs, compraMsUtc, __BUSINESS_HOURS_CFG);
+              const businessHours = minutes / 60;
+              const businessDays = businessHours / 10;
+              if (businessDays > 0) {
+                fechTotalDays += businessDays;
+                fechCount += 1;
+                if (businessDays <= 7) fechWithin += 1;
+              }
+            });
+          }
+        } catch (e) {}
+
+        const avgFech = fechCount > 0 ? +(fechTotalDays / fechCount).toFixed(1) : 0;
+        const slaFech = fechCount > 0 ? Math.round((fechWithin / fechCount) * 100) : 0;
+        console.log(`Fechamento: ${avgFech}d (${fechCount}) SLA:${slaFech}%`);
 
         // --- Renderizar ---
         const cards = document.querySelectorAll('.sla-card');
@@ -4644,13 +4647,13 @@
             updateCard(0, avgFRT, 'min', '20min', 20);
             updateCard(1, avgCiclo, 'd', '5d', 5);
             updateCard(2, avgProp, 'h', '6h', 6);
-            updateCard(3, avgFollow, 'h', '24h', 24);
+            updateCard(3, avgFech, 'd', '7d', 7);
         }
 
         // --- Eficiência (Dias de ciclo + SLA % agregado) ---
         try {
-          const totalCount = frtCount + cicloCount + propCount + followCount;
-          const totalWithin = frtWithin + cicloWithin + propWithin + followWithin;
+          const totalCount = frtCount + cicloCount + propCount + fechCount;
+          const totalWithin = frtWithin + cicloWithin + propWithin + fechWithin;
           const slaOverall = totalCount > 0 ? Math.round((totalWithin / totalCount) * 100) : 0;
 
           const cycleEl = document.getElementById('eff-cycle-days');
