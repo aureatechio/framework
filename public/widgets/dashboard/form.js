@@ -4337,7 +4337,7 @@
         console.log(`FRT(hardcut): ${avgFRT}min (${frtCount}) SLA:${slaFRT}%`);
 
         // --- 2. Ciclo de Venda ---
-        // Novo cálculo: lead.created_at -> compras.data_compra (aprovada)
+        // Cálculo: primeira entrada na etapa Oportunidade -> compras.data_compra (aprovada)
         let qComprasCiclo = sbClient
           .from('compras')
           .select('leadid, data_compra, vendedoresponsavel, valor_total');
@@ -4348,36 +4348,41 @@
         qComprasCiclo = applyCutoffTimestamp(qComprasCiclo, 'created_at');
         if (state.selectedSeller) qComprasCiclo = qComprasCiclo.eq('vendedoresponsavel', state.selectedSeller);
 
-        const { data: comprasCicloRaw } = await qComprasCiclo;
-        const comprasCiclo = await filterRowsByAgencyViaLeadId((comprasCicloRaw || []), (r) => r && r.leadid);
+        const { data: comprasCiclo } = await qComprasCiclo;
 
-        // Buscar created_at dos leads envolvidos para calcular ciclo
-        const leadCreatedAtMap = {};
+        // Buscar primeira entrada na etapa Oportunidade por lead (t0)
+        const oportunidadeEntryByLead = {};
         const leadIdsCiclo = [...new Set((comprasCiclo || []).map(r => r && r.leadid).filter(Boolean))];
         for (const chunk of chunkArray(leadIdsCiclo, 500)) {
-          let qLeads = sbClient
-            .from('leads')
-            .select('lead_id, created_at')
-            .in('lead_id', chunk);
-          qLeads = applyAgencyFilterToLeadQuery(qLeads);
-          qLeads = applyCutoffTimestamp(qLeads, 'created_at');
-          const { data: leadsRows } = await qLeads;
-          (leadsRows || []).forEach(l => { if (l && l.lead_id && l.created_at) leadCreatedAtMap[l.lead_id] = l.created_at; });
+          let qOppEntry = sbClient
+            .from('loogsLeads')
+            .select('lead, created_at')
+            .eq('etapa_posterior', ETAPA_OPORTUNIDADE_ID)
+            .not('lead', 'is', null)
+            .in('lead', chunk)
+            .order('created_at', { ascending: true });
+          qOppEntry = applyCutoffTimestamp(qOppEntry, 'created_at');
+          const { data: oppRows } = await qOppEntry;
+          (oppRows || []).forEach(r => {
+            if (r && r.lead && r.created_at && !oportunidadeEntryByLead[r.lead]) {
+              oportunidadeEntryByLead[r.lead] = r.created_at; // primeira entrada
+            }
+          });
         }
 
         const leadsCiclo = (comprasCiclo || []).map(c => ({
-          created_at: leadCreatedAtMap[c.leadid],
+          opp_entry: oportunidadeEntryByLead[c.leadid],
           data_compra: c.data_compra
         }));
         let cicloTotalDays = 0;
         let cicloCount = 0;
         let cicloWithin = 0;
-        
+
         if (leadsCiclo) {
             leadsCiclo.forEach(l => {
-                if (!l || !l.created_at || !l.data_compra) return;
+                if (!l || !l.opp_entry || !l.data_compra) return;
                 const endT = new Date(l.data_compra);
-                const startT = new Date(l.created_at);
+                const startT = new Date(l.opp_entry);
                 const diffDays = (endT - startT) / (1000 * 60 * 60 * 24);
                 if (diffDays > 0) {
                     cicloTotalDays += diffDays;
