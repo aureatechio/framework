@@ -71,7 +71,7 @@
       // ATENÇÃO: token exposto no frontend conforme solicitado.
       const META_GRAPH_VERSION = 'v20.0';
       const META_AD_ACCOUNT_ID = 'act_843937229337573';
-      const META_ACCESS_TOKEN = 'EAASGBRlEgBwBQGFUAaRob6p1yhZCfLL9szluxABxeXFYmmpz0Gankr47BZBKFD8TAkBharYfGwck69wMZC8okMGjoIfZAP8VcirRD6Eu2uBQ4PqJHj7NYKuBz83F2rvRhb4D32iCC0Iar2URocbEEw1dZCf4GFamZBnVz4OLt49k3ejs1UFx2eMondXTlCApOe';
+      const META_ACCESS_TOKEN = 'EAASGBRlEgBwBQgYbX6rZBeMyxdZCBZAOvRB0poLTjLyLcwD8O7sCql3vLRRg1ZB63yfrcVg3aWdEZBRyZCCqVjF9e6KgQYwyvZB9RHNTrZCTlHJESMTZAn0JGCSfpucCv458GSnJ62jUiSlBEJvOMxZCtGmnzrxeZCd46s6fWdkW6Ojk5ueEhlBYBI8zqtZBQ9V7';
       const META_SPEND_CACHE_MS = 5 * 60 * 1000; // 5 min
 
       // --- BUBBLE PARAM (PLACEHOLDER) ---
@@ -1092,6 +1092,197 @@
         return normalizeIds(agencyData[channelType] || []);
       }
 
+      // --- Cache e helper para buscar IDs de campanhas via timeline_campanhas + name-matching Meta ---
+      let __timelineCampaignCache = {}; // { [key]: { data, fetchedAt } }
+      const TIMELINE_CAMPAIGN_CACHE_MS = 5 * 60 * 1000; // 5 min
+
+      /**
+       * Busca tags de `timeline_campanhas` (Supabase), lista campanhas Meta via API,
+       * faz name-matching e separa IDs por canal (heurística pelo nome).
+       * Fallback: se timeline vazia ou Meta falha, usa hardcoded (getMetaCampaignIdsByAgency).
+       * @param {string} [agencyId] - UUID da agência (usado apenas como cache key; não filtra campanhas Meta)
+       * @returns {Promise<{ landing: string[], whatsapp: string[] }>}
+       */
+      async function fetchTimelineFilteredCampaignIds(agencyId) {
+        const key = agencyId || '__all__';
+        const cached = __timelineCampaignCache[key];
+        if (cached && (Date.now() - cached.fetchedAt) < TIMELINE_CAMPAIGN_CACHE_MS) {
+          return cached.data;
+        }
+
+        try {
+          if (!sbClient) throw new Error('sbClient not ready');
+
+          // 1+2. Buscar tags da timeline E campanhas Meta em paralelo
+          const [timelineResult, metaCampaigns] = await Promise.all([
+            sbClient
+              .from('timeline_campanhas')
+              .select('id_campanha')
+              .not('id_campanha', 'is', null),
+            fetchAllMetaCampaigns()
+          ]);
+
+          const { data: timelineRows, error } = timelineResult;
+          if (error) throw error;
+
+          const tags = (timelineRows || [])
+            .map(r => String(r.id_campanha || '').trim())
+            .filter(Boolean);
+          if (!tags.length) throw new Error('timeline_campanhas sem tags');
+          if (!metaCampaigns.length) throw new Error('Meta retornou 0 campanhas');
+
+          // 3. Name-match: campanha Meta cujo nome contém algum tag da timeline
+          const matched = metaCampaigns.filter(c => {
+            const name = String(c.name || '');
+            return tags.some(tag => name.includes(tag));
+          });
+
+          if (!matched.length) throw new Error('Nenhuma campanha Meta matchou os tags da timeline');
+
+          // 4. Separar por canal (heurística pelo nome da campanha Meta)
+          const landing = [];
+          const whatsapp = [];
+          const seen = new Set();
+          matched.forEach(c => {
+            const id = String(c.id || '').trim();
+            if (!id || seen.has(id)) return;
+            seen.add(id);
+            const nameLower = String(c.name || '').toLowerCase();
+            if (nameLower.includes('whatsapp') || nameLower.includes('wpp')) {
+              whatsapp.push(id);
+            } else {
+              landing.push(id);
+            }
+          });
+
+          const result = { landing, whatsapp };
+          __timelineCampaignCache[key] = { data: result, fetchedAt: Date.now() };
+          console.log(`[timeline] Matched ${matched.length} campanhas (${landing.length} LP + ${whatsapp.length} WPP) de ${metaCampaigns.length} total`);
+          return result;
+        } catch (e) {
+          console.warn('[timeline] fallback para campanhaTrafego:', e && e.message);
+          // Fallback 1: campanhaTrafego (tabela legada com IDs diretos)
+          try {
+            if (!sbClient) throw new Error('sbClient not ready');
+            const { data: campRows, error: campErr } = await sbClient
+              .from('campanhaTrafego')
+              .select('idcampanha, tipocampanha')
+              .not('idcampanha', 'is', null);
+            if (campErr) throw campErr;
+            if (!campRows || !campRows.length) throw new Error('campanhaTrafego vazia');
+
+            const norm = (s) => String(s || '').toLowerCase();
+            let landingRaw = campRows
+              .filter(r => norm(r.tipocampanha).includes('landing'))
+              .map(r => String(r.idcampanha || '').trim())
+              .filter(Boolean);
+            let whatsappRaw = campRows
+              .filter(r => norm(r.tipocampanha).includes('whats'))
+              .map(r => String(r.idcampanha || '').trim())
+              .filter(Boolean);
+
+            if (agencyId) {
+              const agencyData = META_CAMPAIGN_IDS_BY_AGENCY[agencyId];
+              if (agencyData) {
+                const hardLP = new Set((agencyData.landingPage || []).map(x => String(x).trim()));
+                const hardWPP = new Set((agencyData.whatsapp || []).map(x => String(x).trim()));
+                landingRaw = landingRaw.filter(id => hardLP.has(id));
+                whatsappRaw = whatsappRaw.filter(id => hardWPP.has(id));
+              } else {
+                landingRaw = [];
+                whatsappRaw = [];
+              }
+            }
+
+            const dedupe = (arr) => [...new Set(arr)];
+            const result = { landing: dedupe(landingRaw), whatsapp: dedupe(whatsappRaw) };
+            __timelineCampaignCache[key] = { data: result, fetchedAt: Date.now() };
+            console.log(`[timeline] campanhaTrafego fallback: ${result.landing.length} LP + ${result.whatsapp.length} WPP`);
+            return result;
+          } catch (e2) {
+            console.warn('[timeline] fallback para hardcoded:', e2 && e2.message);
+          }
+
+          // Fallback 2: hardcoded
+          const result = {
+            landing: getMetaCampaignIdsByAgency('landingPage'),
+            whatsapp: getMetaCampaignIdsByAgency('whatsapp')
+          };
+          __timelineCampaignCache[key] = { data: result, fetchedAt: Date.now() };
+          return result;
+        }
+      }
+
+      /**
+       * Fetch com retry e exponential backoff para chamadas ao Meta Graph API.
+       * Não retenta erros de autenticação (code 190).
+       * @param {string} url - URL completa do Graph API
+       * @param {number} [maxRetries=3] - Número máximo de tentativas
+       * @returns {Promise<Response>}
+       */
+      async function callMetaWithRetry(url, maxRetries = 3) {
+        let lastError;
+        for (let attempt = 0; attempt < maxRetries; attempt++) {
+          try {
+            const res = await fetch(url, { method: 'GET', mode: 'cors' });
+            if (res.ok) return res;
+            const txt = await res.text().catch(() => '');
+            // Auth error (190) — não retenta
+            if (res.status === 400 && txt.includes('190')) throw new Error(`Meta auth error: ${txt}`);
+            throw new Error(`Meta HTTP ${res.status}: ${txt}`);
+          } catch (e) {
+            lastError = e;
+            if (String(e.message).includes('190')) throw e; // não retenta auth
+            if (attempt < maxRetries - 1) {
+              const delay = Math.pow(2, attempt) * 1000; // 1s, 2s, 4s
+              console.warn(`[Meta retry] tentativa ${attempt + 1}/${maxRetries} falhou, retentando em ${delay}ms...`);
+              await new Promise(r => setTimeout(r, delay));
+            }
+          }
+        }
+        throw lastError;
+      }
+
+      // --- Cache e helper para buscar TODAS campanhas da conta Meta ---
+      let __metaCampaignsCache = null; // { campaigns: [], fetchedAt }
+      const META_CAMPAIGNS_CACHE_MS = 10 * 60 * 1000; // 10 min
+
+      /**
+       * Busca todas as campanhas da conta Meta via GET /{adAccountId}/campaigns.
+       * Paginação automática. Cache de 10min.
+       * @returns {Promise<Array<{id: string, name: string, status: string}>>}
+       */
+      async function fetchAllMetaCampaigns() {
+        if (__metaCampaignsCache && (Date.now() - __metaCampaignsCache.fetchedAt) < META_CAMPAIGNS_CACHE_MS) {
+          return __metaCampaignsCache.campaigns;
+        }
+        if (!META_ACCESS_TOKEN || !META_AD_ACCOUNT_ID) return [];
+
+        const campaigns = [];
+        const url = new URL(`https://graph.facebook.com/${META_GRAPH_VERSION}/${META_AD_ACCOUNT_ID}/campaigns`);
+        url.searchParams.set('access_token', META_ACCESS_TOKEN);
+        url.searchParams.set('fields', 'id,name,effective_status');
+        url.searchParams.set('limit', '500');
+
+        let nextUrl = url.toString();
+        while (nextUrl) {
+          const res = await callMetaWithRetry(nextUrl);
+          const json = await res.json();
+          const data = (json && Array.isArray(json.data)) ? json.data : [];
+          data.forEach(r => {
+            campaigns.push({
+              id: String(r.id || ''),
+              name: String(r.name || ''),
+              status: String(r.effective_status || r.status || 'UNKNOWN')
+            });
+          });
+          nextUrl = (json && json.paging && json.paging.next) ? json.paging.next : null;
+        }
+
+        __metaCampaignsCache = { campaigns, fetchedAt: Date.now() };
+        return campaigns;
+      }
+
       function getSelectedAgencyLabel() {
         const id = state && state.selectedAgencyId ? String(state.selectedAgencyId) : '';
         if (!id) return '';
@@ -1727,19 +1918,23 @@
       }
 
       const applyNotTestPurchaseFilter = (q) => {
-        // "is not true" => inclui NULL e qualquer valor diferente de true
-        try { return q.or('is_test.is.null,is_test.neq.true'); } catch (e) { return q; }
+        try { return q.not('is_test', 'is', true); } catch (e) { return q; }
       };
 
       const applyApprovedPurchaseFilter = (q) => {
         // Filtro estrito: apenas vendas marcadas explicitamente como aprovadas.
         try {
-          let qq = q.eq('vendaaprovada', true);
+          let qq = q.eq('vendaaprovada', true)
+            .or('checkout_status.eq.pago,clicksign_status.eq.Assinado');
           if (__comprasIsTestSupported === true) {
             qq = applyNotTestPurchaseFilter(qq);
           }
           return qq;
         } catch (e) { return q; }
+      };
+
+      const applyNotImportedLeadFilter = (q) => {
+        try { return q.not('csv_import', 'is', true); } catch (e) { return q; }
       };
 
       // --- AGENCY FILTER (leads.agencia) ---
@@ -1886,27 +2081,14 @@
             return;
           }
 
-          // Investimento Mkt deve respeitar a allowlist de campaign.id (por agência / Todos)
+          // Investimento Mkt: busca campanhas via timeline_campanhas + name-matching Meta (dinâmico)
+          const { landing: idsLanding, whatsapp: idsWhatsapp } = await fetchTimelineFilteredCampaignIds(state.selectedAgencyId);
           const idsInvest = (() => {
-            try {
-              const ids = [
-                ...(getMetaCampaignIdsByAgency('landingPage') || []),
-                ...(getMetaCampaignIdsByAgency('whatsapp') || []),
-              ];
-              // dedup/normaliza (String/trim)
-              const out = [];
-              const seen = new Set();
-              ids.forEach((x) => {
-                const id = String(x || '').trim();
-                if (!id) return;
-                if (seen.has(id)) return;
-                seen.add(id);
-                out.push(id);
-              });
-              return out;
-            } catch (e) {
-              return [];
-            }
+            const out = []; const seen = new Set();
+            [...idsLanding, ...idsWhatsapp].forEach(x => {
+              const id = String(x||'').trim(); if (!id || seen.has(id)) return; seen.add(id); out.push(id);
+            });
+            return out;
           })();
 
           // Se não houver campanhas mapeadas para esta agência (ou para o conjunto "Todos"), gasto = 0
@@ -1957,11 +2139,7 @@
 
               let nextUrl = buildUrl().toString();
               while (nextUrl) {
-                const res = await fetch(nextUrl, { method: 'GET', mode: 'cors' });
-                if (!res.ok) {
-                  const txt = await res.text().catch(() => '');
-                  throw new Error(`Meta insights HTTP ${res.status}: ${txt}`);
-                }
+                const res = await callMetaWithRetry(nextUrl);
                 const json = await res.json();
                 const data = (json && Array.isArray(json.data)) ? json.data : [];
                 data.forEach(row => {
@@ -2019,11 +2197,7 @@
 
             let nextUrl = buildUrl().toString();
             while (nextUrl) {
-              const res = await fetch(nextUrl, { method: 'GET', mode: 'cors' });
-              if (!res.ok) {
-                const txt = await res.text().catch(() => '');
-                throw new Error(`Meta insights(prev) HTTP ${res.status}: ${txt}`);
-              }
+              const res = await callMetaWithRetry(nextUrl);
               const json = await res.json();
               const data = (json && Array.isArray(json.data)) ? json.data : [];
               data.forEach(row => {
@@ -3085,9 +3259,13 @@
             end.setDate(end.getDate() + 6);
             end.setHours(23,59,59,999);
         } else if (filter === 'month') {
-            start.setMonth(start.getMonth() - 1);
-            start.setDate(1);
-            end.setDate(0); 
+            // Mês anterior ATÉ o mesmo dia do mês (comparativo MTD)
+            const y = now.getFullYear();
+            const m = now.getMonth();
+            start = new Date(y, m - 1, 1, 0, 0, 0, 0);
+            const daysInPrevMonth = new Date(y, m, 0).getDate();
+            const d = Math.min(now.getDate(), daysInPrevMonth);
+            end = new Date(y, m - 1, d, 23, 59, 59, 999);
         } else if (filter === 'semester') {
             // Período anterior (6 meses imediatamente antes do range atual)
             const currentStart = new Date(now);
@@ -3437,8 +3615,14 @@
             const currentYear = (refStart && !Number.isNaN(refStart.getTime())) ? refStart.getFullYear() : getCurrentYear();
             const isYearly = !!chartData.isYearly;
 
-            const lyStart = __shiftIsoYear(chartStart, -1) || chartStart;
-            const lyEnd = __shiftIsoYear(chartEnd, -1) || chartEnd;
+            const lyStart = (() => {
+              const d = new Date(String(chartStart));
+              return new Date(Date.UTC(d.getFullYear() - 1, d.getMonth(), d.getDate(), 0, 0, 0, 0)).toISOString();
+            })();
+            const lyEnd = (() => {
+              const d = new Date(String(chartEnd));
+              return new Date(Date.UTC(d.getFullYear() - 1, d.getMonth(), d.getDate(), 23, 59, 59, 999)).toISOString();
+            })();
 
             let qLY = sbClient
               .from('compras')
@@ -3462,7 +3646,7 @@
                 try {
                   const d = new Date(r.data_compra);
                   if (Number.isNaN(d.getTime())) return;
-                  const mm = String(d.getMonth() + 1).padStart(2, '0');
+                  const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
                   const mappedKey = `${currentYear}-${mm}`;
                   if (Object.prototype.hasOwnProperty.call(totalsByKey, mappedKey)) {
                     totalsByKey[mappedKey] += parseCurrency(r.valor_total);
@@ -3478,7 +3662,7 @@
                 try {
                   const d = new Date(r.data_compra);
                   if (Number.isNaN(d.getTime())) return;
-                  const dom = d.getDate();
+                  const dom = d.getUTCDate();
                   const mapped = new Date(currentYear, currentMonth, dom, 12, 0, 0, 0);
                   const mappedKey = formatYmdLocal(mapped);
                   if (mappedKey && Object.prototype.hasOwnProperty.call(totalsByKey, mappedKey)) {
@@ -3608,6 +3792,7 @@
           .from('leads')
           .select('lead_id', { count: 'exact', head: true });
         queryCaptados = applyAgencyFilterToLeadQuery(queryCaptados);
+        queryCaptados = applyNotImportedLeadFilter(queryCaptados);
         queryCaptados = applyCutoffTimestamp(queryCaptados, 'created_at')
           .gte('created_at', start)
           .lte('created_at', end);
@@ -3622,6 +3807,7 @@
           .from('leads')
           .select('lead_id', { count: 'exact', head: true });
         queryCaptadosPrev = applyAgencyFilterToLeadQuery(queryCaptadosPrev);
+        queryCaptadosPrev = applyNotImportedLeadFilter(queryCaptadosPrev);
         queryCaptadosPrev = applyCutoffTimestamp(queryCaptadosPrev, 'created_at')
           .gte('created_at', prevRange.start)
           .lte('created_at', prevRange.end);
@@ -3921,6 +4107,8 @@
           : computeProratedTargetForRange(monthlyTarget, start, end);
 
         const gaugeCurrentRevenue = currentRevenue;
+        // prevRevenue já vem recortado MTD (mês anterior até o mesmo dia) via getPreviousDateRange,
+        // então NÃO precisa de prorrateio adicional.
         const gaugePrevRevenue = prevRevenue;
 
         const gaugePct = targetRevenue > 0 ? Math.min((gaugeCurrentRevenue / targetRevenue) * 100, 100) : 0;
@@ -5609,6 +5797,7 @@
         // 1. Leads Captados
         let queryCaptados = sbClient.from('leads').select('lead_id', { count: 'exact', head: true });
         queryCaptados = applyAgencyFilterToLeadQuery(queryCaptados);
+        queryCaptados = applyNotImportedLeadFilter(queryCaptados);
         queryCaptados = applyCutoffTimestamp(queryCaptados, 'created_at').gte('created_at', start).lte('created_at', end);
         if (state.selectedSeller) queryCaptados = queryCaptados.eq('vendedorResponsavel', state.selectedSeller);
         const { count: countCaptados } = await queryCaptados;
@@ -5619,6 +5808,7 @@
           .select('lead_id', { count: 'exact', head: true })
           .not('vendedorResponsavel', 'is', null);
         queryQualif = applyAgencyFilterToLeadQuery(queryQualif);
+        queryQualif = applyNotImportedLeadFilter(queryQualif);
         queryQualif = applyCutoffTimestamp(queryQualif, 'created_at')
           .gte('created_at', start)
           .lte('created_at', end);
@@ -5750,6 +5940,7 @@
           .from('leads')
           .select('lead_id', { count: 'exact', head: true });
         qTotal = applyAgencyFilterToLeadQuery(qTotal);
+        qTotal = applyNotImportedLeadFilter(qTotal);
         qTotal = applyCutoffTimestamp(qTotal, 'created_at').gte('created_at', start).lte('created_at', end);
         if (state.selectedSeller) qTotal = qTotal.eq('vendedorResponsavel', state.selectedSeller);
         const { count: totalLeads } = await qTotal;
@@ -5761,6 +5952,7 @@
           .select('lead_id', { count: 'exact', head: true })
           .not('vendedorResponsavel', 'is', null);
         qWithSeller = applyAgencyFilterToLeadQuery(qWithSeller);
+        qWithSeller = applyNotImportedLeadFilter(qWithSeller);
         qWithSeller = applyCutoffTimestamp(qWithSeller, 'created_at').gte('created_at', start).lte('created_at', end);
         if (state.selectedSeller) qWithSeller = qWithSeller.eq('vendedorResponsavel', state.selectedSeller);
         const { count: leadsWithSeller } = await qWithSeller;
@@ -5774,6 +5966,7 @@
               .select('lead_id, created_at, vendedorResponsavel')
               .in('lead_id', chunk);
             q = applyAgencyFilterToLeadQuery(q);
+            q = applyNotImportedLeadFilter(q);
             q = applyCutoffTimestamp(q, 'created_at').gte('created_at', start).lte('created_at', end);
             if (state.selectedSeller) q = q.eq('vendedorResponsavel', state.selectedSeller);
             const { data } = await q;
@@ -5880,6 +6073,7 @@
             .select('lead_id', { count: 'exact', head: true })
             .eq('canalentrada', canal);
           q = applyAgencyFilterToLeadQuery(q);
+          q = applyNotImportedLeadFilter(q);
           q = applyCutoffTimestamp(q, 'created_at').gte('created_at', start).lte('created_at', end);
           if (state.selectedSeller) q = q.eq('vendedorResponsavel', state.selectedSeller);
           const { count } = await q;
@@ -5940,11 +6134,7 @@
 
           let nextUrl = buildUrl().toString();
           while (nextUrl) {
-            const res = await fetch(nextUrl, { method: 'GET', mode: 'cors' });
-            if (!res.ok) {
-              const txt = await res.text().catch(() => '');
-              throw new Error(`Meta insights(channel) HTTP ${res.status}: ${txt}`);
-            }
+            const res = await callMetaWithRetry(nextUrl);
             const json = await res.json();
             const data = (json && Array.isArray(json.data)) ? json.data : [];
             data.forEach(row => {
@@ -5973,25 +6163,8 @@
               spendLP = cache.landing;
               spendWPP = cache.whatsapp;
             } else {
-              // Landing Page: IDs filtrados por agência
-              const idsLP = getMetaCampaignIdsByAgency('landingPage');
-
-              // WhatsApp: buscar da tabela campanhaTrafego e filtrar por agência
-              const { data: campRows } = await sbClient
-                .from('campanhaTrafego')
-                .select('idcampanha, tipocampanha')
-                .not('idcampanha', 'is', null);
-              const allCampaigns = campRows || [];
-              const wppFromTable = allCampaigns
-                .filter(r => norm(r && r.tipocampanha).includes('whats'))
-                .map(r => String((r && r.idcampanha) || '').trim())
-                .filter(Boolean);
-
-              // Intersecção: IDs do banco QUE também estão no mapeamento da agência
-              const idsWPPByAgency = getMetaCampaignIdsByAgency('whatsapp');
-              const idsWPP = idsWPPByAgency.length > 0
-                ? wppFromTable.filter(id => idsWPPByAgency.includes(String(id || '').trim()))
-                : wppFromTable;
+              // Busca dinâmica via timeline_campanhas + name-matching Meta
+              const { landing: idsLP, whatsapp: idsWPP } = await fetchTimelineFilteredCampaignIds(state.selectedAgencyId);
 
               spendLP = await fetchSpendByCampaignIds(idsLP, startYmd, endYmd);
               spendWPP = await fetchSpendByCampaignIds(idsWPP, startYmd, endYmd);
@@ -6205,6 +6378,7 @@
                 .select('lead_id, created_at')
                 .in('lead_id', chunk);
               q = applyAgencyFilterToLeadQuery(q);
+              q = applyNotImportedLeadFilter(q);
               q = applyCutoffTimestamp(q, 'created_at');
               const { data, error } = await q;
               if (error) console.error('[pipeline] erro leads(created_at):', error);
@@ -6633,7 +6807,8 @@
 
           trendEl.className = `text-xs font-bold flex items-center gap-1 mt-2 px-2 py-1 rounded-full ${trendClass}`;
           trendEl.style.background = trendBg;
-          trendTextEl.textContent = (isPositive ? '+' : '') + Math.abs(trendVariation).toFixed(1) + '% vs período anterior';
+          const trendLabel = (state && state.dateFilter === 'month') ? '% vs média mês ant.' : '% vs período anterior';
+          trendTextEl.textContent = (isPositive ? '+' : '') + Math.abs(trendVariation).toFixed(1) + trendLabel;
 
           // Update icon
           trendIconEl.setAttribute('data-lucide', trendIcon);
