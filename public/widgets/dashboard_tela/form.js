@@ -167,7 +167,8 @@
             sbClient
               .from('timeline_campanhas')
               .select('id_campanha')
-              .not('id_campanha', 'is', null),
+              .not('id_campanha', 'is', null)
+              .eq('buscar_metricas_meta', true),
             fetchAllMetaCampaigns()
           ]);
 
