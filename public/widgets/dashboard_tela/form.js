@@ -3872,11 +3872,9 @@
         const metaLoaded = state.__metaLoadState === 'loaded';
         const investment = (typeof state.marketingInvestment === 'number' && Number.isFinite(state.marketingInvestment)) ? state.marketingInvestment : 0;
         const investmentPrev = (typeof state.marketingInvestmentPrev === 'number' && Number.isFinite(state.marketingInvestmentPrev)) ? state.marketingInvestmentPrev : 0;
-        // CAC (dashboard_tela): (investimento_mkt + faturamento) / vendas
-        // Divergência INTENCIONAL do dashboard principal (que usa investimento / vendas).
-        // Métrica de negócio específica para este display TV.
-        const cac = (metaLoaded && currentSales > 0) ? (investment + currentRevenue) / currentSales : 0;
-        const cacPrev = (metaLoaded && prevSales > 0) ? ((investmentPrev + prevRevenue) / prevSales) : 0;
+        // CAC: investimento_mkt / vendas
+        const cac = (metaLoaded && currentSales > 0) ? investment / currentSales : 0;
+        const cacPrev = (metaLoaded && prevSales > 0) ? investmentPrev / prevSales : 0;
         const roas = (metaLoaded && investment > 0) ? currentRevenue / investment : 0;
         const roasPrev = (metaLoaded && investmentPrev > 0) ? (prevRevenue / investmentPrev) : 0;
 
@@ -5062,9 +5060,9 @@
              const metaOk = state.__metaLoadState === 'loaded';
              const investment = (typeof state.marketingInvestment === 'number' && Number.isFinite(state.marketingInvestment)) ? state.marketingInvestment : 0;
              const investmentPrev = (typeof state.marketingInvestmentPrev === 'number' && Number.isFinite(state.marketingInvestmentPrev)) ? state.marketingInvestmentPrev : 0;
-             // CAC (dashboard_tela): (investimento_mkt + faturamento) / vendas
-             const cac = (metaOk && agg.currentSales > 0) ? (investment + agg.currentRevenue) / agg.currentSales : 0;
-             const cacPrev = (metaOk && agg.prevSales > 0) ? (investmentPrev + agg.prevRevenue) / agg.prevSales : 0;
+             // CAC: investimento_mkt / vendas
+             const cac = (metaOk && agg.currentSales > 0) ? investment / agg.currentSales : 0;
+             const cacPrev = (metaOk && agg.prevSales > 0) ? investmentPrev / agg.prevSales : 0;
              const roas = (metaOk && investment > 0) ? agg.currentRevenue / investment : 0;
              const roasPrev = (metaOk && investmentPrev > 0) ? agg.prevRevenue / investmentPrev : 0;
 

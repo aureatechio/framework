@@ -3895,8 +3895,8 @@
         const metaLoaded = state.__metaLoadState === 'loaded';
         const investment = (typeof state.marketingInvestment === 'number' && Number.isFinite(state.marketingInvestment)) ? state.marketingInvestment : 0;
         const investmentPrev = (typeof state.marketingInvestmentPrev === 'number' && Number.isFinite(state.marketingInvestmentPrev)) ? state.marketingInvestmentPrev : 0;
-        const cac = (metaLoaded && currentSales > 0) ? (investment + currentRevenue) / currentSales : 0;
-        const cacPrev = (metaLoaded && prevSales > 0) ? ((investmentPrev + prevRevenue) / prevSales) : 0;
+        const cac = (metaLoaded && currentSales > 0) ? investment / currentSales : 0;
+        const cacPrev = (metaLoaded && prevSales > 0) ? investmentPrev / prevSales : 0;
         const roas = (metaLoaded && investment > 0) ? currentRevenue / investment : 0;
         const roasPrev = (metaLoaded && investmentPrev > 0) ? (prevRevenue / investmentPrev) : 0;
 
