@@ -5829,7 +5829,20 @@
         if (state.selectedSeller) queryQualif = queryQualif.eq('vendedorResponsavel', state.selectedSeller);
         const { count: countQualificados } = await queryQualif;
 
-        // 3. Propostas
+        // 3. Leads Prioridade (passou_prioridade = true)
+        let queryPrioridade = sbClient
+          .from('leads')
+          .select('lead_id', { count: 'exact', head: true })
+          .eq('passou_prioridade', true);
+        queryPrioridade = applyAgencyFilterToLeadQuery(queryPrioridade);
+        queryPrioridade = applyNotImportedLeadFilter(queryPrioridade);
+        queryPrioridade = applyCutoffTimestamp(queryPrioridade, 'created_at')
+          .gte('created_at', start)
+          .lte('created_at', end);
+        if (state.selectedSeller) queryPrioridade = queryPrioridade.eq('vendedorResponsavel', state.selectedSeller);
+        const { count: countPrioridade } = await queryPrioridade;
+
+        // 4. Propostas
         let countPropostas = 0;
         try {
           let qProps = sbClient
@@ -5924,6 +5937,7 @@
         const funnelData = [
             { l:"Leads Captados", v: countCaptados || 0, color:"#3b82f6" },
             { l:"Leads Qualificados", v: countQualificados || 0, color:"#60a5fa" },
+            { l:"Leads Prioridade", v: countPrioridade || 0, color:"#818cf8" },
             { l:"Propostas", v: countPropostas || 0, color:"#22c55e" },
             { l:"Reuniões", v: countReunioes || 0, color:"#f59e0b" },
             { l:"Vendas", v: countVendas || 0, color:"#16a34a" }
