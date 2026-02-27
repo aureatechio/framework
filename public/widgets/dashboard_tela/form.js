@@ -1883,6 +1883,12 @@
         try { return q.not('is_test', 'is', true); } catch (e) { return q; }
       };
 
+      // Filtro: excluir leads importados via CSV (csv_import=true).
+      // IS NOT TRUE => inclui NULL e FALSE, exclui apenas TRUE.
+      const applyNotImportedLeadFilter = (q) => {
+        try { return q.not('csv_import', 'is', true); } catch (e) { return q; }
+      };
+
       const applyApprovedPurchaseFilter = (q) => {
         // Filtro de venda aprovada: vendaaprovada=true AND (checkout pago OU assinatura Clicksign concluída).
         // Alinhado às métricas do Figma (Christian): "pagamento realizado ou assinatura realizada ou ambos".
@@ -3689,6 +3695,7 @@
         let queryCaptados = sbClient
           .from('leads')
           .select('lead_id', { count: 'exact', head: true });
+        queryCaptados = applyNotImportedLeadFilter(queryCaptados);
         queryCaptados = applyCutoffTimestamp(queryCaptados, 'created_at')
           .gte('created_at', start)
           .lte('created_at', end);
@@ -3703,6 +3710,7 @@
         let queryCaptadosPrev = sbClient
           .from('leads')
           .select('lead_id', { count: 'exact', head: true });
+        queryCaptadosPrev = applyNotImportedLeadFilter(queryCaptadosPrev);
         queryCaptadosPrev = applyCutoffTimestamp(queryCaptadosPrev, 'created_at')
           .gte('created_at', prevRange.start)
           .lte('created_at', prevRange.end);
@@ -3720,6 +3728,7 @@
             .from('leads')
             .select('lead_id', { count: 'exact', head: true })
             .eq('passou_prioridade', true);
+          q = applyNotImportedLeadFilter(q);
           q = applyCutoffTimestamp(q, 'created_at')
             .gte('created_at', start)
             .lte('created_at', end);
@@ -3735,6 +3744,7 @@
             .from('leads')
             .select('lead_id', { count: 'exact', head: true })
             .eq('passou_prioridade', true);
+          q = applyNotImportedLeadFilter(q);
           q = applyCutoffTimestamp(q, 'created_at')
             .gte('created_at', prevRange.start)
             .lte('created_at', prevRange.end);
@@ -3749,10 +3759,12 @@
         const vendasLeadIds = [...new Set((dataCurrRows || []).map(r => r.leadid).filter(Boolean))];
         let countVendasPrioridade = 0;
         for (const chunk of chunkArray(vendasLeadIds, 500)) {
-          const { count } = await sbClient.from('leads')
+          let qVP = sbClient.from('leads')
             .select('lead_id', { count: 'exact', head: true })
             .in('lead_id', chunk)
             .eq('passou_prioridade', true);
+          qVP = applyNotImportedLeadFilter(qVP);
+          const { count } = await qVP;
           countVendasPrioridade += (count || 0);
         }
         const convOportunidadesPct = currentSales > 0
@@ -3763,10 +3775,12 @@
         const vendasLeadIdsPrev = [...new Set((dataPrevRows || []).map(r => r.leadid).filter(Boolean))];
         let countVendasPrioridadePrev = 0;
         for (const chunk of chunkArray(vendasLeadIdsPrev, 500)) {
-          const { count } = await sbClient.from('leads')
+          let qVPP = sbClient.from('leads')
             .select('lead_id', { count: 'exact', head: true })
             .in('lead_id', chunk)
             .eq('passou_prioridade', true);
+          qVPP = applyNotImportedLeadFilter(qVPP);
+          const { count } = await qVPP;
           countVendasPrioridadePrev += (count || 0);
         }
         const convOportunidadesPctPrev = prevSales > 0
@@ -5676,6 +5690,7 @@
             let q = sbClient
               .from('leads')
               .select('lead_id, segundaMensagem, mensagensEnviadas, vendedorResponsavel');
+            q = applyNotImportedLeadFilter(q);
             q = applyCutoffTimestamp(q, 'created_at').gte('created_at', start).lte('created_at', end);
             q = q.eq('novo_crm', true).eq('canalentrada', CANAL_LP);
             if (state.selectedSeller) q = q.eq('vendedorResponsavel', state.selectedSeller);
@@ -5744,6 +5759,7 @@
         
         // 1. Leads Captados
         let queryCaptados = sbClient.from('leads').select('lead_id', { count: 'exact', head: true });
+        queryCaptados = applyNotImportedLeadFilter(queryCaptados);
         queryCaptados = applyCutoffTimestamp(queryCaptados, 'created_at').gte('created_at', start).lte('created_at', end);
         if (state.selectedSeller) queryCaptados = queryCaptados.eq('vendedorResponsavel', state.selectedSeller);
         const { count: countCaptados } = await queryCaptados;
@@ -5753,6 +5769,7 @@
           .from('leads')
           .select('lead_id', { count: 'exact', head: true })
           .not('vendedorResponsavel', 'is', null);
+        queryQualif = applyNotImportedLeadFilter(queryQualif);
         queryQualif = applyCutoffTimestamp(queryQualif, 'created_at')
           .gte('created_at', start)
           .lte('created_at', end);
@@ -5857,6 +5874,7 @@
         let qTotal = sbClient
           .from('leads')
           .select('lead_id', { count: 'exact', head: true });
+        qTotal = applyNotImportedLeadFilter(qTotal);
         qTotal = applyCutoffTimestamp(qTotal, 'created_at').gte('created_at', start).lte('created_at', end);
         if (state.selectedSeller) qTotal = qTotal.eq('vendedorResponsavel', state.selectedSeller);
         const { count: totalLeads } = await qTotal;
@@ -5867,6 +5885,7 @@
           .from('leads')
           .select('lead_id', { count: 'exact', head: true })
           .not('vendedorResponsavel', 'is', null);
+        qWithSeller = applyNotImportedLeadFilter(qWithSeller);
         qWithSeller = applyCutoffTimestamp(qWithSeller, 'created_at').gte('created_at', start).lte('created_at', end);
         if (state.selectedSeller) qWithSeller = qWithSeller.eq('vendedorResponsavel', state.selectedSeller);
         const { count: leadsWithSeller } = await qWithSeller;
@@ -5879,6 +5898,7 @@
               .from('leads')
               .select('lead_id, created_at, vendedorResponsavel')
               .in('lead_id', chunk);
+            q = applyNotImportedLeadFilter(q);
             q = applyCutoffTimestamp(q, 'created_at').gte('created_at', start).lte('created_at', end);
             if (state.selectedSeller) q = q.eq('vendedorResponsavel', state.selectedSeller);
             const { data } = await q;
@@ -5984,6 +6004,7 @@
             .from('leads')
             .select('lead_id', { count: 'exact', head: true })
             .eq('canalentrada', canal);
+          q = applyNotImportedLeadFilter(q);
           q = applyCutoffTimestamp(q, 'created_at').gte('created_at', start).lte('created_at', end);
           if (state.selectedSeller) q = q.eq('vendedorResponsavel', state.selectedSeller);
           const { count } = await q;
