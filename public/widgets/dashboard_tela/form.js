@@ -159,10 +159,6 @@
           return cached.data;
         }
 
-        // Mínimo de matches para considerar o resultado válido.
-        // Se abaixo disso, cai no fallback hardcoded (timeline ainda incompleta).
-        const MIN_MATCH_THRESHOLD = 3;
-
         try {
           if (!sbClient) throw new Error('sbClient not ready');
 
@@ -190,10 +186,7 @@
             return tags.some(tag => name.includes(tag));
           });
 
-          // Se poucos matches, timeline ainda não tem tags suficientes → fallback
-          if (matched.length < MIN_MATCH_THRESHOLD) {
-            throw new Error(`Apenas ${matched.length} matches (min ${MIN_MATCH_THRESHOLD}) — timeline incompleta`);
-          }
+          if (!matched.length) throw new Error('Nenhuma campanha Meta matchou os tags da timeline');
 
           // 4. Separar por canal (heurística pelo nome da campanha Meta)
           const landing = [];
