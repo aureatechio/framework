@@ -4795,7 +4795,7 @@
             });
           } catch (e) {}
 
-          // 3) Propostas (COUNT total, sem deduplicar por lead — alinhado com performance.html)
+          // 3) Propostas — deduplicando por lead (1 proposta por lead por vendedor)
           let proposalsQuery = sbClient
             .from('imagemProposta')
             .select('id, id_vendedor, id_lead');
@@ -4805,12 +4805,16 @@
           const { data: proposalsRaw } = await proposalsQuery;
           const proposals = await filterRowsByAgencyViaLeadId((proposalsRaw || []), (p) => p && p.id_lead);
 
-          // Count proposals per seller (total count, not deduplicated)
+          // Count proposals per seller (1 per lead)
           const proposalCountBySeller = {};
           if (proposals && proposals.length > 0) {
+            const seenBySellerLead = new Set();
             proposals.forEach(p => {
-              if (p.id_vendedor) {
+              if (p.id_vendedor && p.id_lead) {
                 const sid = String(p.id_vendedor);
+                const key = sid + '|' + String(p.id_lead);
+                if (seenBySellerLead.has(key)) return;
+                seenBySellerLead.add(key);
                 proposalCountBySeller[sid] = (proposalCountBySeller[sid] || 0) + 1;
               }
             });
