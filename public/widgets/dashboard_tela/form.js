@@ -216,7 +216,50 @@
           console.log(`[timeline] Matched ${matched.length} campanhas (${landing.length} LP + ${whatsapp.length} WPP) de ${metaCampaigns.length} total`);
           return result;
         } catch (e) {
-          console.warn('[timeline] fallback para hardcoded:', e && e.message);
+          console.warn('[timeline] fallback para campanhaTrafego:', e && e.message);
+          // Fallback 1: campanhaTrafego (tabela legada com IDs diretos)
+          try {
+            if (!sbClient) throw new Error('sbClient not ready');
+            const { data: campRows, error: campErr } = await sbClient
+              .from('campanhaTrafego')
+              .select('idcampanha, tipocampanha')
+              .not('idcampanha', 'is', null);
+            if (campErr) throw campErr;
+            if (!campRows || !campRows.length) throw new Error('campanhaTrafego vazia');
+
+            const norm = (s) => String(s || '').toLowerCase();
+            let landingRaw = campRows
+              .filter(r => norm(r.tipocampanha).includes('landing'))
+              .map(r => String(r.idcampanha || '').trim())
+              .filter(Boolean);
+            let whatsappRaw = campRows
+              .filter(r => norm(r.tipocampanha).includes('whats'))
+              .map(r => String(r.idcampanha || '').trim())
+              .filter(Boolean);
+
+            if (agencyId) {
+              const agencyData = META_CAMPAIGN_IDS_BY_AGENCY[agencyId];
+              if (agencyData) {
+                const hardLP = new Set((agencyData.landingPage || []).map(x => String(x).trim()));
+                const hardWPP = new Set((agencyData.whatsapp || []).map(x => String(x).trim()));
+                landingRaw = landingRaw.filter(id => hardLP.has(id));
+                whatsappRaw = whatsappRaw.filter(id => hardWPP.has(id));
+              } else {
+                landingRaw = [];
+                whatsappRaw = [];
+              }
+            }
+
+            const dedupe = (arr) => [...new Set(arr)];
+            const result = { landing: dedupe(landingRaw), whatsapp: dedupe(whatsappRaw) };
+            __timelineCampaignCache[key] = { data: result, fetchedAt: Date.now() };
+            console.log(`[timeline] campanhaTrafego fallback: ${result.landing.length} LP + ${result.whatsapp.length} WPP`);
+            return result;
+          } catch (e2) {
+            console.warn('[timeline] fallback para hardcoded:', e2 && e2.message);
+          }
+
+          // Fallback 2: hardcoded
           const result = {
             landing: getMetaCampaignIdsByAgency('landingPage'),
             whatsapp: getMetaCampaignIdsByAgency('whatsapp')
