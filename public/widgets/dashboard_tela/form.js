@@ -159,23 +159,29 @@
           return cached.data;
         }
 
+        // Mínimo de matches para considerar o resultado válido.
+        // Se abaixo disso, cai no fallback hardcoded (timeline ainda incompleta).
+        const MIN_MATCH_THRESHOLD = 3;
+
         try {
           if (!sbClient) throw new Error('sbClient not ready');
 
-          // 1. Buscar tags da timeline_campanhas
-          const { data: timelineRows, error } = await sbClient
-            .from('timeline_campanhas')
-            .select('id_campanha')
-            .not('id_campanha', 'is', null);
+          // 1+2. Buscar tags da timeline E campanhas Meta em paralelo
+          const [timelineResult, metaCampaigns] = await Promise.all([
+            sbClient
+              .from('timeline_campanhas')
+              .select('id_campanha')
+              .not('id_campanha', 'is', null),
+            fetchAllMetaCampaigns()
+          ]);
+
+          const { data: timelineRows, error } = timelineResult;
           if (error) throw error;
 
           const tags = (timelineRows || [])
             .map(r => String(r.id_campanha || '').trim())
             .filter(Boolean);
           if (!tags.length) throw new Error('timeline_campanhas sem tags');
-
-          // 2. Buscar todas campanhas Meta
-          const metaCampaigns = await fetchAllMetaCampaigns();
           if (!metaCampaigns.length) throw new Error('Meta retornou 0 campanhas');
 
           // 3. Name-match: campanha Meta cujo nome contém algum tag da timeline
@@ -183,6 +189,11 @@
             const name = String(c.name || '');
             return tags.some(tag => name.includes(tag));
           });
+
+          // Se poucos matches, timeline ainda não tem tags suficientes → fallback
+          if (matched.length < MIN_MATCH_THRESHOLD) {
+            throw new Error(`Apenas ${matched.length} matches (min ${MIN_MATCH_THRESHOLD}) — timeline incompleta`);
+          }
 
           // 4. Separar por canal (heurística pelo nome da campanha Meta)
           const landing = [];
