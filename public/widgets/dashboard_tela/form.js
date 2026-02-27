@@ -3627,7 +3627,8 @@
                   if (Number.isNaN(d.getTime())) return;
 
                   if (isYearly) {
-                    const mm = String(d.getMonth() + 1).padStart(2, '0');
+                    // Usar getUTCMonth: data_compra histórico = midnight UTC → getMonth() em BRT desloca dia 1 para mês anterior
+                    const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
                     const mappedKey = `${currentYear}-${mm}`; // YYYY-MM
                     if (Object.prototype.hasOwnProperty.call(dailyTotalsByKey, mappedKey)) {
                       dailyTotalsByKey[mappedKey] += parseCurrency(r.valor_total);
@@ -3635,7 +3636,8 @@
                     return;
                   }
 
-                  const dom = d.getDate();
+                  // Usar getUTCDate: data_compra histórico = midnight UTC → getDate() em BRT dá dia anterior
+                  const dom = d.getUTCDate();
                   const mapped = new Date(currentYear, currentMonth, dom, 12, 0, 0, 0);
                   const mappedKey = formatYmdLocal(mapped); // YYYY-MM-DD
                   if (mappedKey && Object.prototype.hasOwnProperty.call(dailyTotalsByKey, mappedKey)) {
