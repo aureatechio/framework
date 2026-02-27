@@ -3044,15 +3044,14 @@
       }
 
       // Range do MÊS INTEIRO (para o gráfico de evolução mensal):
-      // - start: 1º dia 00:00 UTC
-      // - end: último dia 23:59:59.999 UTC
-      // IMPORTANTE: usar Date.UTC para que data_compra (midnight UTC) não sofra offset de timezone local.
+      // - start: 1º dia 00:00
+      // - end: último dia 23:59:59.999
       function getFullMonthRange() {
         const now = new Date();
-        const y = now.getFullYear();
-        const m = now.getMonth();
-        const start = new Date(Date.UTC(y, m, 1, 0, 0, 0, 0));
-        const end = new Date(Date.UTC(y, m + 1, 0, 23, 59, 59, 999));
+        const start = new Date(now.getFullYear(), now.getMonth(), 1);
+        start.setHours(0,0,0,0);
+        const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        end.setHours(23,59,59,999);
         return { start: start.toISOString(), end: end.toISOString() };
       }
 
@@ -3420,16 +3419,15 @@
           const now = new Date();
           const y = now.getFullYear();
           const m = now.getMonth();
-          // IMPORTANTE: usar Date.UTC para alinhar com data_compra (midnight UTC).
           if (revenueMode === 'year') {
-            const s = new Date(Date.UTC(y, 0, 1, 0, 0, 0, 0)).toISOString();
-            const e = new Date(Date.UTC(y, 11, 31, 23, 59, 59, 999)).toISOString();
+            const s = new Date(y, 0, 1, 0, 0, 0, 0).toISOString();
+            const e = new Date(y, 11, 31, 23, 59, 59, 999).toISOString();
             return { start: s, end: e };
           }
           if (revenueMode === 'semester') {
             // v127: Janeiro até Julho (7 meses fixos do ano) - alinhado ao semestre comercial
-            const s = new Date(Date.UTC(y, 0, 1, 0, 0, 0, 0)).toISOString(); // 01/janeiro
-            const e = new Date(Date.UTC(y, 7, 0, 23, 59, 59, 999)).toISOString(); // 31/julho
+            const s = new Date(y, 0, 1, 0, 0, 0, 0).toISOString(); // 01/janeiro
+            const e = new Date(y, 7, 0, 23, 59, 59, 999).toISOString(); // 31/julho
             return { start: s, end: e };
           }
           // month (default)
@@ -3468,9 +3466,17 @@
           .lte('data_compra', chartRange.end);
         if (state.selectedSeller) qMonth = qMonth.eq('vendedoresponsavel', state.selectedSeller);
 
-        // Ano passado (mesmo range do gráfico, shift -1 ano)
-        const lastYearMonthStart = __shiftIsoYear(chartRange.start, -1) || chartRange.start;
-        const lastYearMonthEnd = __shiftIsoYear(chartRange.end, -1) || chartRange.end;
+        // Ano passado: usar UTC puro para alinhar com data_compra histórico (DATE = midnight UTC).
+        // chartRange usa timezone local (BRT), que ao shift -1 ano mantém offset +3h e exclui dia 1.
+        // Fix: extrair mês/dia LOCAL do chartRange e reconstruir em UTC.
+        const lastYearMonthStart = (() => {
+          const d = new Date(chartRange.start);
+          return new Date(Date.UTC(d.getFullYear() - 1, d.getMonth(), d.getDate(), 0, 0, 0, 0)).toISOString();
+        })();
+        const lastYearMonthEnd = (() => {
+          const d = new Date(chartRange.end);
+          return new Date(Date.UTC(d.getFullYear() - 1, d.getMonth(), d.getDate(), 23, 59, 59, 999)).toISOString();
+        })();
         // v124+: Usar ano atual - 1 para label, não o ano da data inicial do range
         const lastYear = new Date().getFullYear() - 1;
 
@@ -3486,11 +3492,12 @@
         // KPI Faturamento (card): sempre comparar MÊS ATUAL (até hoje) vs MÊS ANTERIOR (até o mesmo dia),
         // usando a mesma fonte do gráfico (compras.data_compra / compras.valor_total).
         const nowRef = new Date();
-        const monthStartIso = new Date(Date.UTC(nowRef.getFullYear(), nowRef.getMonth(), 1, 0, 0, 0, 0)).toISOString();
-        const todayEndIso = new Date(Date.UTC(nowRef.getFullYear(), nowRef.getMonth(), nowRef.getDate(), 23, 59, 59, 999)).toISOString();
-        const prevMonthStartIso = new Date(Date.UTC(nowRef.getFullYear(), nowRef.getMonth() - 1, 1, 0, 0, 0, 0)).toISOString();
-        const daysInPrevMonth = new Date(Date.UTC(nowRef.getFullYear(), nowRef.getMonth(), 0)).getUTCDate();
+        const monthStartIso = new Date(nowRef.getFullYear(), nowRef.getMonth(), 1, 0, 0, 0, 0).toISOString();
+        const todayEndIso = new Date(nowRef.getFullYear(), nowRef.getMonth(), nowRef.getDate(), 23, 59, 59, 999).toISOString();
+        // Mês anterior: usar UTC para alinhar com data_compra histórico (DATE = midnight UTC)
+        const daysInPrevMonth = new Date(nowRef.getFullYear(), nowRef.getMonth(), 0).getDate();
         const prevMonthDay = Math.min(nowRef.getDate(), daysInPrevMonth);
+        const prevMonthStartIso = new Date(Date.UTC(nowRef.getFullYear(), nowRef.getMonth() - 1, 1, 0, 0, 0, 0)).toISOString();
         const prevMonthEndIso = new Date(Date.UTC(nowRef.getFullYear(), nowRef.getMonth() - 1, prevMonthDay, 23, 59, 59, 999)).toISOString();
 
         let qPrevMonthMtd = sbClient
