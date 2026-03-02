@@ -5199,11 +5199,10 @@
           const fatMtd = comprasMes.reduce((s, r) => s + __toNumber(r.valor_total), 0);
           const fatHoje = comprasHoje.reduce((s, r) => s + __toNumber(r.valor_total), 0);
 
-          // Propostas deduplicadas por id_lead+id_vendedor
+          // Propostas deduplicadas por id_lead (1 por lead)
           const propSet = new Set();
           propostasRaw.forEach(r => {
-            const key = `${r.id_lead || ''}_${r.id_vendedor || ''}`;
-            propSet.add(key);
+            if (r.id_lead) propSet.add(r.id_lead);
           });
           const propostasHoje = propSet.size;
 
