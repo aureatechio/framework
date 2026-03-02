@@ -5272,31 +5272,73 @@
           alert('Não foi possível carregar a biblioteca de PDF. Tente novamente.');
           return;
         }
-        const el = document.getElementById('daily-report-content');
-        if (!el) return;
 
-        // html2canvas não resolve CSS variables — clonar e resolver inline
-        const clone = el.cloneNode(true);
-        clone.style.position = 'absolute';
-        clone.style.left = '-9999px';
-        clone.style.top = '0';
-        clone.style.background = '#ffffff';
-        clone.style.color = '#0f172a';
-        clone.style.width = el.offsetWidth + 'px';
-        document.body.appendChild(clone);
+        const d = state.dailyReport;
+        const now = new Date();
+        const dateLabel = `${__pad2(now.getDate())}/${__pad2(now.getMonth()+1)}/${now.getFullYear()}`;
+        const fatPct = d.fatMeta > 0 ? Math.min(100, Math.round((d.fatMtd / d.fatMeta) * 100)) : 0;
+        const barFill = fatPct >= 100 ? '#22c55e' : '#3b82f6';
+        const metaLabel = d.fatMeta > 0
+          ? `${formatCurrencyCompact(d.fatMtd)} / ${formatCurrencyCompact(d.fatMeta)}`
+          : formatCurrencyCompact(d.fatMtd);
+        const fmtPace = (val) => {
+          if (val === null || val === undefined) return '—';
+          return `${val >= 0 ? '+' : ''}${val.toFixed(1)}%`;
+        };
+        const pc = (val) => (val === null || val === undefined) ? '#64748b' : (val >= 0 ? '#22c55e' : '#ef4444');
 
-        // Resolver CSS variables para computed values em todos os elementos
-        try {
-          const resolveVars = (node) => {
-            if (node.nodeType !== 1) return;
-            const cs = getComputedStyle(node);
-            node.style.color = cs.color;
-            node.style.backgroundColor = cs.backgroundColor;
-            node.style.borderColor = cs.borderColor;
-            Array.from(node.children).forEach(resolveVars);
-          };
-          resolveVars(clone);
-        } catch (e) {}
+        // Gerar HTML standalone com cores hardcoded (sem CSS variables)
+        const pdfCard = (title, value, sub) => `
+          <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:14px;">
+            <div style="font-size:11px; color:#64748b; font-weight:500; margin-bottom:6px;">${title}</div>
+            <div style="font-size:24px; font-weight:800; color:#0f172a;">${value}</div>
+            ${sub ? `<div style="margin-top:4px;">${sub}</div>` : ''}
+          </div>`;
+
+        const pdfHtml = `
+          <div style="font-family:Arial,Helvetica,sans-serif; padding:24px; background:#ffffff; color:#0f172a;">
+            <div style="margin-bottom:18px;">
+              <div style="font-size:20px; font-weight:700; color:#0f172a;">Relatório Diário — ${dateLabel}</div>
+              <div style="font-size:12px; color:#64748b; margin-top:2px;">Gerado automaticamente pelo Dashboard Aceleraí</div>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;">
+              ${pdfCard('Qtd Vendas', d.vendasMtd + ' vendas (mês)', `<span style="color:#22c55e; font-weight:600; font-size:13px;">+${d.vendasHoje} hoje</span>`)}
+              <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:14px;">
+                <div style="font-size:11px; color:#64748b; font-weight:500; margin-bottom:6px;">Faturamento vs Meta</div>
+                <div style="font-size:14px; font-weight:700; color:#0f172a;">${metaLabel}</div>
+                ${d.fatMeta > 0 ? `
+                  <div style="display:flex; align-items:center; gap:8px; margin-top:6px;">
+                    <div style="flex:1; height:8px; background:#e2e8f0; border-radius:999px; overflow:hidden;">
+                      <div style="height:100%; width:${fatPct}%; background:${barFill}; border-radius:inherit;"></div>
+                    </div>
+                    <span style="font-size:12px; font-weight:800; color:${barFill};">${fatPct}%</span>
+                  </div>` : ''}
+                <div style="margin-top:4px;"><span style="color:#22c55e; font-weight:600; font-size:13px;">+${formatCurrencyCompact(d.fatHoje)} hoje</span></div>
+              </div>
+              <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:14px;">
+                <div style="font-size:11px; color:#64748b; font-weight:500; margin-bottom:6px;">Pace vs Ano Passado</div>
+                <div style="margin-top:8px;">
+                  <div style="font-size:13px; font-weight:700; color:${pc(d.paceVendas)};">Vendas: ${fmtPace(d.paceVendas)}</div>
+                  <div style="font-size:13px; font-weight:700; color:${pc(d.paceFat)}; margin-top:4px;">Fat: ${fmtPace(d.paceFat)}</div>
+                </div>
+              </div>
+              ${pdfCard('Propostas Enviadas Hoje', d.propostasHoje, '')}
+              ${pdfCard('Reuniões Agendadas Hoje', d.reunioesAgendadas, '')}
+              ${pdfCard('Reuniões Realizadas Hoje', d.reunioesRealizadas, '')}
+              ${pdfCard('Conversão Reunião → Venda', d.convReunVenda.toFixed(1) + '%', '<span style="font-size:11px; color:#64748b;">mês</span>')}
+              ${pdfCard('Desconto Médio', d.descontoMedio.toFixed(1) + '%', '<span style="font-size:11px; color:#64748b;">proposta → venda</span>')}
+              ${pdfCard('Taxa No-show', `<span style="color:${d.noShowRate > 30 ? '#ef4444' : '#0f172a'}">${d.noShowRate.toFixed(1)}%</span>`, '<span style="font-size:11px; color:#64748b;">mês</span>')}
+            </div>
+          </div>`;
+
+        // Criar container temporário offscreen
+        const wrapper = document.createElement('div');
+        wrapper.style.position = 'absolute';
+        wrapper.style.left = '-9999px';
+        wrapper.style.top = '0';
+        wrapper.style.width = '1100px';
+        wrapper.innerHTML = pdfHtml;
+        document.body.appendChild(wrapper);
 
         const sellerName = state.selectedSeller
           ? (state.sellerNameById[state.selectedSeller] || 'vendedor')
@@ -5310,9 +5352,9 @@
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
         };
         try {
-          await html2pdf().set(opt).from(clone).save();
+          await html2pdf().set(opt).from(wrapper.firstElementChild).save();
         } finally {
-          try { document.body.removeChild(clone); } catch (e) {}
+          try { document.body.removeChild(wrapper); } catch (e) {}
         }
       }
       window.downloadDailyReportPDF = downloadDailyReportPDF;
