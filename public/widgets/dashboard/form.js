@@ -5109,7 +5109,17 @@
       // Vazio = todos veem. Preencher com UUIDs para restringir.
       const DAILY_REPORT_VISIBLE_SELLERS = [];
 
-      const isRealized = (s) => /realiz|conclu|feito/i.test(s || '');
+      // Reunião "realizada" para o Relatório Diário:
+      // - Meet (tipo ≠ ligação): score_final preenchido (não vazio/null)
+      // - Ligação (tipo = LIGACAO_TIPO_ID): statusReuniao indica realizada
+      function isDailyReportRealized(row) {
+        if (!row) return false;
+        if (row.tipo_agendamento === LIGACAO_TIPO_ID) {
+          return /realiz|conclu|feito/i.test(row.statusReuniao || '');
+        }
+        // Meet: score_final preenchido
+        return row.score_final !== null && row.score_final !== undefined && row.score_final !== '';
+      }
 
       async function fetchDailyReport() {
         if (!sbClient) return;
@@ -5199,10 +5209,10 @@
 
           // Reuniões hoje
           const reunioesAgendadas = reunioesHoje.length;
-          const reunioesRealizadas = reunioesHoje.filter(r => isRealized(r.statusReuniao)).length;
+          const reunioesRealizadas = reunioesHoje.filter(r => isDailyReportRealized(r)).length;
 
           // Conversão reunião→venda (mês)
-          const reunioesRealizadasMes = reunioesMes.filter(r => isRealized(r.statusReuniao)).length;
+          const reunioesRealizadasMes = reunioesMes.filter(r => isDailyReportRealized(r)).length;
           const convReunVenda = reunioesRealizadasMes > 0 ? (vendasMtd / reunioesRealizadasMes) * 100 : 0;
 
           // % Desconto médio (mês)
@@ -5221,7 +5231,7 @@
           const reunioesMesPassadas = reunioesMes.filter(r => {
             try { return (r.data || '') <= todayYmd; } catch (e) { return false; }
           });
-          const naoRealizadas = reunioesMesPassadas.filter(r => !isRealized(r.statusReuniao)).length;
+          const naoRealizadas = reunioesMesPassadas.filter(r => !isDailyReportRealized(r)).length;
           const noShowRate = reunioesMesPassadas.length > 0 ? (naoRealizadas / reunioesMesPassadas.length) * 100 : 0;
 
           // Pace vs ano passado
@@ -5264,6 +5274,30 @@
         }
         const el = document.getElementById('daily-report-content');
         if (!el) return;
+
+        // html2canvas não resolve CSS variables — clonar e resolver inline
+        const clone = el.cloneNode(true);
+        clone.style.position = 'absolute';
+        clone.style.left = '-9999px';
+        clone.style.top = '0';
+        clone.style.background = '#ffffff';
+        clone.style.color = '#0f172a';
+        clone.style.width = el.offsetWidth + 'px';
+        document.body.appendChild(clone);
+
+        // Resolver CSS variables para computed values em todos os elementos
+        try {
+          const resolveVars = (node) => {
+            if (node.nodeType !== 1) return;
+            const cs = getComputedStyle(node);
+            node.style.color = cs.color;
+            node.style.backgroundColor = cs.backgroundColor;
+            node.style.borderColor = cs.borderColor;
+            Array.from(node.children).forEach(resolveVars);
+          };
+          resolveVars(clone);
+        } catch (e) {}
+
         const sellerName = state.selectedSeller
           ? (state.sellerNameById[state.selectedSeller] || 'vendedor')
           : 'equipe';
@@ -5275,7 +5309,11 @@
           html2canvas: { scale: 2, useCORS: true },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
         };
-        html2pdf().set(opt).from(el).save();
+        try {
+          await html2pdf().set(opt).from(clone).save();
+        } finally {
+          try { document.body.removeChild(clone); } catch (e) {}
+        }
       }
       window.downloadDailyReportPDF = downloadDailyReportPDF;
 
