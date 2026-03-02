@@ -979,6 +979,8 @@
           fatMtd: 0,
           fatMeta: 0,
           fatHoje: 0,
+          vendasLyMtd: 0,
+          fatLyMtd: 0,
           propostasHoje: 0,
           reunioesAgendadas: 0,
           reunioesRealizadas: 0,
@@ -5112,12 +5114,12 @@
       // Reunião "realizada" para o Relatório Diário:
       // - Meet (tipo ≠ ligação): score_final preenchido (não vazio/null)
       // - Ligação (tipo = LIGACAO_TIPO_ID): statusReuniao indica realizada
+      // Alinhado com performance.html: score_final not null OR tipo_agendamento = ligação
       function isDailyReportRealized(row) {
         if (!row) return false;
-        if (row.tipo_agendamento === LIGACAO_TIPO_ID) {
-          return /realiz|conclu|feito/i.test(row.statusReuniao || '');
-        }
-        // Meet: score_final preenchido
+        // Ligação: todas contam como realizadas
+        if (row.tipo_agendamento === LIGACAO_TIPO_ID) return true;
+        // Meet: score_final preenchido (não null)
         return row.score_final !== null && row.score_final !== undefined && row.score_final !== '';
       }
 
@@ -5158,14 +5160,13 @@
           qC = applyCutoffTimestamp(qC, 'created_at').gte('created_at', todayStartIso).lte('created_at', todayEndIso);
           if (state.selectedSeller) qC = qC.eq('id_vendedor', state.selectedSeller);
 
-          // D) Reuniões hoje
+          // D) Reuniões hoje — sem filtro de cancelamento (alinhado c/ performance.html)
           let qD = sbClient.from('agendamento').select('id, data, vendedor, statusReuniao, score_final, tipo_agendamento, leadId');
-          qD = applyMeetingNotCanceledFilter(qD).eq('data', todayYmd);
+          qD = qD.eq('data', todayYmd);
           if (state.selectedSeller) qD = qD.eq('vendedor', state.selectedSeller);
 
-          // E) Reuniões mês (para no-show + conversão)
+          // E) Reuniões mês (para no-show + conversão) — sem filtro de cancelamento
           let qE = sbClient.from('agendamento').select('id, data, vendedor, statusReuniao, score_final, tipo_agendamento');
-          qE = applyMeetingNotCanceledFilter(qE);
           const monthStartYmd = `${now.getFullYear()}-${__pad2(now.getMonth()+1)}-01`;
           qE = applyCutoffDateYmd(qE, 'data').gte('data', monthStartYmd).lte('data', todayYmd);
           if (state.selectedSeller) qE = qE.eq('vendedor', state.selectedSeller);
@@ -5241,6 +5242,7 @@
 
           state.dailyReport = {
             vendasMtd, vendasHoje, fatMtd, fatMeta, fatHoje,
+            vendasLyMtd, fatLyMtd,
             propostasHoje, reunioesAgendadas, reunioesRealizadas,
             convReunVenda, descontoMedio, noShowRate,
             paceVendas, paceFat
@@ -5318,7 +5320,9 @@
                 <div style="font-size:11px; color:#64748b; font-weight:500; margin-bottom:6px;">Pace vs Ano Passado</div>
                 <div style="margin-top:8px;">
                   <div style="font-size:13px; font-weight:700; color:${pc(d.paceVendas)};">Vendas: ${fmtPace(d.paceVendas)}</div>
+                  <div style="font-size:11px; color:#64748b; margin-top:2px;">${d.vendasMtd} atual vs ${d.vendasLyMtd} ano ant</div>
                   <div style="font-size:13px; font-weight:700; color:${pc(d.paceFat)}; margin-top:4px;">Fat: ${fmtPace(d.paceFat)}</div>
+                  <div style="font-size:11px; color:#64748b; margin-top:2px;">${formatCurrencyCompact(d.fatMtd)} atual vs ${formatCurrencyCompact(d.fatLyMtd)} ano ant</div>
                 </div>
               </div>
               ${pdfCard('Propostas Enviadas Hoje', d.propostasHoje, '')}
@@ -5495,15 +5499,17 @@
                 <i data-lucide="trending-up" size="14"></i>
               </div>
             </div>
-            <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; flex-direction: column; gap: 6px;">
               <div style="display: flex; align-items: center; gap: 8px;">
                 <i data-lucide="${paceIcon(d.paceVendas)}" size="16" style="color: ${paceColor(d.paceVendas)};"></i>
                 <span style="font-size: 14px; font-weight: 700; color: ${paceColor(d.paceVendas)};">Vendas: ${fmtPace(d.paceVendas)}</span>
               </div>
+              <div style="font-size: 11px; color: var(--text-muted); padding-left: 24px;">${d.vendasMtd} atual vs ${d.vendasLyMtd} ano ant</div>
               <div style="display: flex; align-items: center; gap: 8px;">
                 <i data-lucide="${paceIcon(d.paceFat)}" size="16" style="color: ${paceColor(d.paceFat)};"></i>
                 <span style="font-size: 14px; font-weight: 700; color: ${paceColor(d.paceFat)};">Fat: ${fmtPace(d.paceFat)}</span>
               </div>
+              <div style="font-size: 11px; color: var(--text-muted); padding-left: 24px;">${formatCurrencyCompact(d.fatMtd)} atual vs ${formatCurrencyCompact(d.fatLyMtd)} ano ant</div>
             </div>
           </div>`;
       }
