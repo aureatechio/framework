@@ -5282,7 +5282,7 @@
       // --- Render ---
       function renderDailyReport() {
         const container = document.getElementById('daily-report-container');
-        if (!container) return;
+        if (!container) { console.warn('[DailyReport] container #daily-report-container não encontrado'); return; }
 
         // Visibilidade por vendedor
         if (DAILY_REPORT_VISIBLE_SELLERS.length > 0 && !access.isLeader) {
@@ -5292,7 +5292,7 @@
             return;
           }
         }
-        container.style.display = '';
+        container.style.display = 'block';
 
         const d = state.dailyReport;
         const isDark = state.theme === 'dark';
