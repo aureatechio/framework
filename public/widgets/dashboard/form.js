@@ -973,6 +973,21 @@
           },
           sellers: [] // [{ id, name, avatarUrl, role, propostasPct, reunioesPct, avgPct }]
         },
+        dailyReport: {
+          vendasMtd: 0,
+          vendasHoje: 0,
+          fatMtd: 0,
+          fatMeta: 0,
+          fatHoje: 0,
+          propostasHoje: 0,
+          reunioesAgendadas: 0,
+          reunioesRealizadas: 0,
+          convReunVenda: 0,
+          descontoMedio: 0,
+          noShowRate: 0,
+          paceVendas: null,
+          paceFat: null
+        },
         kpis: [
            // Linha 1 (6): Faturamento • Conversão Global • Conversão Prioridade • Leads Prioridade • Propostas • Reuniões
            { id: KPI_IDS.FATURAMENTO, t:"Faturamento", v:"R$ --", i:"dollar-sign", bg:"icon-bg-blue", vs1: {v:0, l:"vs mês anterior", up:true}, vs2: {v:0, l:"vs meta", up:true}, vs3: {v:0, l:"vs ano ant", up:true} },
@@ -5087,6 +5102,333 @@
         }
       }
 
+      // ==========================================
+      // RELATÓRIO DIÁRIO
+      // ==========================================
+
+      // Vazio = todos veem. Preencher com UUIDs para restringir.
+      const DAILY_REPORT_VISIBLE_SELLERS = [];
+
+      const isRealized = (s) => /realiz|conclu|feito/i.test(s || '');
+
+      async function fetchDailyReport() {
+        if (!sbClient) return;
+
+        const now = new Date();
+        const todayStart = new Date(now); todayStart.setHours(0,0,0,0);
+        const todayEnd   = new Date(now); todayEnd.setHours(23,59,59,999);
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const lyMonthStart = new Date(now.getFullYear()-1, now.getMonth(), 1);
+        const lyTodayEnd   = new Date(now.getFullYear()-1, now.getMonth(), now.getDate(), 23,59,59,999);
+
+        const todayStartIso = todayStart.toISOString();
+        const todayEndIso   = todayEnd.toISOString();
+        const monthStartIso = monthStart.toISOString();
+        const lyMonthStartIso = lyMonthStart.toISOString();
+        const lyTodayEndIso   = lyTodayEnd.toISOString();
+
+        const todayYmd = getTodayYmdLocal();
+
+        try {
+          // A) Vendas mês + hoje
+          let qA = sbClient.from('compras').select('valor_total, valor_total_proposta, data_compra, leadid, vendedoresponsavel');
+          qA = applyApprovedPurchaseFilter(qA);
+          qA = applyCutoffTimestamp(qA, 'data_compra').gte('data_compra', monthStartIso).lte('data_compra', todayEndIso);
+          if (state.selectedSeller) qA = qA.eq('vendedoresponsavel', state.selectedSeller);
+
+          // B) Vendas ano passado (mesmo período)
+          let qB = sbClient.from('compras').select('valor_total, data_compra, leadid, vendedoresponsavel');
+          qB = applyApprovedPurchaseFilter(qB);
+          const cutoffLY = (cutoff && cutoff.enabled && cutoff.cutoffInstantIso) ? __shiftIsoYear(cutoff.cutoffInstantIso, -1) : null;
+          qB = applyCutoffTimestampAt(qB, 'data_compra', cutoffLY).gte('data_compra', lyMonthStartIso).lte('data_compra', lyTodayEndIso);
+          if (state.selectedSeller) qB = qB.eq('vendedoresponsavel', state.selectedSeller);
+
+          // C) Propostas hoje
+          let qC = sbClient.from('imagemProposta').select('id, id_vendedor, id_lead');
+          qC = applyCutoffTimestamp(qC, 'created_at').gte('created_at', todayStartIso).lte('created_at', todayEndIso);
+          if (state.selectedSeller) qC = qC.eq('id_vendedor', state.selectedSeller);
+
+          // D) Reuniões hoje
+          let qD = sbClient.from('agendamento').select('id, data, vendedor, statusReuniao, score_final, tipo_agendamento, leadId');
+          qD = applyMeetingNotCanceledFilter(qD).eq('data', todayYmd);
+          if (state.selectedSeller) qD = qD.eq('vendedor', state.selectedSeller);
+
+          // E) Reuniões mês (para no-show + conversão)
+          let qE = sbClient.from('agendamento').select('id, data, vendedor, statusReuniao, score_final, tipo_agendamento');
+          qE = applyMeetingNotCanceledFilter(qE);
+          const monthStartYmd = `${now.getFullYear()}-${__pad2(now.getMonth()+1)}-01`;
+          qE = applyCutoffDateYmd(qE, 'data').gte('data', monthStartYmd).lte('data', todayYmd);
+          if (state.selectedSeller) qE = qE.eq('vendedor', state.selectedSeller);
+
+          const [rA, rB, rC, rD, rE] = await Promise.allSettled([qA, qB, qC, qD, qE]);
+
+          let comprasMes   = (rA.status === 'fulfilled' && rA.value.data) ? rA.value.data : [];
+          let comprasLY    = (rB.status === 'fulfilled' && rB.value.data) ? rB.value.data : [];
+          let propostasRaw = (rC.status === 'fulfilled' && rC.value.data) ? rC.value.data : [];
+          let reunioesHoje = (rD.status === 'fulfilled' && rD.value.data) ? rD.value.data : [];
+          let reunioesMes  = (rE.status === 'fulfilled' && rE.value.data) ? rE.value.data : [];
+
+          // Aplicar filtro de agência (post-fetch)
+          comprasMes   = await filterRowsByAgencyViaLeadId(comprasMes, (r) => r && r.leadid);
+          comprasLY    = await filterRowsByAgencyViaLeadId(comprasLY, (r) => r && r.leadid);
+          propostasRaw = await filterRowsByAgencyViaLeadId(propostasRaw, (r) => r && r.id_lead);
+          reunioesHoje = await filterRowsByAgencyViaLeadId(reunioesHoje, (r) => r && r.leadId);
+          reunioesMes  = await filterRowsByAgencyViaLeadId(reunioesMes, (r) => r && r.leadId);
+
+          // F) Meta mensal de faturamento — reutilizar helper existente
+          let fatMeta = 0;
+          try { fatMeta = await getGaugeTargetRevenueFromCrm() || 0; } catch (e) {}
+
+          // --- Cálculos ---
+          const vendasMtd = comprasMes.length;
+          const comprasHoje = comprasMes.filter(r => {
+            try { return (r.data_compra || '').slice(0,10) === todayYmd; } catch (e) { return false; }
+          });
+          const vendasHoje = comprasHoje.length;
+
+          const fatMtd = comprasMes.reduce((s, r) => s + __toNumber(r.valor_total), 0);
+          const fatHoje = comprasHoje.reduce((s, r) => s + __toNumber(r.valor_total), 0);
+
+          // Propostas deduplicadas por id_lead+id_vendedor
+          const propSet = new Set();
+          propostasRaw.forEach(r => {
+            const key = `${r.id_lead || ''}_${r.id_vendedor || ''}`;
+            propSet.add(key);
+          });
+          const propostasHoje = propSet.size;
+
+          // Reuniões hoje
+          const reunioesAgendadas = reunioesHoje.length;
+          const reunioesRealizadas = reunioesHoje.filter(r => isRealized(r.statusReuniao)).length;
+
+          // Conversão reunião→venda (mês)
+          const reunioesRealizadasMes = reunioesMes.filter(r => isRealized(r.statusReuniao)).length;
+          const convReunVenda = reunioesRealizadasMes > 0 ? (vendasMtd / reunioesRealizadasMes) * 100 : 0;
+
+          // % Desconto médio (mês)
+          const comprasComProposta = comprasMes.filter(r => __toNumber(r.valor_total_proposta) > 0);
+          let descontoMedio = 0;
+          if (comprasComProposta.length > 0) {
+            const somaDesc = comprasComProposta.reduce((s, r) => {
+              const vp = __toNumber(r.valor_total_proposta);
+              const vt = __toNumber(r.valor_total);
+              return s + ((vp - vt) / vp);
+            }, 0);
+            descontoMedio = (somaDesc / comprasComProposta.length) * 100;
+          }
+
+          // No-show (mês) — reuniões com data passada que NÃO são realizadas
+          const reunioesMesPassadas = reunioesMes.filter(r => {
+            try { return (r.data || '') <= todayYmd; } catch (e) { return false; }
+          });
+          const naoRealizadas = reunioesMesPassadas.filter(r => !isRealized(r.statusReuniao)).length;
+          const noShowRate = reunioesMesPassadas.length > 0 ? (naoRealizadas / reunioesMesPassadas.length) * 100 : 0;
+
+          // Pace vs ano passado
+          const vendasLyMtd = comprasLY.length;
+          const fatLyMtd = comprasLY.reduce((s, r) => s + __toNumber(r.valor_total), 0);
+          const paceVendas = vendasLyMtd > 0 ? ((vendasMtd / vendasLyMtd) - 1) * 100 : null;
+          const paceFat    = fatLyMtd > 0 ? ((fatMtd / fatLyMtd) - 1) * 100 : null;
+
+          state.dailyReport = {
+            vendasMtd, vendasHoje, fatMtd, fatMeta, fatHoje,
+            propostasHoje, reunioesAgendadas, reunioesRealizadas,
+            convReunVenda, descontoMedio, noShowRate,
+            paceVendas, paceFat
+          };
+
+          renderDailyReport();
+        } catch (e) {
+          console.error('Erro ao buscar relatório diário:', e);
+        }
+      }
+
+      // --- PDF ---
+      async function loadHtml2Pdf() {
+        if (window.html2pdf) return;
+        return new Promise((resolve, reject) => {
+          const s = document.createElement('script');
+          s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+          s.onload = resolve;
+          s.onerror = reject;
+          document.head.appendChild(s);
+        });
+      }
+
+      async function downloadDailyReportPDF() {
+        try {
+          await loadHtml2Pdf();
+        } catch (e) {
+          alert('Não foi possível carregar a biblioteca de PDF. Tente novamente.');
+          return;
+        }
+        const el = document.getElementById('daily-report-content');
+        if (!el) return;
+        const sellerName = state.selectedSeller
+          ? (state.sellerNameById[state.selectedSeller] || 'vendedor')
+          : 'equipe';
+        const dateStr = getTodayYmdLocal();
+        const opt = {
+          margin: [10, 10, 10, 10],
+          filename: `relatorio_diario_${sellerName}_${dateStr}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+        };
+        html2pdf().set(opt).from(el).save();
+      }
+      window.downloadDailyReportPDF = downloadDailyReportPDF;
+
+      // --- Render ---
+      function renderDailyReport() {
+        const container = document.getElementById('daily-report-container');
+        if (!container) return;
+
+        // Visibilidade por vendedor
+        if (DAILY_REPORT_VISIBLE_SELLERS.length > 0 && !access.isLeader) {
+          const loggedId = (access && access.sellerId) ? String(access.sellerId) : '';
+          if (!DAILY_REPORT_VISIBLE_SELLERS.includes(loggedId)) {
+            container.style.display = 'none';
+            return;
+          }
+        }
+        container.style.display = '';
+
+        const d = state.dailyReport;
+        const isDark = state.theme === 'dark';
+        const now = new Date();
+        const dateLabel = `${__pad2(now.getDate())}/${__pad2(now.getMonth()+1)}/${now.getFullYear()}`;
+
+        // Faturamento vs meta
+        const fatPct = d.fatMeta > 0 ? Math.min(100, Math.round((d.fatMtd / d.fatMeta) * 100)) : 0;
+
+        // Pace helpers
+        const fmtPace = (val) => {
+          if (val === null || val === undefined) return '—';
+          const sign = val >= 0 ? '+' : '';
+          return `${sign}${val.toFixed(1)}%`;
+        };
+        const paceColor = (val) => {
+          if (val === null || val === undefined) return 'var(--text-muted)';
+          return val >= 0 ? 'var(--col-success, #22c55e)' : 'var(--col-danger, #ef4444)';
+        };
+        const paceArrow = (val) => {
+          if (val === null || val === undefined) return '';
+          return val >= 0 ? 'trending-up' : 'trending-down';
+        };
+
+        const cardBg = isDark ? 'rgba(30,41,59,0.7)' : 'rgba(255,255,255,0.85)';
+        const borderCol = isDark ? 'rgba(51,65,85,0.6)' : 'rgba(226,232,240,0.8)';
+
+        const html = `
+          <div id="daily-report-content" style="padding: 20px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #3b82f6, #6366f1); display: flex; align-items: center; justify-content: center;">
+                  <i data-lucide="clipboard-list" style="color: #fff;" size="18"></i>
+                </div>
+                <div>
+                  <div style="font-size: 16px; font-weight: 700; color: var(--text-main);">Relatório Diário</div>
+                  <div style="font-size: 12px; color: var(--text-muted);">${dateLabel}</div>
+                </div>
+              </div>
+              <button onclick="downloadDailyReportPDF()" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 8px; border: 1px solid ${borderCol}; background: ${cardBg}; color: var(--text-main); cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.borderColor='#3b82f6'" onmouseout="this.style.borderColor='${borderCol}'">
+                <i data-lucide="download" size="14"></i> Baixar PDF
+              </button>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+              ${_drCard('shopping-cart', 'icon-bg-green', 'Qtd Vendas', `<span style="font-size: 28px; font-weight: 800; color: var(--text-main);">${d.vendasMtd}</span> <span style="font-size: 13px; color: var(--text-muted);">vendas (mês)</span>`, `<span style="color: var(--col-success, #22c55e); font-weight: 600;">+${d.vendasHoje} hoje</span>`, cardBg, borderCol)}
+              ${_drCardFat(d, fatPct, cardBg, borderCol)}
+              ${_drCardPace(d, cardBg, borderCol)}
+              ${_drCard('file-text', 'icon-bg-blue', 'Propostas Enviadas Hoje', `<span style="font-size: 28px; font-weight: 800; color: var(--text-main);">${d.propostasHoje}</span>`, '', cardBg, borderCol)}
+              ${_drCard('calendar', 'icon-bg-orange', 'Reuniões Agendadas Hoje', `<span style="font-size: 28px; font-weight: 800; color: var(--text-main);">${d.reunioesAgendadas}</span>`, '', cardBg, borderCol)}
+              ${_drCard('calendar-check', 'icon-bg-green', 'Reuniões Realizadas Hoje', `<span style="font-size: 28px; font-weight: 800; color: var(--text-main);">${d.reunioesRealizadas}</span>`, '', cardBg, borderCol)}
+              ${_drCard('percent', 'icon-bg-cyan', 'Conversão Reunião → Venda', `<span style="font-size: 28px; font-weight: 800; color: var(--text-main);">${d.convReunVenda.toFixed(1)}%</span>`, `<span style="font-size: 12px; color: var(--text-muted);">mês</span>`, cardBg, borderCol)}
+              ${_drCard('tag', 'icon-bg-purple', 'Desconto Médio', `<span style="font-size: 28px; font-weight: 800; color: var(--text-main);">${d.descontoMedio.toFixed(1)}%</span>`, `<span style="font-size: 12px; color: var(--text-muted);">(proposta → venda)</span>`, cardBg, borderCol)}
+              ${_drCard('user-x', 'icon-bg-red', 'Taxa No-show', `<span style="font-size: 28px; font-weight: 800; color: ${d.noShowRate > 30 ? 'var(--col-danger, #ef4444)' : 'var(--text-main)'};">${d.noShowRate.toFixed(1)}%</span>`, `<span style="font-size: 12px; color: var(--text-muted);">mês</span>`, cardBg, borderCol)}
+            </div>
+          </div>
+        `;
+        container.innerHTML = html;
+        try { lucide.createIcons(); } catch (e) {}
+      }
+
+      function _drCard(icon, iconBg, title, mainVal, subVal, cardBg, borderCol) {
+        return `
+          <div style="background: ${cardBg}; border: 1px solid ${borderCol}; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 8px; transition: all 0.2s;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <span style="font-size: 12px; font-weight: 500; color: var(--text-muted);">${title}</span>
+              <div class="kpi-icon-box ${iconBg}" style="width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                <i data-lucide="${icon}" size="14"></i>
+              </div>
+            </div>
+            <div>${mainVal}</div>
+            ${subVal ? `<div>${subVal}</div>` : ''}
+          </div>`;
+      }
+
+      function _drCardFat(d, fatPct, cardBg, borderCol) {
+        const barBg = 'var(--bg-subtle, #f1f5f9)';
+        const barFill = fatPct >= 100 ? '#22c55e' : '#3b82f6';
+        const metaLabel = d.fatMeta > 0
+          ? `${formatCurrencyCompact(d.fatMtd)} / ${formatCurrencyCompact(d.fatMeta)}`
+          : formatCurrencyCompact(d.fatMtd);
+        return `
+          <div style="background: ${cardBg}; border: 1px solid ${borderCol}; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 8px; transition: all 0.2s;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <span style="font-size: 12px; font-weight: 500; color: var(--text-muted);">Faturamento vs Meta</span>
+              <div class="kpi-icon-box icon-bg-blue" style="width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                <i data-lucide="dollar-sign" size="14"></i>
+              </div>
+            </div>
+            <div style="font-size: 15px; font-weight: 700; color: var(--text-main);">${metaLabel}</div>
+            ${d.fatMeta > 0 ? `
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="flex: 1; height: 8px; background: ${barBg}; border-radius: 999px; overflow: hidden; border: 1px solid ${borderCol};">
+                  <div style="height: 100%; width: ${fatPct}%; background: ${barFill}; border-radius: inherit; transition: width 0.4s ease;"></div>
+                </div>
+                <span style="font-size: 13px; font-weight: 800; color: ${barFill}; min-width: 38px; text-align: right;">${fatPct}%</span>
+              </div>
+            ` : ''}
+            <div><span style="color: var(--col-success, #22c55e); font-weight: 600; font-size: 13px;">+${formatCurrencyCompact(d.fatHoje)} hoje</span></div>
+          </div>`;
+      }
+
+      function _drCardPace(d, cardBg, borderCol) {
+        const fmtPace = (val) => {
+          if (val === null || val === undefined) return '—';
+          const sign = val >= 0 ? '+' : '';
+          return `${sign}${val.toFixed(1)}%`;
+        };
+        const paceColor = (val) => {
+          if (val === null || val === undefined) return 'var(--text-muted)';
+          return val >= 0 ? '#22c55e' : '#ef4444';
+        };
+        const paceIcon = (val) => {
+          if (val === null || val === undefined) return 'minus';
+          return val >= 0 ? 'trending-up' : 'trending-down';
+        };
+        return `
+          <div style="background: ${cardBg}; border: 1px solid ${borderCol}; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px; transition: all 0.2s;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <span style="font-size: 12px; font-weight: 500; color: var(--text-muted);">Pace vs Ano Passado</span>
+              <div class="kpi-icon-box icon-bg-purple" style="width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                <i data-lucide="trending-up" size="14"></i>
+              </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="${paceIcon(d.paceVendas)}" size="16" style="color: ${paceColor(d.paceVendas)};"></i>
+                <span style="font-size: 14px; font-weight: 700; color: ${paceColor(d.paceVendas)};">Vendas: ${fmtPace(d.paceVendas)}</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="${paceIcon(d.paceFat)}" size="16" style="color: ${paceColor(d.paceFat)};"></i>
+                <span style="font-size: 14px; font-weight: 700; color: ${paceColor(d.paceFat)};">Fat: ${fmtPace(d.paceFat)}</span>
+              </div>
+            </div>
+          </div>`;
+      }
+
       function renderMetasSection() {
         const data = state.metasData;
         if (!data) return;
@@ -5212,7 +5554,8 @@
              fetchConversionRates(),
              fetchChannelData(),
              fetchPipelineData(),
-             fetchMetasData()
+             fetchMetasData(),
+             fetchDailyReport()
          ];
          const results = await Promise.allSettled(tasks);
          results.forEach((r) => {
@@ -5296,6 +5639,7 @@
         renderChannels();
         renderPipeline();
         renderMetasSection();
+        renderDailyReport();
         // Importante: NÃO renderizar ApexCharts (Gauge/Revenue) enquanto o dashboard-content está display:none.
         // No Bubble isso pode deixar o gráfico “branco” (container com width=0) e às vezes ele não recupera nem com reload.
         // Vamos renderizar depois que o conteúdo estiver visível (ver abaixo).
@@ -5409,6 +5753,7 @@
                     try { renderChannels(); } catch (e) {}
                     try { renderPipeline(); } catch (e) {}
                     try { renderMetasSection(); } catch (e) {}
+                    try { renderDailyReport(); } catch (e) {}
                     try { renderGauge(); } catch (e) {}
                     try { renderRevenue(state.revenueChartData); } catch (e) {}
                     try { window.dispatchEvent(new Event('resize')); } catch (e) {}
