@@ -5255,25 +5255,7 @@
       }
 
       // --- PDF ---
-      async function loadHtml2Pdf() {
-        if (window.html2pdf) return;
-        return new Promise((resolve, reject) => {
-          const s = document.createElement('script');
-          s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
-          s.onload = resolve;
-          s.onerror = reject;
-          document.head.appendChild(s);
-        });
-      }
-
       async function downloadDailyReportPDF() {
-        try {
-          await loadHtml2Pdf();
-        } catch (e) {
-          alert('Não foi possível carregar a biblioteca de PDF. Tente novamente.');
-          return;
-        }
-
         const d = state.dailyReport;
         const now = new Date();
         const dateLabel = `${__pad2(now.getDate())}/${__pad2(now.getMonth()+1)}/${now.getFullYear()}`;
@@ -5283,82 +5265,87 @@
           ? `${formatCurrencyCompact(d.fatMtd)} / ${formatCurrencyCompact(d.fatMeta)}`
           : formatCurrencyCompact(d.fatMtd);
         const fmtPace = (val) => {
-          if (val === null || val === undefined) return '—';
+          if (val === null || val === undefined) return '\u2014';
           return `${val >= 0 ? '+' : ''}${val.toFixed(1)}%`;
         };
         const pc = (val) => (val === null || val === undefined) ? '#64748b' : (val >= 0 ? '#22c55e' : '#ef4444');
-
-        // Gerar HTML standalone com cores hardcoded (sem CSS variables)
-        const pdfCard = (title, value, sub) => `
-          <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:14px;">
-            <div style="font-size:11px; color:#64748b; font-weight:500; margin-bottom:6px;">${title}</div>
-            <div style="font-size:24px; font-weight:800; color:#0f172a;">${value}</div>
-            ${sub ? `<div style="margin-top:4px;">${sub}</div>` : ''}
-          </div>`;
-
-        const pdfHtml = `
-          <div style="font-family:Arial,Helvetica,sans-serif; padding:24px; background:#ffffff; color:#0f172a;">
-            <div style="margin-bottom:18px;">
-              <div style="font-size:20px; font-weight:700; color:#0f172a;">Relatório Diário — ${dateLabel}</div>
-              <div style="font-size:12px; color:#64748b; margin-top:2px;">Gerado automaticamente pelo Dashboard Aceleraí</div>
-            </div>
-            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;">
-              ${pdfCard('Qtd Vendas', d.vendasMtd + ' vendas (mês)', `<span style="color:#22c55e; font-weight:600; font-size:13px;">+${d.vendasHoje} hoje</span>`)}
-              <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:14px;">
-                <div style="font-size:11px; color:#64748b; font-weight:500; margin-bottom:6px;">Faturamento vs Meta</div>
-                <div style="font-size:14px; font-weight:700; color:#0f172a;">${metaLabel}</div>
-                ${d.fatMeta > 0 ? `
-                  <div style="display:flex; align-items:center; gap:8px; margin-top:6px;">
-                    <div style="flex:1; height:8px; background:#e2e8f0; border-radius:999px; overflow:hidden;">
-                      <div style="height:100%; width:${fatPct}%; background:${barFill}; border-radius:inherit;"></div>
-                    </div>
-                    <span style="font-size:12px; font-weight:800; color:${barFill};">${fatPct}%</span>
-                  </div>` : ''}
-                <div style="margin-top:4px;"><span style="color:#22c55e; font-weight:600; font-size:13px;">+${formatCurrencyCompact(d.fatHoje)} hoje</span></div>
-              </div>
-              <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:14px;">
-                <div style="font-size:11px; color:#64748b; font-weight:500; margin-bottom:6px;">Pace vs Ano Passado</div>
-                <div style="margin-top:8px;">
-                  <div style="font-size:13px; font-weight:700; color:${pc(d.paceVendas)};">Vendas: ${fmtPace(d.paceVendas)}</div>
-                  <div style="font-size:11px; color:#64748b; margin-top:2px;">${d.vendasMtd} atual vs ${d.vendasLyMtd} ano ant</div>
-                  <div style="font-size:13px; font-weight:700; color:${pc(d.paceFat)}; margin-top:4px;">Fat: ${fmtPace(d.paceFat)}</div>
-                  <div style="font-size:11px; color:#64748b; margin-top:2px;">${formatCurrencyCompact(d.fatMtd)} atual vs ${formatCurrencyCompact(d.fatLyMtd)} ano ant</div>
-                </div>
-              </div>
-              ${pdfCard('Propostas Enviadas Hoje', d.propostasHoje, '')}
-              ${pdfCard('Reuniões Agendadas Hoje', d.reunioesAgendadas, '')}
-              ${pdfCard('Reuniões Realizadas Hoje', d.reunioesRealizadas, '')}
-              ${pdfCard('Conversão Reunião → Venda', d.convReunVenda.toFixed(1) + '%', '<span style="font-size:11px; color:#64748b;">mês</span>')}
-              ${pdfCard('Desconto Médio', d.descontoMedio.toFixed(1) + '%', '<span style="font-size:11px; color:#64748b;">proposta → venda</span>')}
-              ${pdfCard('Taxa No-show', `<span style="color:${d.noShowRate > 30 ? '#ef4444' : '#0f172a'}">${d.noShowRate.toFixed(1)}%</span>`, '<span style="font-size:11px; color:#64748b;">mês</span>')}
-            </div>
-          </div>`;
-
-        // Criar container temporário offscreen
-        const wrapper = document.createElement('div');
-        wrapper.style.position = 'absolute';
-        wrapper.style.left = '-9999px';
-        wrapper.style.top = '0';
-        wrapper.style.width = '1100px';
-        wrapper.innerHTML = pdfHtml;
-        document.body.appendChild(wrapper);
 
         const sellerName = state.selectedSeller
           ? (state.sellerNameById[state.selectedSeller] || 'vendedor')
           : 'equipe';
         const dateStr = getTodayYmdLocal();
-        const opt = {
-          margin: [10, 10, 10, 10],
-          filename: `relatorio_diario_${sellerName}_${dateStr}.pdf`,
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
-        };
-        try {
-          await html2pdf().set(opt).from(wrapper.firstElementChild).save();
-        } finally {
-          try { document.body.removeChild(wrapper); } catch (e) {}
+
+        // Abrir nova janela com HTML completo para impressão/PDF
+        const card = (title, value, sub) => `
+          <td style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:14px; width:33.33%; vertical-align:top;">
+            <div style="font-size:11px; color:#64748b; font-weight:500; margin-bottom:6px;">${title}</div>
+            <div style="font-size:22px; font-weight:800; color:#0f172a;">${value}</div>
+            ${sub ? `<div style="margin-top:4px;">${sub}</div>` : ''}
+          </td>`;
+
+        const fullHtml = `<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<title>Relat\u00f3rio Di\u00e1rio - ${sellerName} - ${dateLabel}</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:Arial,Helvetica,sans-serif; background:#fff; color:#0f172a; padding:24px; }
+  table { width:100%; border-collapse:separate; border-spacing:10px; }
+  td { border-radius:10px; }
+  @media print {
+    body { padding:12px; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    @page { size:A4 landscape; margin:10mm; }
+  }
+</style></head><body>
+<div style="margin-bottom:16px;">
+  <div style="font-size:20px; font-weight:700;">Relat\u00f3rio Di\u00e1rio \u2014 ${dateLabel}</div>
+  <div style="font-size:12px; color:#64748b; margin-top:2px;">Vendedor: ${sellerName} | Gerado pelo Dashboard Aceleraí</div>
+</div>
+<table>
+  <tr>
+    ${card('Qtd Vendas', d.vendasMtd + ' vendas (m\u00eas)', `<span style="color:#22c55e;font-weight:600;font-size:13px;">+${d.vendasHoje} hoje</span>`)}
+    <td style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:14px; width:33.33%; vertical-align:top;">
+      <div style="font-size:11px; color:#64748b; font-weight:500; margin-bottom:6px;">Faturamento vs Meta</div>
+      <div style="font-size:14px; font-weight:700;">${metaLabel}</div>
+      ${d.fatMeta > 0 ? `<div style="margin-top:6px; display:flex; align-items:center; gap:6px;">
+        <div style="flex:1; height:8px; background:#e2e8f0; border-radius:999px; overflow:hidden;">
+          <div style="height:100%; width:${fatPct}%; background:${barFill}; border-radius:inherit;"></div>
+        </div>
+        <span style="font-size:12px; font-weight:800; color:${barFill};">${fatPct}%</span>
+      </div>` : ''}
+      <div style="margin-top:4px;"><span style="color:#22c55e;font-weight:600;font-size:13px;">+${formatCurrencyCompact(d.fatHoje)} hoje</span></div>
+    </td>
+    <td style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:14px; width:33.33%; vertical-align:top;">
+      <div style="font-size:11px; color:#64748b; font-weight:500; margin-bottom:6px;">Pace vs Ano Passado</div>
+      <div style="margin-top:8px;">
+        <div style="font-size:13px; font-weight:700; color:${pc(d.paceVendas)};">Vendas: ${fmtPace(d.paceVendas)}</div>
+        <div style="font-size:11px; color:#64748b; margin-top:2px;">${d.vendasMtd} atual vs ${d.vendasLyMtd} ano ant</div>
+        <div style="font-size:13px; font-weight:700; color:${pc(d.paceFat)}; margin-top:6px;">Fat: ${fmtPace(d.paceFat)}</div>
+        <div style="font-size:11px; color:#64748b; margin-top:2px;">${formatCurrencyCompact(d.fatMtd)} atual vs ${formatCurrencyCompact(d.fatLyMtd)} ano ant</div>
+      </div>
+    </td>
+  </tr>
+  <tr>
+    ${card('Propostas Enviadas Hoje', d.propostasHoje, '')}
+    ${card('Reuni\u00f5es Agendadas Hoje', d.reunioesAgendadas, '')}
+    ${card('Reuni\u00f5es Realizadas Hoje', d.reunioesRealizadas, '')}
+  </tr>
+  <tr>
+    ${card('Convers\u00e3o Reuni\u00e3o \u2192 Venda', d.convReunVenda.toFixed(1) + '%', '<span style="font-size:11px;color:#64748b;">m\u00eas</span>')}
+    ${card('Desconto M\u00e9dio', d.descontoMedio.toFixed(1) + '%', '<span style="font-size:11px;color:#64748b;">proposta \u2192 venda</span>')}
+    ${card('Taxa No-show', `<span style="color:${d.noShowRate > 30 ? '#ef4444' : '#0f172a'}">${d.noShowRate.toFixed(1)}%</span>`, '<span style="font-size:11px;color:#64748b;">m\u00eas</span>')}
+  </tr>
+</table>
+</body></html>`;
+
+        const printWin = window.open('', '_blank');
+        if (!printWin) {
+          alert('Permita pop-ups para baixar o PDF.');
+          return;
         }
+        printWin.document.write(fullHtml);
+        printWin.document.close();
+        // Aguardar renderização e abrir diálogo de impressão (Salvar como PDF)
+        setTimeout(() => { printWin.print(); }, 400);
       }
       window.downloadDailyReportPDF = downloadDailyReportPDF;
 
