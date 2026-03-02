@@ -5211,28 +5211,24 @@
           const reunioesAgendadas = reunioesHoje.length;
           const reunioesRealizadas = reunioesHoje.filter(r => isDailyReportRealized(r)).length;
 
-          // Conversão reunião→venda (mês)
-          const reunioesRealizadasMes = reunioesMes.filter(r => isDailyReportRealized(r)).length;
-          const convReunVenda = reunioesRealizadasMes > 0 ? (vendasMtd / reunioesRealizadasMes) * 100 : 0;
+          // Conversão reunião→venda (hoje)
+          const convReunVenda = reunioesRealizadas > 0 ? (vendasHoje / reunioesRealizadas) * 100 : 0;
 
-          // % Desconto médio (mês)
-          const comprasComProposta = comprasMes.filter(r => __toNumber(r.valor_total_proposta) > 0);
+          // % Desconto médio (hoje)
+          const comprasComPropostaHoje = comprasHoje.filter(r => __toNumber(r.valor_total_proposta) > 0);
           let descontoMedio = 0;
-          if (comprasComProposta.length > 0) {
-            const somaDesc = comprasComProposta.reduce((s, r) => {
+          if (comprasComPropostaHoje.length > 0) {
+            const somaDesc = comprasComPropostaHoje.reduce((s, r) => {
               const vp = __toNumber(r.valor_total_proposta);
               const vt = __toNumber(r.valor_total);
               return s + ((vp - vt) / vp);
             }, 0);
-            descontoMedio = (somaDesc / comprasComProposta.length) * 100;
+            descontoMedio = (somaDesc / comprasComPropostaHoje.length) * 100;
           }
 
-          // No-show (mês) — reuniões com data passada que NÃO são realizadas
-          const reunioesMesPassadas = reunioesMes.filter(r => {
-            try { return (r.data || '') <= todayYmd; } catch (e) { return false; }
-          });
-          const naoRealizadas = reunioesMesPassadas.filter(r => !isDailyReportRealized(r)).length;
-          const noShowRate = reunioesMesPassadas.length > 0 ? (naoRealizadas / reunioesMesPassadas.length) * 100 : 0;
+          // No-show (hoje) — reuniões de hoje que NÃO foram realizadas
+          const naoRealizadasHoje = reunioesHoje.filter(r => !isDailyReportRealized(r)).length;
+          const noShowRate = reunioesAgendadas > 0 ? (naoRealizadasHoje / reunioesAgendadas) * 100 : 0;
 
           // Pace vs ano passado
           const vendasLyMtd = comprasLY.length;
@@ -5330,9 +5326,9 @@
     ${card('Reuni\u00f5es Realizadas Hoje', d.reunioesRealizadas, '')}
   </tr>
   <tr>
-    ${card('Convers\u00e3o Reuni\u00e3o \u2192 Venda', d.convReunVenda.toFixed(1) + '%', '<span style="font-size:11px;color:#64748b;">m\u00eas</span>')}
-    ${card('Desconto M\u00e9dio', d.descontoMedio.toFixed(1) + '%', '<span style="font-size:11px;color:#64748b;">proposta \u2192 venda</span>')}
-    ${card('Taxa No-show', `<span style="color:${d.noShowRate > 30 ? '#ef4444' : '#0f172a'}">${d.noShowRate.toFixed(1)}%</span>`, '<span style="font-size:11px;color:#64748b;">m\u00eas</span>')}
+    ${card('Convers\u00e3o Reuni\u00e3o \u2192 Venda', d.convReunVenda.toFixed(1) + '%', '<span style="font-size:11px;color:#64748b;">hoje</span>')}
+    ${card('Desconto M\u00e9dio', d.descontoMedio.toFixed(1) + '%', '<span style="font-size:11px;color:#64748b;">hoje (proposta \u2192 venda)</span>')}
+    ${card('Taxa No-show', `<span style="color:${d.noShowRate > 30 ? '#ef4444' : '#0f172a'}">${d.noShowRate.toFixed(1)}%</span>`, '<span style="font-size:11px;color:#64748b;">hoje</span>')}
   </tr>
 </table>
 </body></html>`;
@@ -5413,9 +5409,9 @@
               ${_drCard('file-text', 'icon-bg-blue', 'Propostas Enviadas Hoje', `<span style="font-size: 28px; font-weight: 800; color: var(--text-main);">${d.propostasHoje}</span>`, '', cardBg, borderCol)}
               ${_drCard('calendar', 'icon-bg-orange', 'Reuniões Agendadas Hoje', `<span style="font-size: 28px; font-weight: 800; color: var(--text-main);">${d.reunioesAgendadas}</span>`, '', cardBg, borderCol)}
               ${_drCard('calendar-check', 'icon-bg-green', 'Reuniões Realizadas Hoje', `<span style="font-size: 28px; font-weight: 800; color: var(--text-main);">${d.reunioesRealizadas}</span>`, '', cardBg, borderCol)}
-              ${_drCard('percent', 'icon-bg-cyan', 'Conversão Reunião → Venda', `<span style="font-size: 28px; font-weight: 800; color: var(--text-main);">${d.convReunVenda.toFixed(1)}%</span>`, `<span style="font-size: 12px; color: var(--text-muted);">mês</span>`, cardBg, borderCol)}
-              ${_drCard('tag', 'icon-bg-purple', 'Desconto Médio', `<span style="font-size: 28px; font-weight: 800; color: var(--text-main);">${d.descontoMedio.toFixed(1)}%</span>`, `<span style="font-size: 12px; color: var(--text-muted);">(proposta → venda)</span>`, cardBg, borderCol)}
-              ${_drCard('user-x', 'icon-bg-red', 'Taxa No-show', `<span style="font-size: 28px; font-weight: 800; color: ${d.noShowRate > 30 ? 'var(--col-danger, #ef4444)' : 'var(--text-main)'};">${d.noShowRate.toFixed(1)}%</span>`, `<span style="font-size: 12px; color: var(--text-muted);">mês</span>`, cardBg, borderCol)}
+              ${_drCard('percent', 'icon-bg-cyan', 'Conversão Reunião → Venda', `<span style="font-size: 28px; font-weight: 800; color: var(--text-main);">${d.convReunVenda.toFixed(1)}%</span>`, `<span style="font-size: 12px; color: var(--text-muted);">hoje</span>`, cardBg, borderCol)}
+              ${_drCard('tag', 'icon-bg-purple', 'Desconto Médio', `<span style="font-size: 28px; font-weight: 800; color: var(--text-main);">${d.descontoMedio.toFixed(1)}%</span>`, `<span style="font-size: 12px; color: var(--text-muted);">hoje (proposta → venda)</span>`, cardBg, borderCol)}
+              ${_drCard('user-x', 'icon-bg-red', 'Taxa No-show', `<span style="font-size: 28px; font-weight: 800; color: ${d.noShowRate > 30 ? 'var(--col-danger, #ef4444)' : 'var(--text-main)'};">${d.noShowRate.toFixed(1)}%</span>`, `<span style="font-size: 12px; color: var(--text-muted);">hoje</span>`, cardBg, borderCol)}
             </div>
           </div>
         `;
