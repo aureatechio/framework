@@ -7347,7 +7347,8 @@
       }
 
       // ====== GAUGE PURCHASES MODAL ======
-      let __gpmData = { approved: [], pending: [] };
+      let __gpmData = { all: [], approved: [], pending: [], faltaAssinar: [], faltaPagar: [] };
+      let __gpmActiveTab = 'all';
 
       window.closeGaugePurchasesModal = () => {
         const overlay = document.getElementById('gauge-purchases-modal');
@@ -7368,9 +7369,10 @@
         if (listEl) listEl.innerHTML = '';
         if (emptyEl) emptyEl.style.display = 'none';
 
-        // Reset tab to approved
+        // Reset tab to all
+        __gpmActiveTab = 'all';
         const tabs = overlay.querySelectorAll('.gpm-tab');
-        tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === 'approved'));
+        tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === 'all'));
 
         try {
           const { start, end } = getDateRange(state.dateFilter);
@@ -7382,13 +7384,18 @@
             subtitleEl.textContent = `${fmt(start)} — ${fmt(end)}` + (state.selectedSeller ? ' • Vendedor filtrado' : '');
           }
 
-          // Query 1: ALL compras in the period (approved + pending)
-          // Approved: vendaaprovada=true AND (checkout_status=pago OR clicksign_status=Assinado)
-          // Pending: vendaaprovada=true BUT missing checkout/clicksign
-          //   OR vendaaprovada != true (still in pipeline)
-          let qAll = sbClient
-            .from('compras')
-            .select('valor_total, data_compra, leadid, vendedoresponsavel, vendaaprovada, checkout_status, clicksign_status, tipo_venda, created_at');
+          // Query: ALL compras in the period with FK joins for lead, celebridade, proposta
+          const selectFields = [
+            'id', 'valor_total', 'data_compra', 'leadid', 'vendedoresponsavel',
+            'vendaaprovada', 'checkout_status', 'clicksign_status', 'tipo_venda',
+            'statuscompra', 'regiaocomprada', 'razao_social', 'imagemproposta_id',
+            'checkout_url', 'created_at',
+            'lead:leadid(nome, empresa)',
+            'celebridadeRef:celebridadesReferencia!compras_celebridade_fkey(nome)',
+            'proposta:imagemProposta!compras_imagemproposta_id_fkey(idproposta)'
+          ].join(', ');
+
+          let qAll = sbClient.from('compras').select(selectFields);
           qAll = applyCutoffTimestamp(qAll, 'data_compra');
           qAll = qAll.gte('data_compra', start).lte('data_compra', end);
           if (__comprasIsTestSupported === true) qAll = applyNotTestPurchaseFilter(qAll);
@@ -7408,48 +7415,62 @@
             } catch (e) {}
           }
 
-          // Classify: approved vs pending
-          const approved = [];
-          const pending = [];
+          // Build items
+          const allItems = [];
           rows.forEach(r => {
             const isApproved = r.vendaaprovada === true;
             const isPago = String(r.checkout_status || '').toLowerCase() === 'pago';
             const isAssinado = String(r.clicksign_status || '').toLowerCase() === 'assinado';
             const consideredInGauge = isApproved && (isPago || isAssinado);
 
-            const item = {
+            const leadData = r.lead || {};
+            const celebData = r.celebridadeRef || {};
+            const propostaData = r.proposta || {};
+            const propostaId = (propostaData && propostaData.idproposta) || r.imagemproposta_id || null;
+
+            allItems.push({
               valor: parseCurrency(r.valor_total),
               data: r.data_compra,
               seller: sellerNames[r.vendedoresponsavel] || r.vendedoresponsavel || '—',
-              sellerId: r.vendedoresponsavel,
+              cliente: leadData.empresa || leadData.nome || r.razao_social || '—',
+              razaoSocial: r.razao_social || null,
+              celebridade: celebData.nome || null,
+              regiao: r.regiaocomprada || null,
               tipo: r.tipo_venda || null,
+              statusCompra: r.statuscompra || null,
               vendaAprovada: isApproved,
               checkoutPago: isPago,
               clicksignAssinado: isAssinado,
               checkoutStatus: r.checkout_status || null,
               clicksignStatus: r.clicksign_status || null,
               considered: consideredInGauge,
-            };
-
-            if (consideredInGauge) {
-              approved.push(item);
-            } else {
-              pending.push(item);
-            }
+              propostaId: propostaId,
+              checkoutUrl: r.checkout_url || null,
+            });
           });
 
-          // Sort by value descending
-          approved.sort((a, b) => b.valor - a.valor);
-          pending.sort((a, b) => b.valor - a.valor);
+          // Sort by data_compra desc (mais recente primeiro)
+          allItems.sort((a, b) => new Date(b.data) - new Date(a.data));
 
-          __gpmData = { approved, pending };
+          // Classify into buckets
+          const approved = allItems.filter(i => i.considered);
+          const pending = allItems.filter(i => !i.considered);
+          const faltaAssinar = allItems.filter(i => i.vendaAprovada && !i.clicksignAssinado);
+          const faltaPagar = allItems.filter(i => i.vendaAprovada && !i.checkoutPago);
+
+          __gpmData = { all: allItems, approved, pending, faltaAssinar, faltaPagar };
 
           // Update summary
           const summaryEl = document.getElementById('gpm-summary');
           if (summaryEl) {
             const totalApproved = approved.reduce((s, r) => s + r.valor, 0);
             const totalPending = pending.reduce((s, r) => s + r.valor, 0);
+            const totalAll = allItems.reduce((s, r) => s + r.valor, 0);
             summaryEl.innerHTML = `
+              <div class="gpm-summary-item">
+                <span class="gpm-summary-label">Total</span>
+                <span class="gpm-summary-val">${formatCurrencyCompact(totalAll)}</span>
+              </div>
               <div class="gpm-summary-item">
                 <span class="gpm-summary-label">Considerado</span>
                 <span class="gpm-summary-val" style="color:var(--col-success)">${formatCurrencyCompact(totalApproved)}</span>
@@ -7463,24 +7484,36 @@
 
           // Update tab counts
           tabs.forEach(t => {
-            if (t.dataset.tab === 'approved') t.textContent = `Consideradas (${approved.length})`;
-            if (t.dataset.tab === 'pending') t.textContent = `Em aprovação (${pending.length})`;
+            const tab = t.dataset.tab;
+            if (tab === 'all') t.textContent = `Todas (${allItems.length})`;
+            if (tab === 'approved') t.textContent = `Consideradas (${approved.length})`;
+            if (tab === 'pending') t.textContent = `Em aprovação (${pending.length})`;
+            if (tab === 'faltaAssinar') t.textContent = `Falta assinar (${faltaAssinar.length})`;
+            if (tab === 'faltaPagar') t.textContent = `Falta pagar (${faltaPagar.length})`;
           });
 
-          renderGaugePurchasesList('approved');
+          renderGaugePurchasesList('all');
         } catch (e) {
+          console.error('[GPM] erro:', e);
           if (loadingEl) loadingEl.textContent = 'Erro ao carregar compras.';
         }
       };
 
+      function __gpmEscapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      }
+
       function renderGaugePurchasesList(tab) {
+        __gpmActiveTab = tab;
         const loadingEl = document.getElementById('gpm-loading');
         const listEl = document.getElementById('gpm-list');
         const emptyEl = document.getElementById('gpm-empty');
         if (loadingEl) loadingEl.style.display = 'none';
         if (!listEl) return;
 
-        const items = (tab === 'pending') ? __gpmData.pending : __gpmData.approved;
+        const buckets = { all: __gpmData.all, approved: __gpmData.approved, pending: __gpmData.pending, faltaAssinar: __gpmData.faltaAssinar, faltaPagar: __gpmData.faltaPagar };
+        const items = buckets[tab] || __gpmData.all;
         if (!items || items.length === 0) {
           listEl.innerHTML = '';
           if (emptyEl) emptyEl.style.display = '';
@@ -7488,53 +7521,59 @@
         }
         if (emptyEl) emptyEl.style.display = 'none';
 
-        const isPending = tab === 'pending';
-        listEl.innerHTML = items.map(item => {
+        listEl.innerHTML = items.map((item, idx) => {
           const fmtDate = (() => {
             try { return new Date(item.data).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }); } catch (e) { return '—'; }
           })();
 
-          // Timeline steps: Aprovado → ClickSign → Assinado → Pago
+          // Timeline steps: Aprovado → Assinado → Pago
           const steps = [
             { label: 'Aprovado', done: item.vendaAprovada },
-            { label: 'ClickSign', done: item.clicksignStatus && item.clicksignStatus !== 'Pendente' && item.clicksignStatus !== '' },
             { label: 'Assinado', done: item.clicksignAssinado },
             { label: 'Pago', done: item.checkoutPago },
           ];
 
-          // Determine the "active" step (the first not-done step)
           let activeIdx = steps.findIndex(s => !s.done);
-          if (activeIdx === -1) activeIdx = steps.length; // all done
+          if (activeIdx === -1) activeIdx = steps.length;
 
           const timelineHtml = steps.map((step, i) => {
             const cls = step.done ? 'gpm-step--done' : (i === activeIdx ? 'gpm-step--active' : '');
             const icon = step.done ? 'check' : (i === activeIdx ? 'loader' : 'circle');
             const line = i < steps.length - 1
-              ? `<div class="gpm-step-line ${(steps[i + 1].done || i + 1 === activeIdx) && step.done ? 'gpm-step-line--done' : ''}"></div>`
+              ? `<div class="gpm-step-line ${step.done && (steps[i+1].done || i+1 === activeIdx) ? 'gpm-step-line--done' : ''}"></div>`
               : '';
-            return `
-              <div class="gpm-step ${cls}">
-                <div class="gpm-step-dot"><i data-lucide="${icon}" size="11"></i></div>
-                <div class="gpm-step-label">${step.label}</div>
-              </div>
-              ${line}
-            `;
+            return `<div class="gpm-step ${cls}"><div class="gpm-step-dot"><i data-lucide="${icon}" size="11"></i></div><div class="gpm-step-label">${step.label}</div></div>${line}`;
           }).join('');
 
-          const tipoHtml = item.tipo ? `<span class="gpm-row-tipo">${item.tipo}</span>` : '';
-          const badgeHtml = isPending ? `<span class="gpm-row-badge"><i data-lucide="clock" size="10"></i> Não considerada</span>` : '';
+          const isPending = !item.considered;
+          const tipoHtml = item.tipo ? `<span class="gpm-row-tipo">${__gpmEscapeHtml(item.tipo)}</span>` : '';
+          const celebHtml = item.celebridade ? `<span class="gpm-row-celeb"><i data-lucide="star" size="10"></i> ${__gpmEscapeHtml(item.celebridade)}</span>` : '';
+          const regiaoHtml = item.regiao ? `<span class="gpm-row-region"><i data-lucide="map-pin" size="10"></i> ${__gpmEscapeHtml(item.regiao)}</span>` : '';
+
+          // Link da proposta
+          let propostaHtml = '';
+          if (item.propostaId) {
+            const propostaUrl = `https://crm.aureatech.io/proposta_v2/${item.propostaId}`;
+            propostaHtml = `<a href="${propostaUrl}" target="_blank" rel="noopener" class="gpm-row-link" title="Ver proposta"><i data-lucide="file-text" size="12"></i> Proposta</a>`;
+          }
 
           return `
             <div class="gpm-row ${isPending ? 'gpm-row--pending' : ''}">
+              <div class="gpm-row-num">${idx + 1}</div>
               <div class="gpm-row-info">
                 <div class="gpm-row-top">
                   <span class="gpm-row-value">${formatCurrency(item.valor)}</span>
                   ${tipoHtml}
-                  ${badgeHtml}
                 </div>
-                <div class="gpm-row-top">
-                  <span class="gpm-row-seller">${item.seller}</span>
-                  <span class="gpm-row-date">${fmtDate}</span>
+                <div class="gpm-row-meta">
+                  <span class="gpm-row-cliente" title="${__gpmEscapeHtml(item.razaoSocial || item.cliente)}"><i data-lucide="building-2" size="11"></i> ${__gpmEscapeHtml(item.cliente)}</span>
+                  <span class="gpm-row-seller"><i data-lucide="user" size="11"></i> ${__gpmEscapeHtml(item.seller)}</span>
+                </div>
+                <div class="gpm-row-meta">
+                  ${celebHtml}
+                  ${regiaoHtml}
+                  <span class="gpm-row-date"><i data-lucide="calendar" size="11"></i> ${fmtDate}</span>
+                  ${propostaHtml}
                 </div>
               </div>
               <div class="gpm-timeline">
