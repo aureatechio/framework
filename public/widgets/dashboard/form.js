@@ -5738,6 +5738,42 @@
           }
         } catch (e) {}
 
+        // --- Gauge Purchases Modal: click handler + close ---
+        try {
+          const gaugeCard = document.querySelector('#gauge-chart');
+          const gaugeCardParent = gaugeCard ? gaugeCard.closest('.card') : null;
+          if (gaugeCardParent && !gaugeCardParent.dataset.gpmBound) {
+            gaugeCardParent.dataset.gpmBound = '1';
+            gaugeCardParent.style.cursor = 'pointer';
+            gaugeCardParent.addEventListener('click', (e) => {
+              // Avoid triggering on links/buttons inside
+              if (e.target.closest('a, button')) return;
+              openGaugePurchasesModal();
+            });
+          }
+
+          const gpmOverlay = document.getElementById('gauge-purchases-modal');
+          if (gpmOverlay && !gpmOverlay.dataset.bound) {
+            gpmOverlay.dataset.bound = '1';
+            gpmOverlay.addEventListener('click', (e) => {
+              if (e && e.target === gpmOverlay) closeGaugePurchasesModal();
+            });
+            document.addEventListener('keydown', (e) => {
+              if (e && e.key === 'Escape' && gpmOverlay.style.display === 'flex') closeGaugePurchasesModal();
+            });
+
+            // Tab switching
+            const tabs = gpmOverlay.querySelectorAll('.gpm-tab');
+            tabs.forEach(tab => {
+              tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                renderGaugePurchasesList(tab.dataset.tab);
+              });
+            });
+          }
+        } catch (e) {}
+
         // Exibir o dashboard rápido:
         // Antes o skeleton só saía DEPOIS de todas as queries (Promise.all de fetchData),
         // o que deixava o gráfico em branco por muito tempo (ou parecia “não carregar”).
@@ -7299,6 +7335,207 @@
         if (val >= 1000000) return 'R$ ' + (val / 1000000).toFixed(2) + 'M';
         if (val >= 1000) return 'R$ ' + (val / 1000).toFixed(2) + 'k';
         return formatCurrency(val);
+      }
+
+      // ====== GAUGE PURCHASES MODAL ======
+      let __gpmData = { approved: [], pending: [] };
+
+      window.closeGaugePurchasesModal = () => {
+        const overlay = document.getElementById('gauge-purchases-modal');
+        if (overlay) { overlay.style.display = 'none'; overlay.setAttribute('aria-hidden', 'true'); }
+      };
+
+      window.openGaugePurchasesModal = async () => {
+        const overlay = document.getElementById('gauge-purchases-modal');
+        if (!overlay || !sbClient) return;
+
+        overlay.style.display = 'flex';
+        overlay.setAttribute('aria-hidden', 'false');
+
+        const loadingEl = document.getElementById('gpm-loading');
+        const listEl = document.getElementById('gpm-list');
+        const emptyEl = document.getElementById('gpm-empty');
+        if (loadingEl) loadingEl.style.display = '';
+        if (listEl) listEl.innerHTML = '';
+        if (emptyEl) emptyEl.style.display = 'none';
+
+        // Reset tab to approved
+        const tabs = overlay.querySelectorAll('.gpm-tab');
+        tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === 'approved'));
+
+        try {
+          const { start, end } = getDateRange(state.dateFilter);
+
+          // Subtitle
+          const subtitleEl = document.getElementById('gpm-subtitle');
+          if (subtitleEl) {
+            const fmt = (d) => new Date(d).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+            subtitleEl.textContent = `${fmt(start)} — ${fmt(end)}` + (state.selectedSeller ? ' • Vendedor filtrado' : '');
+          }
+
+          // Query 1: ALL compras in the period (approved + pending)
+          // Approved: vendaaprovada=true AND (checkout_status=pago OR clicksign_status=Assinado)
+          // Pending: vendaaprovada=true BUT missing checkout/clicksign
+          //   OR vendaaprovada != true (still in pipeline)
+          let qAll = sbClient
+            .from('compras')
+            .select('valor_total, data_compra, leadid, vendedoresponsavel, vendaaprovada, checkout_status, clicksign_status, tipo_venda, created_at');
+          qAll = applyCutoffTimestamp(qAll, 'data_compra');
+          qAll = qAll.gte('data_compra', start).lte('data_compra', end);
+          if (__comprasIsTestSupported === true) qAll = applyNotTestPurchaseFilter(qAll);
+          if (state.selectedSeller) qAll = qAll.eq('vendedoresponsavel', state.selectedSeller);
+          const { data: allRows } = await qAll;
+          let rows = await filterRowsByAgencyViaLeadId((allRows || []), (r) => r && r.leadid);
+
+          // Enrich with seller names
+          const sellerIds = [...new Set(rows.map(r => r.vendedoresponsavel).filter(Boolean))];
+          let sellerNames = {};
+          if (state.sellerNameById && Object.keys(state.sellerNameById).length > 0) {
+            sellerNames = state.sellerNameById;
+          } else if (sellerIds.length > 0) {
+            try {
+              const { data: sellers } = await sbClient.from('vendedores').select('id, nome').in('id', sellerIds);
+              (sellers || []).forEach(s => { if (s && s.id) sellerNames[s.id] = s.nome || String(s.id); });
+            } catch (e) {}
+          }
+
+          // Classify: approved vs pending
+          const approved = [];
+          const pending = [];
+          rows.forEach(r => {
+            const isApproved = r.vendaaprovada === true;
+            const isPago = String(r.checkout_status || '').toLowerCase() === 'pago';
+            const isAssinado = String(r.clicksign_status || '').toLowerCase() === 'assinado';
+            const consideredInGauge = isApproved && (isPago || isAssinado);
+
+            const item = {
+              valor: parseCurrency(r.valor_total),
+              data: r.data_compra,
+              seller: sellerNames[r.vendedoresponsavel] || r.vendedoresponsavel || '—',
+              sellerId: r.vendedoresponsavel,
+              tipo: r.tipo_venda || null,
+              vendaAprovada: isApproved,
+              checkoutPago: isPago,
+              clicksignAssinado: isAssinado,
+              checkoutStatus: r.checkout_status || null,
+              clicksignStatus: r.clicksign_status || null,
+              considered: consideredInGauge,
+            };
+
+            if (consideredInGauge) {
+              approved.push(item);
+            } else {
+              pending.push(item);
+            }
+          });
+
+          // Sort by value descending
+          approved.sort((a, b) => b.valor - a.valor);
+          pending.sort((a, b) => b.valor - a.valor);
+
+          __gpmData = { approved, pending };
+
+          // Update summary
+          const summaryEl = document.getElementById('gpm-summary');
+          if (summaryEl) {
+            const totalApproved = approved.reduce((s, r) => s + r.valor, 0);
+            const totalPending = pending.reduce((s, r) => s + r.valor, 0);
+            summaryEl.innerHTML = `
+              <div class="gpm-summary-item">
+                <span class="gpm-summary-label">Considerado</span>
+                <span class="gpm-summary-val" style="color:var(--col-success)">${formatCurrencyCompact(totalApproved)}</span>
+              </div>
+              <div class="gpm-summary-item">
+                <span class="gpm-summary-label">Em aprovação</span>
+                <span class="gpm-summary-val" style="color:var(--col-warning)">${formatCurrencyCompact(totalPending)}</span>
+              </div>
+            `;
+          }
+
+          // Update tab counts
+          tabs.forEach(t => {
+            if (t.dataset.tab === 'approved') t.textContent = `Consideradas (${approved.length})`;
+            if (t.dataset.tab === 'pending') t.textContent = `Em aprovação (${pending.length})`;
+          });
+
+          renderGaugePurchasesList('approved');
+        } catch (e) {
+          if (loadingEl) loadingEl.textContent = 'Erro ao carregar compras.';
+        }
+      };
+
+      function renderGaugePurchasesList(tab) {
+        const loadingEl = document.getElementById('gpm-loading');
+        const listEl = document.getElementById('gpm-list');
+        const emptyEl = document.getElementById('gpm-empty');
+        if (loadingEl) loadingEl.style.display = 'none';
+        if (!listEl) return;
+
+        const items = (tab === 'pending') ? __gpmData.pending : __gpmData.approved;
+        if (!items || items.length === 0) {
+          listEl.innerHTML = '';
+          if (emptyEl) emptyEl.style.display = '';
+          return;
+        }
+        if (emptyEl) emptyEl.style.display = 'none';
+
+        const isPending = tab === 'pending';
+        listEl.innerHTML = items.map(item => {
+          const fmtDate = (() => {
+            try { return new Date(item.data).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }); } catch (e) { return '—'; }
+          })();
+
+          // Timeline steps: Aprovado → ClickSign → Assinado → Pago
+          const steps = [
+            { label: 'Aprovado', done: item.vendaAprovada },
+            { label: 'ClickSign', done: item.clicksignStatus && item.clicksignStatus !== 'Pendente' && item.clicksignStatus !== '' },
+            { label: 'Assinado', done: item.clicksignAssinado },
+            { label: 'Pago', done: item.checkoutPago },
+          ];
+
+          // Determine the "active" step (the first not-done step)
+          let activeIdx = steps.findIndex(s => !s.done);
+          if (activeIdx === -1) activeIdx = steps.length; // all done
+
+          const timelineHtml = steps.map((step, i) => {
+            const cls = step.done ? 'gpm-step--done' : (i === activeIdx ? 'gpm-step--active' : '');
+            const icon = step.done ? 'check' : (i === activeIdx ? 'loader' : 'circle');
+            const line = i < steps.length - 1
+              ? `<div class="gpm-step-line ${(steps[i + 1].done || i + 1 === activeIdx) && step.done ? 'gpm-step-line--done' : ''}"></div>`
+              : '';
+            return `
+              <div class="gpm-step ${cls}">
+                <div class="gpm-step-dot"><i data-lucide="${icon}" size="11"></i></div>
+                <div class="gpm-step-label">${step.label}</div>
+              </div>
+              ${line}
+            `;
+          }).join('');
+
+          const tipoHtml = item.tipo ? `<span class="gpm-row-tipo">${item.tipo}</span>` : '';
+          const badgeHtml = isPending ? `<span class="gpm-row-badge"><i data-lucide="clock" size="10"></i> Não considerada</span>` : '';
+
+          return `
+            <div class="gpm-row ${isPending ? 'gpm-row--pending' : ''}">
+              <div class="gpm-row-info">
+                <div class="gpm-row-top">
+                  <span class="gpm-row-value">${formatCurrency(item.valor)}</span>
+                  ${tipoHtml}
+                  ${badgeHtml}
+                </div>
+                <div class="gpm-row-top">
+                  <span class="gpm-row-seller">${item.seller}</span>
+                  <span class="gpm-row-date">${fmtDate}</span>
+                </div>
+              </div>
+              <div class="gpm-timeline">
+                ${timelineHtml}
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        if (typeof lucide !== 'undefined') lucide.createIcons();
       }
 
       function renderRevenue(chartData) {
