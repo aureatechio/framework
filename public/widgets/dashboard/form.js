@@ -5740,13 +5740,22 @@
 
         // --- Gauge Purchases Modal: click handler + close ---
         try {
+          // Overlay transparente sobre o gauge chart que captura o click
+          const gaugeClickOverlay = document.getElementById('gauge-click-overlay');
+          if (gaugeClickOverlay && !gaugeClickOverlay.dataset.gpmBound) {
+            gaugeClickOverlay.dataset.gpmBound = '1';
+            gaugeClickOverlay.addEventListener('click', (e) => {
+              e.stopPropagation();
+              openGaugePurchasesModal();
+            });
+          }
+          // Também tornar o footer do card clicável
           const gaugeCard = document.querySelector('#gauge-chart');
           const gaugeCardParent = gaugeCard ? gaugeCard.closest('.card') : null;
           if (gaugeCardParent && !gaugeCardParent.dataset.gpmBound) {
             gaugeCardParent.dataset.gpmBound = '1';
             gaugeCardParent.style.cursor = 'pointer';
             gaugeCardParent.addEventListener('click', (e) => {
-              // Avoid triggering on links/buttons inside
               if (e.target.closest('a, button')) return;
               openGaugePurchasesModal();
             });
