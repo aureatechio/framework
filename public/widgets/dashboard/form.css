@@ -2499,9 +2499,9 @@
     #dashboard-acelerai-v2 .gpm-loading,
     #dashboard-acelerai-v2 .gpm-empty { text-align: center; padding: 48px 0; font-size: 12px; color: var(--text-muted); }
 
-    /* Card list */
+    /* Card list — single column */
     #dashboard-acelerai-v2 .gpm-list {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 10px;
+      display: flex; flex-direction: column; gap: 8px;
     }
 
     /* Card */
@@ -2596,9 +2596,6 @@
     #dashboard-acelerai-v2 .gpm-step-line--done { background: var(--col-success); }
 
     /* Responsive */
-    @media (max-width: 900px) {
-      #dashboard-acelerai-v2 .gpm-list { grid-template-columns: 1fr; }
-    }
     @media (max-width: 768px) {
       #dashboard-acelerai-v2 .gpm-card { max-width: 100%; max-height: 95vh; }
       #dashboard-acelerai-v2 .gpm-header { flex-direction: column; gap: 8px; padding: 14px 16px 10px; }
