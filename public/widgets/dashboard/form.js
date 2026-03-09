@@ -5771,8 +5771,8 @@
               if (e && e.key === 'Escape' && gpmOverlay.style.display === 'flex') closeGaugePurchasesModal();
             });
 
-            // Tab switching
-            const tabs = gpmOverlay.querySelectorAll('.gpm-tab');
+            // Filter pills switching
+            const tabs = gpmOverlay.querySelectorAll('.gpm-filter');
             tabs.forEach(tab => {
               tab.addEventListener('click', () => {
                 tabs.forEach(t => t.classList.remove('active'));
@@ -7371,7 +7371,7 @@
 
         // Reset tab to all
         __gpmActiveTab = 'all';
-        const tabs = overlay.querySelectorAll('.gpm-tab');
+        const tabs = overlay.querySelectorAll('.gpm-filter');
         tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === 'all'));
 
         try {
@@ -7482,14 +7482,12 @@
             `;
           }
 
-          // Update tab counts
+          // Update filter pill counts
           tabs.forEach(t => {
             const tab = t.dataset.tab;
-            if (tab === 'all') t.textContent = `Todas (${allItems.length})`;
-            if (tab === 'approved') t.textContent = `Consideradas (${approved.length})`;
-            if (tab === 'pending') t.textContent = `Em aprovação (${pending.length})`;
-            if (tab === 'faltaAssinar') t.textContent = `Falta assinar (${faltaAssinar.length})`;
-            if (tab === 'faltaPagar') t.textContent = `Falta pagar (${faltaPagar.length})`;
+            const counts = { all: allItems.length, approved: approved.length, pending: pending.length, faltaAssinar: faltaAssinar.length, faltaPagar: faltaPagar.length };
+            const labels = { all: 'Todas', approved: 'Consideradas', pending: 'Em aprovação', faltaAssinar: 'Falta assinar', faltaPagar: 'Falta pagar' };
+            if (labels[tab]) t.innerHTML = `${labels[tab]} <span class="gpm-filter-count">${counts[tab]}</span>`;
           });
 
           renderGaugePurchasesList('all');
@@ -7547,15 +7545,19 @@
 
           const isPending = !item.considered;
           const tipoHtml = item.tipo ? `<span class="gpm-row-tipo">${__gpmEscapeHtml(item.tipo)}</span>` : '';
-          const celebHtml = item.celebridade ? `<span class="gpm-row-celeb"><i data-lucide="star" size="10"></i> ${__gpmEscapeHtml(item.celebridade)}</span>` : '';
-          const regiaoHtml = item.regiao ? `<span class="gpm-row-region"><i data-lucide="map-pin" size="10"></i> ${__gpmEscapeHtml(item.regiao)}</span>` : '';
 
-          // Link da proposta
-          let propostaHtml = '';
+          // Build detail fragments (no icons — just clean text with · separators)
+          const details = [];
+          if (item.cliente && item.cliente !== '—') details.push(`<span class="gpm-row-cliente" title="${__gpmEscapeHtml(item.razaoSocial || item.cliente)}">${__gpmEscapeHtml(item.cliente)}</span>`);
+          if (item.seller && item.seller !== '—') details.push(`<span class="gpm-row-seller">${__gpmEscapeHtml(item.seller)}</span>`);
+          if (item.celebridade) details.push(`<span class="gpm-row-celeb">${__gpmEscapeHtml(item.celebridade)}</span>`);
+          if (item.regiao) details.push(`<span>${__gpmEscapeHtml(item.regiao)}</span>`);
+          details.push(`<span>${fmtDate}</span>`);
           if (item.propostaId) {
             const propostaUrl = `https://crm.aureatech.io/proposta_v2/${item.propostaId}`;
-            propostaHtml = `<a href="${propostaUrl}" target="_blank" rel="noopener" class="gpm-row-link" title="Ver proposta"><i data-lucide="file-text" size="12"></i> Proposta</a>`;
+            details.push(`<a href="${propostaUrl}" target="_blank" rel="noopener" class="gpm-row-link">ver proposta</a>`);
           }
+          const detailsHtml = details.join('<span class="gpm-row-sep">·</span>');
 
           return `
             <div class="gpm-row ${isPending ? 'gpm-row--pending' : ''}">
@@ -7565,16 +7567,7 @@
                   <span class="gpm-row-value">${formatCurrency(item.valor)}</span>
                   ${tipoHtml}
                 </div>
-                <div class="gpm-row-meta">
-                  <span class="gpm-row-cliente" title="${__gpmEscapeHtml(item.razaoSocial || item.cliente)}"><i data-lucide="building-2" size="11"></i> ${__gpmEscapeHtml(item.cliente)}</span>
-                  <span class="gpm-row-seller"><i data-lucide="user" size="11"></i> ${__gpmEscapeHtml(item.seller)}</span>
-                </div>
-                <div class="gpm-row-meta">
-                  ${celebHtml}
-                  ${regiaoHtml}
-                  <span class="gpm-row-date"><i data-lucide="calendar" size="11"></i> ${fmtDate}</span>
-                  ${propostaHtml}
-                </div>
+                <div class="gpm-row-meta">${detailsHtml}</div>
               </div>
               <div class="gpm-timeline">
                 ${timelineHtml}

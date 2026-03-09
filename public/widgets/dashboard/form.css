@@ -2433,340 +2433,197 @@
       }
     }
 
-    /* ====== Gauge Purchases Modal (GPM) ====== */
+    /* ====== Gauge Purchases Modal (GPM) — Clean / Minimal ====== */
     #dashboard-acelerai-v2 .gpm-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(15, 23, 42, 0.55);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 18px;
+      position: fixed; inset: 0;
+      background: rgba(15,23,42,0.35);
+      backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+      display: none; align-items: center; justify-content: center;
+      padding: 12px;
       z-index: 2147482000;
     }
-    #dashboard-acelerai-v2.dark-mode .gpm-overlay { background: rgba(0,0,0,0.65); }
+    #dashboard-acelerai-v2.dark-mode .gpm-overlay { background: rgba(0,0,0,0.5); }
 
     #dashboard-acelerai-v2 .gpm-card {
-      width: 100%;
-      max-width: 1100px;
-      max-height: 90vh;
+      width: 100%; max-width: 1280px; max-height: 92vh;
       overflow: hidden;
       background: var(--bg-card);
       border: 1px solid var(--border-color);
-      border-radius: 16px;
-      box-shadow: 0 24px 64px rgba(0,0,0,0.25);
-      display: flex;
-      flex-direction: column;
+      border-radius: 14px;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.12);
+      display: flex; flex-direction: column;
     }
 
+    /* Header */
     #dashboard-acelerai-v2 .gpm-header {
-      padding: 16px 20px 12px;
+      padding: 18px 24px 14px;
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
       border-bottom: 1px solid var(--border-color);
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 12px;
     }
     #dashboard-acelerai-v2 .gpm-header-left { flex: 1 1 auto; min-width: 0; }
-    #dashboard-acelerai-v2 .gpm-header-right { display: flex; align-items: center; gap: 12px; flex: 0 0 auto; }
+    #dashboard-acelerai-v2 .gpm-header-right { display: flex; align-items: center; gap: 16px; flex: 0 0 auto; }
     #dashboard-acelerai-v2 .gpm-title {
-      font-size: 15px;
-      font-weight: 900;
-      color: var(--text-main);
-      line-height: 1.2;
+      font-size: 14px; font-weight: 600; color: var(--text-main); letter-spacing: -0.01em;
     }
     #dashboard-acelerai-v2 .gpm-subtitle {
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-top: 2px;
+      font-size: 11px; color: var(--text-muted); margin-top: 1px; font-weight: 400;
     }
     #dashboard-acelerai-v2 .gpm-summary {
-      display: flex;
-      gap: 12px;
-      font-size: 12px;
-      font-weight: 800;
-      color: var(--text-main);
+      display: flex; gap: 16px;
     }
     #dashboard-acelerai-v2 .gpm-summary-item {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 1px;
+      display: flex; flex-direction: column; align-items: flex-end; gap: 0;
     }
     #dashboard-acelerai-v2 .gpm-summary-label {
-      font-size: 9px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--text-muted);
+      font-size: 9px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);
     }
     #dashboard-acelerai-v2 .gpm-summary-val {
-      font-size: 14px;
-      font-weight: 900;
+      font-size: 13px; font-weight: 600;
     }
     #dashboard-acelerai-v2 .gpm-close {
-      width: 34px;
-      height: 34px;
-      border-radius: 10px;
-      border: 1px solid var(--border-color);
-      background: var(--bg-subtle);
-      color: var(--text-main);
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
+      width: 30px; height: 30px; border-radius: 8px;
+      border: 1px solid var(--border-color); background: transparent;
+      color: var(--text-muted); display: inline-flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: background 0.15s;
     }
+    #dashboard-acelerai-v2 .gpm-close:hover { background: var(--bg-subtle); color: var(--text-main); }
 
-    /* Tabs */
-    #dashboard-acelerai-v2 .gpm-tabs {
-      display: flex;
-      gap: 0;
+    /* Filter pills (replaces heavy tabs) */
+    #dashboard-acelerai-v2 .gpm-filters {
+      padding: 10px 24px;
+      display: flex; align-items: center; gap: 6px;
       border-bottom: 1px solid var(--border-color);
-      padding: 0 20px;
+      overflow-x: auto; -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
     }
-    #dashboard-acelerai-v2 .gpm-tab {
-      padding: 10px 16px;
-      font-size: 12px;
-      font-weight: 800;
-      color: var(--text-muted);
-      background: none;
-      border: none;
-      border-bottom: 2px solid transparent;
-      cursor: pointer;
-      transition: color 0.15s, border-color 0.15s;
+    #dashboard-acelerai-v2 .gpm-filters::-webkit-scrollbar { display: none; }
+    #dashboard-acelerai-v2 .gpm-filter {
+      padding: 5px 12px; border-radius: 999px;
+      font-size: 11px; font-weight: 500; color: var(--text-muted);
+      background: transparent; border: 1px solid var(--border-color);
+      cursor: pointer; white-space: nowrap;
+      transition: all 0.15s;
     }
-    #dashboard-acelerai-v2 .gpm-tab:hover { color: var(--text-main); }
-    #dashboard-acelerai-v2 .gpm-tab.active {
-      color: var(--col-primary);
-      border-bottom-color: var(--col-primary);
+    #dashboard-acelerai-v2 .gpm-filter:hover { color: var(--text-main); border-color: var(--text-muted); }
+    #dashboard-acelerai-v2 .gpm-filter.active {
+      background: var(--text-main); color: var(--bg-card); border-color: var(--text-main);
+    }
+    #dashboard-acelerai-v2 .gpm-filter-count {
+      font-weight: 600; opacity: 0.7; margin-left: 2px;
     }
 
     /* Body */
     #dashboard-acelerai-v2 .gpm-body {
-      padding: 16px 20px 20px;
-      overflow: auto;
-      flex: 1 1 auto;
+      padding: 12px 24px 20px; overflow: auto; flex: 1 1 auto;
     }
-    #dashboard-acelerai-v2 .gpm-loading {
-      text-align: center;
-      padding: 32px 0;
-      font-size: 13px;
-      color: var(--text-muted);
-    }
+    #dashboard-acelerai-v2 .gpm-loading,
     #dashboard-acelerai-v2 .gpm-empty {
-      text-align: center;
-      padding: 32px 0;
-      font-size: 13px;
-      color: var(--text-muted);
+      text-align: center; padding: 40px 0;
+      font-size: 12px; font-weight: 400; color: var(--text-muted);
     }
 
-    /* Purchase Row */
-    #dashboard-acelerai-v2 .gpm-list { display: flex; flex-direction: column; gap: 6px; }
+    /* Table-style list */
+    #dashboard-acelerai-v2 .gpm-list { display: flex; flex-direction: column; gap: 1px; }
     #dashboard-acelerai-v2 .gpm-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 14px 16px;
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      background: var(--bg-card);
-      transition: box-shadow 0.15s, opacity 0.15s;
+      display: flex; align-items: center; gap: 14px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      transition: background 0.1s;
     }
-    #dashboard-acelerai-v2 .gpm-row:hover {
-      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-    }
-    #dashboard-acelerai-v2 .gpm-row--pending {
-      opacity: 0.5;
-      border-style: dashed;
-      background: var(--bg-subtle);
-    }
+    #dashboard-acelerai-v2 .gpm-row:hover { background: var(--bg-subtle); }
+    #dashboard-acelerai-v2 .gpm-row--pending { opacity: 0.45; }
+    #dashboard-acelerai-v2 .gpm-row--pending:hover { opacity: 0.65; }
 
     /* Row number */
     #dashboard-acelerai-v2 .gpm-row-num {
-      flex: 0 0 28px;
-      width: 28px;
-      height: 28px;
-      border-radius: 8px;
-      background: var(--bg-subtle);
-      border: 1px solid var(--border-color);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-      font-weight: 900;
-      color: var(--text-muted);
+      flex: 0 0 22px; width: 22px;
+      font-size: 10px; font-weight: 500; color: var(--text-muted);
+      text-align: right;
     }
 
+    /* Info block */
     #dashboard-acelerai-v2 .gpm-row-info {
-      flex: 1 1 auto;
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
+      flex: 1 1 auto; min-width: 0;
+      display: flex; flex-direction: column; gap: 2px;
     }
     #dashboard-acelerai-v2 .gpm-row-top {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
+      display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
     }
     #dashboard-acelerai-v2 .gpm-row-value {
-      font-size: 15px;
-      font-weight: 900;
-      color: var(--text-main);
-      white-space: nowrap;
+      font-size: 13px; font-weight: 600; color: var(--text-main); white-space: nowrap;
     }
     #dashboard-acelerai-v2 .gpm-row-meta {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
-      font-size: 11px;
-      color: var(--text-muted);
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      font-size: 11px; font-weight: 400; color: var(--text-muted);
     }
     #dashboard-acelerai-v2 .gpm-row-meta > span,
     #dashboard-acelerai-v2 .gpm-row-meta > a {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      white-space: nowrap;
+      display: inline-flex; align-items: center; gap: 3px; white-space: nowrap;
     }
     #dashboard-acelerai-v2 .gpm-row-cliente {
-      font-weight: 800;
-      color: var(--text-main);
-      max-width: 220px;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      font-weight: 500; color: var(--text-main);
+      max-width: 240px; overflow: hidden; text-overflow: ellipsis;
     }
-    #dashboard-acelerai-v2 .gpm-row-seller {
-      font-weight: 700;
-      max-width: 160px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    #dashboard-acelerai-v2 .gpm-row-celeb {
-      font-weight: 700;
-      color: var(--col-primary);
-    }
-    #dashboard-acelerai-v2 .gpm-row-region {
-      font-weight: 700;
-    }
-    #dashboard-acelerai-v2 .gpm-row-date {
-      font-weight: 600;
-    }
+    #dashboard-acelerai-v2 .gpm-row-seller { max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
+    #dashboard-acelerai-v2 .gpm-row-celeb { color: var(--text-main); font-weight: 500; }
     #dashboard-acelerai-v2 .gpm-row-link {
-      font-weight: 800;
-      color: var(--col-primary);
-      text-decoration: none;
-      cursor: pointer;
-      padding: 2px 8px;
-      border-radius: 6px;
-      background: rgba(59,130,246,0.08);
-      border: 1px solid rgba(59,130,246,0.15);
-      transition: background 0.15s;
+      color: var(--col-primary); text-decoration: none; font-weight: 500;
+      transition: opacity 0.15s;
     }
-    #dashboard-acelerai-v2 .gpm-row-link:hover {
-      background: rgba(59,130,246,0.15);
-      text-decoration: none;
-    }
+    #dashboard-acelerai-v2 .gpm-row-link:hover { opacity: 0.7; text-decoration: underline; }
     #dashboard-acelerai-v2 .gpm-row-tipo {
-      font-size: 10px;
-      font-weight: 700;
-      padding: 2px 7px;
-      border-radius: 999px;
-      background: var(--bg-subtle);
-      color: var(--text-muted);
-      border: 1px solid var(--border-color);
-      white-space: nowrap;
+      font-size: 10px; font-weight: 500;
+      padding: 1px 6px; border-radius: 4px;
+      background: var(--bg-subtle); color: var(--text-muted);
+    }
+    #dashboard-acelerai-v2 .gpm-row-sep {
+      color: var(--border-color); font-size: 10px;
     }
 
-    /* Timeline Steps */
+    /* Timeline — minimal dots + line */
     #dashboard-acelerai-v2 .gpm-timeline {
-      display: flex;
-      align-items: center;
-      gap: 0;
-      flex: 0 0 auto;
+      display: flex; align-items: center; gap: 0; flex: 0 0 auto;
     }
     #dashboard-acelerai-v2 .gpm-step {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 3px;
-      position: relative;
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
     }
     #dashboard-acelerai-v2 .gpm-step-dot {
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: 2px solid var(--border-color);
-      background: var(--bg-card);
-      color: var(--text-muted);
-      transition: all 0.15s;
-      position: relative;
-      z-index: 2;
+      width: 18px; height: 18px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      border: 1.5px solid var(--border-color);
+      background: var(--bg-card); color: var(--text-muted);
+      position: relative; z-index: 2;
     }
     #dashboard-acelerai-v2 .gpm-step-dot svg,
-    #dashboard-acelerai-v2 .gpm-step-dot i { width: 11px; height: 11px; }
+    #dashboard-acelerai-v2 .gpm-step-dot i { width: 9px; height: 9px; }
     #dashboard-acelerai-v2 .gpm-step--done .gpm-step-dot {
-      background: var(--col-success);
-      border-color: var(--col-success);
-      color: #fff;
+      background: var(--col-success); border-color: var(--col-success); color: #fff;
     }
     #dashboard-acelerai-v2 .gpm-step--active .gpm-step-dot {
-      background: var(--col-primary);
-      border-color: var(--col-primary);
-      color: #fff;
+      border-color: var(--col-primary); color: var(--col-primary); background: var(--bg-card);
     }
     #dashboard-acelerai-v2 .gpm-step-label {
-      font-size: 9px;
-      font-weight: 700;
-      color: var(--text-muted);
-      white-space: nowrap;
-      text-align: center;
-      max-width: 56px;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      font-size: 8px; font-weight: 500; color: var(--text-muted);
+      white-space: nowrap; text-align: center;
     }
     #dashboard-acelerai-v2 .gpm-step--done .gpm-step-label { color: var(--col-success); }
-    #dashboard-acelerai-v2 .gpm-step--active .gpm-step-label { color: var(--col-primary); font-weight: 800; }
+    #dashboard-acelerai-v2 .gpm-step--active .gpm-step-label { color: var(--col-primary); }
     #dashboard-acelerai-v2 .gpm-step-line {
-      width: 20px;
-      height: 2px;
-      background: var(--border-color);
-      flex: 0 0 auto;
-      align-self: flex-start;
-      margin-top: 10px;
+      width: 16px; height: 1.5px;
+      background: var(--border-color); flex: 0 0 auto;
+      align-self: flex-start; margin-top: 8px;
     }
-    #dashboard-acelerai-v2 .gpm-step-line--done {
-      background: var(--col-success);
-    }
-
-    /* Tabs overflow scroll */
-    #dashboard-acelerai-v2 .gpm-tabs {
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      scrollbar-width: none;
-    }
-    #dashboard-acelerai-v2 .gpm-tabs::-webkit-scrollbar { display: none; }
+    #dashboard-acelerai-v2 .gpm-step-line--done { background: var(--col-success); }
 
     /* Responsive */
     @media (max-width: 768px) {
       #dashboard-acelerai-v2 .gpm-card { max-width: 100%; max-height: 95vh; }
-      #dashboard-acelerai-v2 .gpm-row {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
-      }
+      #dashboard-acelerai-v2 .gpm-row { flex-direction: column; align-items: flex-start; gap: 8px; }
       #dashboard-acelerai-v2 .gpm-row-num { display: none; }
-      #dashboard-acelerai-v2 .gpm-timeline {
-        align-self: stretch;
-        justify-content: center;
-      }
-      #dashboard-acelerai-v2 .gpm-header { flex-direction: column; gap: 8px; }
+      #dashboard-acelerai-v2 .gpm-timeline { align-self: stretch; justify-content: center; }
+      #dashboard-acelerai-v2 .gpm-header { flex-direction: column; gap: 8px; padding: 14px 16px 10px; }
       #dashboard-acelerai-v2 .gpm-header-right { align-self: flex-end; }
-      #dashboard-acelerai-v2 .gpm-summary { gap: 8px; }
+      #dashboard-acelerai-v2 .gpm-filters { padding: 8px 16px; }
+      #dashboard-acelerai-v2 .gpm-body { padding: 10px 16px 16px; }
     }
 
