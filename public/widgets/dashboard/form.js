@@ -7391,14 +7391,15 @@
             'statuscompra', 'regiaocomprada', 'razao_social', 'imagemproposta_id',
             'checkout_url', 'created_at',
             'lead:leadid(nome, empresa)',
-            'celebridadeRef:celebridadesReferencia!compras_celebridade_fkey(nome)',
+            'celebridadeRef:celebridadesReferencia!compras_celebridade_fkey(nome, fotoPrincipal)',
             'proposta:imagemProposta!compras_imagemproposta_id_fkey(idproposta)'
           ].join(', ');
 
           let qAll = sbClient.from('compras').select(selectFields);
           qAll = applyCutoffTimestamp(qAll, 'data_compra');
           qAll = qAll.gte('data_compra', start).lte('data_compra', end);
-          if (__comprasIsTestSupported === true) qAll = applyNotTestPurchaseFilter(qAll);
+          // Sempre excluir compras de teste
+          try { qAll = qAll.not('is_test', 'is', true); } catch (e) {}
           if (state.selectedSeller) qAll = qAll.eq('vendedoresponsavel', state.selectedSeller);
           const { data: allRows } = await qAll;
           let rows = await filterRowsByAgencyViaLeadId((allRows || []), (r) => r && r.leadid);
@@ -7435,6 +7436,7 @@
               cliente: leadData.empresa || leadData.nome || r.razao_social || '—',
               razaoSocial: r.razao_social || null,
               celebridade: celebData.nome || null,
+              celebFoto: celebData.fotoPrincipal || null,
               regiao: r.regiaocomprada || null,
               tipo: r.tipo_venda || null,
               statusCompra: r.statuscompra || null,
@@ -7521,56 +7523,68 @@
 
         listEl.innerHTML = items.map((item, idx) => {
           const fmtDate = (() => {
-            try { return new Date(item.data).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }); } catch (e) { return '—'; }
+            try { return new Date(item.data).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }); } catch (e) { return '—'; }
           })();
 
-          // Timeline steps: Aprovado → Assinado → Pago
+          // Timeline steps
           const steps = [
             { label: 'Aprovado', done: item.vendaAprovada },
             { label: 'Assinado', done: item.clicksignAssinado },
             { label: 'Pago', done: item.checkoutPago },
           ];
-
           let activeIdx = steps.findIndex(s => !s.done);
           if (activeIdx === -1) activeIdx = steps.length;
-
           const timelineHtml = steps.map((step, i) => {
             const cls = step.done ? 'gpm-step--done' : (i === activeIdx ? 'gpm-step--active' : '');
             const icon = step.done ? 'check' : (i === activeIdx ? 'loader' : 'circle');
             const line = i < steps.length - 1
               ? `<div class="gpm-step-line ${step.done && (steps[i+1].done || i+1 === activeIdx) ? 'gpm-step-line--done' : ''}"></div>`
               : '';
-            return `<div class="gpm-step ${cls}"><div class="gpm-step-dot"><i data-lucide="${icon}" size="11"></i></div><div class="gpm-step-label">${step.label}</div></div>${line}`;
+            return `<div class="gpm-step ${cls}"><div class="gpm-step-dot"><i data-lucide="${icon}" size="8"></i></div><div class="gpm-step-label">${step.label}</div></div>${line}`;
           }).join('');
 
           const isPending = !item.considered;
-          const tipoHtml = item.tipo ? `<span class="gpm-row-tipo">${__gpmEscapeHtml(item.tipo)}</span>` : '';
 
-          // Build detail fragments (no icons — just clean text with · separators)
-          const details = [];
-          if (item.cliente && item.cliente !== '—') details.push(`<span class="gpm-row-cliente" title="${__gpmEscapeHtml(item.razaoSocial || item.cliente)}">${__gpmEscapeHtml(item.cliente)}</span>`);
-          if (item.seller && item.seller !== '—') details.push(`<span class="gpm-row-seller">${__gpmEscapeHtml(item.seller)}</span>`);
-          if (item.celebridade) details.push(`<span class="gpm-row-celeb">${__gpmEscapeHtml(item.celebridade)}</span>`);
-          if (item.regiao) details.push(`<span>${__gpmEscapeHtml(item.regiao)}</span>`);
-          details.push(`<span>${fmtDate}</span>`);
+          // Avatar
+          const avatarHtml = item.celebFoto
+            ? `<div class="gpm-avatar"><img src="${__gpmEscapeHtml(item.celebFoto)}" alt="${__gpmEscapeHtml(item.celebridade || '')}" loading="lazy"></div>`
+            : `<div class="gpm-avatar gpm-avatar--empty"><i data-lucide="user" size="18"></i></div>`;
+
+          // Tags
+          const tags = [];
+          if (item.tipo) tags.push(`<span class="gpm-tag gpm-tag--tipo">${__gpmEscapeHtml(item.tipo)}</span>`);
+          if (item.celebridade) tags.push(`<span class="gpm-tag gpm-tag--celeb">${__gpmEscapeHtml(item.celebridade)}</span>`);
+          if (item.regiao) tags.push(`<span class="gpm-tag gpm-tag--region">${__gpmEscapeHtml(item.regiao)}</span>`);
+          tags.push(`<span class="gpm-tag gpm-tag--date">${fmtDate}</span>`);
+          const tagsHtml = tags.join('');
+
+          // Details line
+          const dets = [];
+          if (item.cliente && item.cliente !== '—') dets.push(`<span class="gpm-card-cliente" title="${__gpmEscapeHtml(item.razaoSocial || item.cliente)}">${__gpmEscapeHtml(item.cliente)}</span>`);
+          if (item.seller && item.seller !== '—') dets.push(`<span class="gpm-card-seller">${__gpmEscapeHtml(item.seller)}</span>`);
+          const detsHtml = dets.join('<span class="gpm-card-sep">·</span>');
+
+          // Proposta link
+          let linkHtml = '<span></span>';
           if (item.propostaId) {
-            const propostaUrl = `https://crm.aureatech.io/proposta_v2/${item.propostaId}`;
-            details.push(`<a href="${propostaUrl}" target="_blank" rel="noopener" class="gpm-row-link">ver proposta</a>`);
+            const url = `https://crm.aureatech.io/proposta_v2/${item.propostaId}`;
+            linkHtml = `<a href="${url}" target="_blank" rel="noopener" class="gpm-card-link">ver proposta →</a>`;
           }
-          const detailsHtml = details.join('<span class="gpm-row-sep">·</span>');
 
           return `
-            <div class="gpm-row ${isPending ? 'gpm-row--pending' : ''}">
-              <div class="gpm-row-num">${idx + 1}</div>
-              <div class="gpm-row-info">
-                <div class="gpm-row-top">
-                  <span class="gpm-row-value">${formatCurrency(item.valor)}</span>
-                  ${tipoHtml}
+            <div class="gpm-card-item ${isPending ? 'gpm-card-item--pending' : ''}">
+              ${avatarHtml}
+              <div class="gpm-card-body">
+                <div class="gpm-card-top">
+                  <span class="gpm-card-value">${formatCurrency(item.valor)}</span>
+                  <span class="gpm-card-num">#${idx + 1}</span>
                 </div>
-                <div class="gpm-row-meta">${detailsHtml}</div>
-              </div>
-              <div class="gpm-timeline">
-                ${timelineHtml}
+                <div class="gpm-tags">${tagsHtml}</div>
+                <div class="gpm-card-details">${detsHtml}</div>
+                <div class="gpm-card-actions">
+                  ${linkHtml}
+                  <div class="gpm-timeline">${timelineHtml}</div>
+                </div>
               </div>
             </div>
           `;
