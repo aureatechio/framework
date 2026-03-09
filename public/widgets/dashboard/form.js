@@ -7504,6 +7504,68 @@
         return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
       }
 
+      function __gpmRenderCard(item, idx) {
+        const fmtDate = (() => {
+          try { return new Date(item.data).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }); } catch (e) { return '—'; }
+        })();
+
+        // Timeline
+        const steps = [
+          { label: 'Aprovado', done: item.vendaAprovada },
+          { label: 'Assinado', done: item.clicksignAssinado },
+          { label: 'Pago', done: item.checkoutPago },
+        ];
+        let activeIdx = steps.findIndex(s => !s.done);
+        if (activeIdx === -1) activeIdx = steps.length;
+        const timelineHtml = steps.map((step, i) => {
+          const cls = step.done ? 'gpm-step--done' : (i === activeIdx ? 'gpm-step--active' : '');
+          const icon = step.done ? 'check' : (i === activeIdx ? 'loader' : 'circle');
+          const line = i < steps.length - 1
+            ? `<div class="gpm-step-line ${step.done && (steps[i+1].done || i+1 === activeIdx) ? 'gpm-step-line--done' : ''}"></div>`
+            : '';
+          return `<div class="gpm-step ${cls}"><div class="gpm-step-dot"><i data-lucide="${icon}" size="11"></i></div><div class="gpm-step-label">${step.label}</div></div>${line}`;
+        }).join('');
+
+        const isPending = !item.considered;
+
+        // Avatar
+        const avatarHtml = item.celebFoto
+          ? `<div class="gpm-avatar"><img src="${__gpmEscapeHtml(item.celebFoto)}" alt="${__gpmEscapeHtml(item.celebridade || '')}" loading="lazy"></div>`
+          : `<div class="gpm-avatar gpm-avatar--empty"><i data-lucide="user" size="20"></i></div>`;
+
+        // Tags
+        const tags = [];
+        if (item.tipo) tags.push(`<span class="gpm-tag gpm-tag--tipo">${__gpmEscapeHtml(item.tipo)}</span>`);
+        if (item.celebridade) tags.push(`<span class="gpm-tag gpm-tag--celeb">${__gpmEscapeHtml(item.celebridade)}</span>`);
+        if (item.regiao) tags.push(`<span class="gpm-tag gpm-tag--region">${__gpmEscapeHtml(item.regiao)}</span>`);
+        tags.push(`<span class="gpm-tag gpm-tag--date">${fmtDate}</span>`);
+        if (item.propostaId) {
+          const url = `https://crm.aureatech.io/proposta_v2/${item.propostaId}`;
+          tags.push(`<a href="${url}" target="_blank" rel="noopener" class="gpm-tag gpm-tag--link">proposta ↗</a>`);
+        }
+
+        // Details
+        const dets = [];
+        if (item.cliente && item.cliente !== '—') dets.push(`<span class="gpm-card-cliente" title="${__gpmEscapeHtml(item.razaoSocial || item.cliente)}">${__gpmEscapeHtml(item.cliente)}</span>`);
+        if (item.seller && item.seller !== '—') dets.push(`<span class="gpm-card-seller">${__gpmEscapeHtml(item.seller)}</span>`);
+        const detsHtml = dets.join('<span class="gpm-card-sep">·</span>');
+
+        return `
+          <div class="gpm-card-item ${isPending ? 'gpm-card-item--pending' : ''}">
+            ${avatarHtml}
+            <div class="gpm-card-body">
+              <div class="gpm-card-top">
+                <span class="gpm-card-value">${formatCurrency(item.valor)}</span>
+                <div class="gpm-timeline">${timelineHtml}</div>
+                <span class="gpm-card-num">#${idx + 1}</span>
+              </div>
+              <div class="gpm-tags">${tags.join('')}</div>
+              <div class="gpm-card-details">${detsHtml}</div>
+            </div>
+          </div>
+        `;
+      }
+
       function renderGaugePurchasesList(tab) {
         __gpmActiveTab = tab;
         const loadingEl = document.getElementById('gpm-loading');
@@ -7521,74 +7583,25 @@
         }
         if (emptyEl) emptyEl.style.display = 'none';
 
-        listEl.innerHTML = items.map((item, idx) => {
-          const fmtDate = (() => {
-            try { return new Date(item.data).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }); } catch (e) { return '—'; }
-          })();
-
-          // Timeline steps
-          const steps = [
-            { label: 'Aprovado', done: item.vendaAprovada },
-            { label: 'Assinado', done: item.clicksignAssinado },
-            { label: 'Pago', done: item.checkoutPago },
-          ];
-          let activeIdx = steps.findIndex(s => !s.done);
-          if (activeIdx === -1) activeIdx = steps.length;
-          const timelineHtml = steps.map((step, i) => {
-            const cls = step.done ? 'gpm-step--done' : (i === activeIdx ? 'gpm-step--active' : '');
-            const icon = step.done ? 'check' : (i === activeIdx ? 'loader' : 'circle');
-            const line = i < steps.length - 1
-              ? `<div class="gpm-step-line ${step.done && (steps[i+1].done || i+1 === activeIdx) ? 'gpm-step-line--done' : ''}"></div>`
-              : '';
-            return `<div class="gpm-step ${cls}"><div class="gpm-step-dot"><i data-lucide="${icon}" size="8"></i></div><div class="gpm-step-label">${step.label}</div></div>${line}`;
-          }).join('');
-
-          const isPending = !item.considered;
-
-          // Avatar
-          const avatarHtml = item.celebFoto
-            ? `<div class="gpm-avatar"><img src="${__gpmEscapeHtml(item.celebFoto)}" alt="${__gpmEscapeHtml(item.celebridade || '')}" loading="lazy"></div>`
-            : `<div class="gpm-avatar gpm-avatar--empty"><i data-lucide="user" size="18"></i></div>`;
-
-          // Tags
-          const tags = [];
-          if (item.tipo) tags.push(`<span class="gpm-tag gpm-tag--tipo">${__gpmEscapeHtml(item.tipo)}</span>`);
-          if (item.celebridade) tags.push(`<span class="gpm-tag gpm-tag--celeb">${__gpmEscapeHtml(item.celebridade)}</span>`);
-          if (item.regiao) tags.push(`<span class="gpm-tag gpm-tag--region">${__gpmEscapeHtml(item.regiao)}</span>`);
-          tags.push(`<span class="gpm-tag gpm-tag--date">${fmtDate}</span>`);
-          const tagsHtml = tags.join('');
-
-          // Details line
-          const dets = [];
-          if (item.cliente && item.cliente !== '—') dets.push(`<span class="gpm-card-cliente" title="${__gpmEscapeHtml(item.razaoSocial || item.cliente)}">${__gpmEscapeHtml(item.cliente)}</span>`);
-          if (item.seller && item.seller !== '—') dets.push(`<span class="gpm-card-seller">${__gpmEscapeHtml(item.seller)}</span>`);
-          const detsHtml = dets.join('<span class="gpm-card-sep">·</span>');
-
-          // Proposta link
-          let linkHtml = '<span></span>';
-          if (item.propostaId) {
-            const url = `https://crm.aureatech.io/proposta_v2/${item.propostaId}`;
-            linkHtml = `<a href="${url}" target="_blank" rel="noopener" class="gpm-card-link">ver proposta →</a>`;
+        // Na aba "Todas": agrupar pendentes em cima, consideradas embaixo
+        if (tab === 'all') {
+          const pending = items.filter(i => !i.considered);
+          const approved = items.filter(i => i.considered);
+          let html = '';
+          if (pending.length > 0) {
+            const totalPending = pending.reduce((s, r) => s + r.valor, 0);
+            html += `<div class="gpm-section-label">Em aprovação · ${pending.length} compras · ${formatCurrencyCompact(totalPending)}</div>`;
+            html += pending.map((item, idx) => __gpmRenderCard(item, idx + 1)).join('');
           }
-
-          return `
-            <div class="gpm-card-item ${isPending ? 'gpm-card-item--pending' : ''}">
-              ${avatarHtml}
-              <div class="gpm-card-body">
-                <div class="gpm-card-top">
-                  <span class="gpm-card-value">${formatCurrency(item.valor)}</span>
-                  <span class="gpm-card-num">#${idx + 1}</span>
-                </div>
-                <div class="gpm-tags">${tagsHtml}</div>
-                <div class="gpm-card-details">${detsHtml}</div>
-                <div class="gpm-card-actions">
-                  ${linkHtml}
-                  <div class="gpm-timeline">${timelineHtml}</div>
-                </div>
-              </div>
-            </div>
-          `;
-        }).join('');
+          if (approved.length > 0) {
+            const totalApproved = approved.reduce((s, r) => s + r.valor, 0);
+            html += `<div class="gpm-section-label" style="margin-top:12px">Consideradas no faturamento · ${approved.length} compras · ${formatCurrencyCompact(totalApproved)}</div>`;
+            html += approved.map((item, idx) => __gpmRenderCard(item, idx + 1)).join('');
+          }
+          listEl.innerHTML = html;
+        } else {
+          listEl.innerHTML = items.map((item, idx) => __gpmRenderCard(item, idx + 1)).join('');
+        }
 
         if (typeof lucide !== 'undefined') lucide.createIcons();
       }

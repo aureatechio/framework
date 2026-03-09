@@ -2521,8 +2521,8 @@
 
     /* Celeb avatar */
     #dashboard-acelerai-v2 .gpm-avatar {
-      flex: 0 0 44px; width: 44px; height: 44px;
-      border-radius: 10px; overflow: hidden;
+      flex: 0 0 56px; width: 56px; height: 56px;
+      border-radius: 12px; overflow: hidden;
       background: var(--bg-subtle); border: 1px solid var(--border-color);
     }
     #dashboard-acelerai-v2 .gpm-avatar img {
@@ -2534,10 +2534,10 @@
     }
 
     /* Card body */
-    #dashboard-acelerai-v2 .gpm-card-body { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
-    #dashboard-acelerai-v2 .gpm-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    #dashboard-acelerai-v2 .gpm-card-body { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+    #dashboard-acelerai-v2 .gpm-card-top { display: flex; align-items: center; gap: 10px; }
     #dashboard-acelerai-v2 .gpm-card-value { font-size: 15px; font-weight: 600; color: var(--text-main); letter-spacing: -0.01em; }
-    #dashboard-acelerai-v2 .gpm-card-num { font-size: 10px; color: var(--text-muted); font-weight: 400; }
+    #dashboard-acelerai-v2 .gpm-card-num { font-size: 10px; color: var(--text-muted); font-weight: 400; margin-left: auto; white-space: nowrap; }
 
     /* Tags row */
     #dashboard-acelerai-v2 .gpm-tags { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
@@ -2563,35 +2563,38 @@
     #dashboard-acelerai-v2 .gpm-card-seller { max-width: 120px; }
     #dashboard-acelerai-v2 .gpm-card-sep { color: var(--border-color); }
 
-    /* Actions row (proposta link + timeline) */
-    #dashboard-acelerai-v2 .gpm-card-actions {
-      display: flex; align-items: center; justify-content: space-between; gap: 8px;
-      margin-top: 2px;
+    /* Section divider label */
+    #dashboard-acelerai-v2 .gpm-section-label {
+      font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--text-muted); padding: 10px 4px 4px;
     }
-    #dashboard-acelerai-v2 .gpm-card-link {
-      font-size: 11px; color: var(--col-primary); text-decoration: none; font-weight: 500;
+    /* Proposta tag-link */
+    #dashboard-acelerai-v2 .gpm-tag--link {
+      background: #eff6ff; color: #2563eb; text-decoration: none; cursor: pointer;
     }
-    #dashboard-acelerai-v2 .gpm-card-link:hover { text-decoration: underline; }
+    #dashboard-acelerai-v2 .gpm-tag--link:hover { background: #dbeafe; }
+    #dashboard-acelerai-v2.dark-mode .gpm-tag--link { background: rgba(37,99,235,0.15); color: #60a5fa; }
+    #dashboard-acelerai-v2.dark-mode .gpm-tag--link:hover { background: rgba(37,99,235,0.25); }
 
-    /* Timeline — compact inline */
+    /* Timeline */
     #dashboard-acelerai-v2 .gpm-timeline { display: flex; align-items: center; gap: 0; flex: 0 0 auto; }
-    #dashboard-acelerai-v2 .gpm-step { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+    #dashboard-acelerai-v2 .gpm-step { display: flex; flex-direction: column; align-items: center; gap: 3px; }
     #dashboard-acelerai-v2 .gpm-step-dot {
-      width: 16px; height: 16px; border-radius: 50%;
+      width: 22px; height: 22px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
       border: 1.5px solid var(--border-color); background: var(--bg-card);
       color: var(--text-muted); position: relative; z-index: 2;
     }
     #dashboard-acelerai-v2 .gpm-step-dot svg,
-    #dashboard-acelerai-v2 .gpm-step-dot i { width: 8px; height: 8px; }
+    #dashboard-acelerai-v2 .gpm-step-dot i { width: 11px; height: 11px; }
     #dashboard-acelerai-v2 .gpm-step--done .gpm-step-dot { background: var(--col-success); border-color: var(--col-success); color: #fff; }
     #dashboard-acelerai-v2 .gpm-step--active .gpm-step-dot { border-color: var(--col-primary); color: var(--col-primary); }
-    #dashboard-acelerai-v2 .gpm-step-label { font-size: 8px; font-weight: 500; color: var(--text-muted); white-space: nowrap; }
+    #dashboard-acelerai-v2 .gpm-step-label { font-size: 9px; font-weight: 500; color: var(--text-muted); white-space: nowrap; }
     #dashboard-acelerai-v2 .gpm-step--done .gpm-step-label { color: var(--col-success); }
     #dashboard-acelerai-v2 .gpm-step--active .gpm-step-label { color: var(--col-primary); }
     #dashboard-acelerai-v2 .gpm-step-line {
-      width: 12px; height: 1.5px; background: var(--border-color);
-      flex: 0 0 auto; align-self: flex-start; margin-top: 7px;
+      width: 20px; height: 2px; background: var(--border-color);
+      flex: 0 0 auto; align-self: flex-start; margin-top: 10px;
     }
     #dashboard-acelerai-v2 .gpm-step-line--done { background: var(--col-success); }
 
