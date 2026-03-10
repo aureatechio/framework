@@ -973,6 +973,8 @@
           },
           sellers: [] // [{ id, name, avatarUrl, role, propostasPct, reunioesPct, avgPct }]
         },
+        teamBattleData: null, // { groups: [...], totalRevenue, totalDeals }
+        teamBattleView: 'revenue', // 'revenue' | 'deals'
         dailyReport: {
           vendasMtd: 0,
           vendasHoje: 0,
@@ -5105,6 +5107,498 @@
       }
 
       // ==========================================
+      // TEAM BATTLE (Grupos vs Grupos)
+      // ==========================================
+
+      // Cores padrão por índice de grupo (azul, verde, roxo, laranja, cyan...)
+      const TEAM_COLORS = ['#3b82f6', '#22c55e', '#8b5cf6', '#f97316', '#06b6d4', '#ec4899'];
+      const TEAM_COLORS_LIGHT = ['rgba(59,130,246,0.12)', 'rgba(34,197,94,0.12)', 'rgba(139,92,246,0.12)', 'rgba(249,115,22,0.12)', 'rgba(6,182,212,0.12)', 'rgba(236,72,153,0.12)'];
+
+      let __teamDailyChart = null;
+      let __teamForceChart = null;
+      let __teamSparkCharts = {};
+
+      async function fetchTeamBattleData() {
+        if (!sbClient) return;
+        try {
+          // 1. Fetch groups (metas_grupos) with name
+          const { data: gruposRaw } = await sbClient
+            .from('crm_metas_grupos')
+            .select('id, nome, ciclos_json');
+          const grupos = Array.isArray(gruposRaw) ? gruposRaw.filter(g => g && g.id) : [];
+          if (grupos.length < 2) {
+            // Need at least 2 groups for battle
+            state.teamBattleData = null;
+            return;
+          }
+
+          // 2. Get seller→group mapping from RPC
+          const { mes, ano, refDateYmd } = getCrmMetaContext();
+          const rpc = await fetchCrmMetasRpc(mes, ano, refDateYmd);
+          const rpcRows = rpc && Array.isArray(rpc.rows) ? rpc.rows : [];
+
+          // 3. Fetch sellers
+          const { data: sellersRaw } = await sbClient
+            .from('vendedores')
+            .select('id, nome, perfil_img, cargo, diretorVendas')
+            .eq('usuarioInterno', false);
+          const sellers = (sellersRaw || []).filter(s => s.diretorVendas !== true);
+
+          // Build seller→grupo_id map
+          const sellerGrupoMap = {};
+          rpcRows.forEach(r => {
+            if (r && r.vendedor_id && r.grupo_id) sellerGrupoMap[String(r.vendedor_id)] = String(r.grupo_id);
+          });
+
+          // Build grupo map
+          const grupoMap = {};
+          grupos.forEach((g, idx) => {
+            grupoMap[String(g.id)] = {
+              id: String(g.id),
+              name: g.nome || `Grupo ${idx + 1}`,
+              color: TEAM_COLORS[idx % TEAM_COLORS.length],
+              colorLight: TEAM_COLORS_LIGHT[idx % TEAM_COLORS_LIGHT.length],
+              sellers: [],
+              totalRevenue: 0,
+              totalDeals: 0,
+              avgTicket: 0,
+              sharePct: 0,
+              dailyRevenue: {},  // date -> value
+              dailyDeals: {}     // date -> count
+            };
+          });
+
+          // Assign sellers to groups
+          sellers.forEach(s => {
+            const gid = sellerGrupoMap[String(s.id)];
+            if (gid && grupoMap[gid]) {
+              grupoMap[gid].sellers.push({
+                id: s.id,
+                name: s.nome || 'Sem nome',
+                avatarUrl: s.perfil_img || null,
+                role: s.cargo || 'Vendedor',
+                revenue: 0,
+                deals: 0,
+                avgTicket: 0,
+                convPct: 0,
+                sharePct: 0,
+                dailyRevenue: {} // date -> value
+              });
+            }
+          });
+
+          // 4. Fetch compras for the current period
+          const { start, end } = getDateRange(state.dateFilter);
+          let qCompras = sbClient
+            .from('compras')
+            .select('valor_total, data_compra, vendedoresponsavel, leadid');
+          qCompras = applyApprovedPurchaseFilter(qCompras);
+          qCompras = applyCutoffTimestamp(qCompras, 'data_compra')
+            .gte('data_compra', start)
+            .lte('data_compra', end);
+          const { data: comprasRaw } = await qCompras;
+          let compras = comprasRaw || [];
+          compras = await filterRowsByAgencyViaLeadId(compras, (r) => r && r.leadid);
+
+          // 5. Aggregate compras by seller → group
+          let grandTotalRevenue = 0;
+          let grandTotalDeals = 0;
+
+          compras.forEach(c => {
+            if (!c || !c.vendedoresponsavel) return;
+            const val = __toNumber(c.valor_total) || 0;
+            const sellerId = String(c.vendedoresponsavel);
+            const gid = sellerGrupoMap[sellerId];
+            if (!gid || !grupoMap[gid]) return;
+
+            const dateKey = (c.data_compra || '').substring(0, 10);
+
+            // Group totals
+            grupoMap[gid].totalRevenue += val;
+            grupoMap[gid].totalDeals++;
+            grupoMap[gid].dailyRevenue[dateKey] = (grupoMap[gid].dailyRevenue[dateKey] || 0) + val;
+            grupoMap[gid].dailyDeals[dateKey] = (grupoMap[gid].dailyDeals[dateKey] || 0) + 1;
+
+            grandTotalRevenue += val;
+            grandTotalDeals++;
+
+            // Seller totals
+            const seller = grupoMap[gid].sellers.find(s => String(s.id) === sellerId);
+            if (seller) {
+              seller.revenue += val;
+              seller.deals++;
+              seller.dailyRevenue[dateKey] = (seller.dailyRevenue[dateKey] || 0) + val;
+            }
+          });
+
+          // 6. Calculate derived metrics
+          const groupList = Object.values(grupoMap).filter(g => g.sellers.length > 0);
+          groupList.forEach(g => {
+            g.avgTicket = g.totalDeals > 0 ? g.totalRevenue / g.totalDeals : 0;
+            g.sharePct = grandTotalRevenue > 0 ? (g.totalRevenue / grandTotalRevenue) * 100 : 0;
+            g.sellers.forEach(s => {
+              s.avgTicket = s.deals > 0 ? s.revenue / s.deals : 0;
+              s.sharePct = g.totalRevenue > 0 ? (s.revenue / g.totalRevenue) * 100 : 0;
+            });
+            // Sort sellers by revenue desc
+            g.sellers.sort((a, b) => b.revenue - a.revenue);
+          });
+
+          // Sort groups by revenue desc (winner first)
+          groupList.sort((a, b) => b.totalRevenue - a.totalRevenue);
+
+          state.teamBattleData = {
+            groups: groupList,
+            totalRevenue: grandTotalRevenue,
+            totalDeals: grandTotalDeals
+          };
+
+          renderTeamBattle();
+        } catch (e) {
+          console.error('Erro ao buscar team battle:', e);
+          state.teamBattleData = null;
+        }
+      }
+
+      function renderTeamBattle() {
+        const data = state.teamBattleData;
+        if (!data || !data.groups || data.groups.length < 2) {
+          const section = document.getElementById('team-battle-section');
+          if (section) section.style.display = 'none';
+          return;
+        }
+
+        const section = document.getElementById('team-battle-section');
+        if (section) section.style.display = '';
+
+        const isDark = state.theme === 'dark';
+        const fmtCurrency = (v) => formatCurrencyCompact(v);
+        const fmtNumber = (v) => new Intl.NumberFormat('pt-BR').format(v);
+        const fmtPct = (v) => `${v.toFixed(1)}%`;
+
+        renderTeamSummaryCards(data, isDark, fmtCurrency, fmtNumber, fmtPct);
+        renderTeamVsPanel(data, isDark, fmtCurrency, fmtNumber, fmtPct);
+        renderTeamPerfTables(data, isDark, fmtCurrency, fmtNumber, fmtPct);
+        renderTeamDailyChart(data, isDark);
+        renderTeamForceChart(data, isDark);
+
+        try { lucide.createIcons(); } catch (e) {}
+      }
+
+      function renderTeamSummaryCards(data, isDark, fmtCurrency, fmtNumber, fmtPct) {
+        const container = document.getElementById('team-summary-cards');
+        if (!container) return;
+
+        let html = '';
+        data.groups.forEach((g, idx) => {
+          const isWinner = idx === 0;
+          const borderColor = g.color;
+          const viewMode = state.teamBattleView || 'revenue';
+          const mainValue = viewMode === 'revenue' ? fmtCurrency(g.totalRevenue) : fmtNumber(g.totalDeals);
+          const shareLabel = `${fmtPct(g.sharePct)} Total Share`;
+
+          html += `
+            <div class="card tb-team-card" style="border-left: 4px solid ${borderColor}; position:relative;">
+              <div class="flex justify-between items-center mb-3">
+                <div class="flex items-center gap-2">
+                  <span class="tb-team-icon" style="background:${g.colorLight}; color:${g.color};">
+                    <i data-lucide="${isWinner ? 'shield' : 'sword'}" size="18"></i>
+                  </span>
+                  <span class="text-base font-bold" style="color:var(--text-main);">Team ${g.name}</span>
+                </div>
+                <div class="tb-view-toggle">
+                  <button class="tb-toggle-btn ${viewMode === 'revenue' ? 'active' : ''}" onclick="window.__setTeamView('revenue')">Revenue</button>
+                  <button class="tb-toggle-btn ${viewMode === 'deals' ? 'active' : ''}" onclick="window.__setTeamView('deals')">Deals</button>
+                </div>
+              </div>
+              <div class="flex items-end justify-between mb-3">
+                <div class="text-2xl font-bold" style="color:${g.color};">${mainValue}</div>
+                <div class="text-xs font-medium" style="color:var(--text-muted);">${shareLabel}</div>
+              </div>
+              <div class="grid grid-cols-3 gap-4 mb-3">
+                <div class="text-center">
+                  <div class="text-xs text-muted font-medium">DEALS</div>
+                  <div class="text-lg font-bold" style="color:var(--text-main);">${fmtNumber(g.totalDeals)}</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-muted font-medium">TICKET</div>
+                  <div class="text-lg font-bold" style="color:var(--text-main);">${fmtCurrency(g.avgTicket)}</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-muted font-medium">PARTICIPAÇÃO</div>
+                  <div class="text-lg font-bold" style="color:var(--text-main);">${fmtPct(g.sharePct)}</div>
+                </div>
+              </div>
+              <div id="tb-spark-${idx}" style="width:100%; height:60px;"></div>
+            </div>
+          `;
+        });
+
+        container.innerHTML = html;
+
+        // Render sparklines
+        data.groups.forEach((g, idx) => {
+          renderTeamSparkline(g, idx, isDark);
+        });
+      }
+
+      function renderTeamSparkline(group, idx, isDark) {
+        const el = document.getElementById(`tb-spark-${idx}`);
+        if (!el) return;
+
+        // Get daily data sorted by date
+        const dailyMap = state.teamBattleView === 'deals' ? group.dailyDeals : group.dailyRevenue;
+        const dates = Object.keys(dailyMap).sort();
+        const values = dates.map(d => dailyMap[d] || 0);
+
+        if (__teamSparkCharts[idx]) {
+          try { __teamSparkCharts[idx].destroy(); } catch (e) {}
+        }
+
+        if (values.length === 0) { el.innerHTML = ''; return; }
+
+        __teamSparkCharts[idx] = new ApexCharts(el, {
+          chart: { type: 'area', height: 60, sparkline: { enabled: true }, animations: { enabled: false } },
+          series: [{ data: values }],
+          stroke: { width: 2, curve: 'smooth' },
+          colors: [group.color],
+          fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.05, stops: [0, 100] } },
+          tooltip: {
+            fixed: { enabled: false },
+            x: { show: false },
+            y: { formatter: (v) => state.teamBattleView === 'deals' ? `${v} deals` : formatCurrencyCompact(v) }
+          }
+        });
+        __teamSparkCharts[idx].render();
+      }
+
+      function renderTeamVsPanel(data, isDark, fmtCurrency, fmtNumber, fmtPct) {
+        const panel = document.getElementById('team-vs-panel');
+        if (!panel || data.groups.length < 2) return;
+        panel.style.display = '';
+
+        const g1 = data.groups[0]; // winner
+        const g2 = data.groups[1]; // challenger
+        const maxRev = Math.max(g1.totalRevenue, g2.totalRevenue, 1);
+        const g1Pct = (g1.totalRevenue / maxRev * 100).toFixed(0);
+        const g2Pct = (g2.totalRevenue / maxRev * 100).toFixed(0);
+
+        panel.innerHTML = `
+          <div class="tb-vs-container">
+            <div class="tb-vs-side">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="text-base font-bold" style="color:${g1.color}; font-style:italic; text-transform:uppercase;">${g1.name}</span>
+                <span class="tb-vs-badge tb-vs-badge--winning">WINNING</span>
+              </div>
+              <div class="text-xs text-muted mb-1">${g1.sellers.length} Sales Reps</div>
+              <div class="flex items-center gap-2 mb-3">
+                <span class="text-xs text-muted">Revenue</span>
+                <div class="tb-vs-bar-bg grow"><div class="tb-vs-bar-fill" style="width:${g1Pct}%; background:${g1.color};"></div></div>
+                <span class="text-base font-bold" style="color:var(--text-main);">${fmtCurrency(g1.totalRevenue)}</span>
+              </div>
+              <div class="grid grid-cols-3 gap-3">
+                <div class="text-center"><div class="text-xs text-muted">DEALS</div><div class="text-sm font-bold">${fmtNumber(g1.totalDeals)}</div></div>
+                <div class="text-center"><div class="text-xs text-muted">AVG TICKET</div><div class="text-sm font-bold">${fmtCurrency(g1.avgTicket)}</div></div>
+                <div class="text-center"><div class="text-xs text-muted">SHARE</div><div class="text-sm font-bold">${fmtPct(g1.sharePct)}</div></div>
+              </div>
+            </div>
+            <div class="tb-vs-center">
+              <div class="tb-vs-circle">VS</div>
+            </div>
+            <div class="tb-vs-side">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="text-base font-bold" style="color:${g2.color}; font-style:italic; text-transform:uppercase;">${g2.name}</span>
+                <span class="tb-vs-badge tb-vs-badge--challenger">CHALLENGER</span>
+              </div>
+              <div class="text-xs text-muted mb-1">${g2.sellers.length} Sales Reps</div>
+              <div class="flex items-center gap-2 mb-3">
+                <span class="text-xs text-muted">Revenue</span>
+                <div class="tb-vs-bar-bg grow"><div class="tb-vs-bar-fill" style="width:${g2Pct}%; background:${g2.color};"></div></div>
+                <span class="text-base font-bold" style="color:var(--text-main);">${fmtCurrency(g2.totalRevenue)}</span>
+              </div>
+              <div class="grid grid-cols-3 gap-3">
+                <div class="text-center"><div class="text-xs text-muted">DEALS</div><div class="text-sm font-bold">${fmtNumber(g2.totalDeals)}</div></div>
+                <div class="text-center"><div class="text-xs text-muted">AVG TICKET</div><div class="text-sm font-bold">${fmtCurrency(g2.avgTicket)}</div></div>
+                <div class="text-center"><div class="text-xs text-muted">SHARE</div><div class="text-sm font-bold">${fmtPct(g2.sharePct)}</div></div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      function renderTeamPerfTables(data, isDark, fmtCurrency, fmtNumber, fmtPct) {
+        const container = document.getElementById('team-perf-tables');
+        if (!container) return;
+
+        let html = '';
+        data.groups.forEach((g, idx) => {
+          const icon = idx === 0 ? 'shield' : (idx === 1 ? 'sword' : 'users');
+          html += `
+            <div class="card tb-perf-card">
+              <div class="flex items-center gap-2 mb-3">
+                <i data-lucide="${icon}" size="16" style="color:${g.color}"></i>
+                <span class="text-sm font-bold" style="color:${g.color}; text-transform:uppercase; font-style:italic;">${g.name} PERFORMANCE</span>
+              </div>
+              <div class="tb-perf-table">
+                <div class="tb-perf-header">
+                  <div class="tb-perf-cell tb-perf-cell--name">VENDEDOR</div>
+                  <div class="tb-perf-cell tb-perf-cell--num">DEALS</div>
+                  <div class="tb-perf-cell tb-perf-cell--num">RECEITA</div>
+                  <div class="tb-perf-cell tb-perf-cell--num">TICKET</div>
+                  <div class="tb-perf-cell tb-perf-cell--num">SHARE</div>
+                </div>
+                ${g.sellers.map(s => {
+                  const avatarSrc = s.avatarUrl || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(s.name) + '&background=e2e8f0&color=64748b';
+                  return `
+                    <div class="tb-perf-row">
+                      <div class="tb-perf-cell tb-perf-cell--name">
+                        <img src="${avatarSrc}" alt="${s.name}" class="tb-perf-avatar" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=e2e8f0&color=64748b'">
+                        <span class="tb-perf-seller-name">${s.name}</span>
+                      </div>
+                      <div class="tb-perf-cell tb-perf-cell--num">${fmtNumber(s.deals)}</div>
+                      <div class="tb-perf-cell tb-perf-cell--num" style="color:${g.color}; font-weight:700;">${fmtCurrency(s.revenue)}</div>
+                      <div class="tb-perf-cell tb-perf-cell--num">${fmtCurrency(s.avgTicket)}</div>
+                      <div class="tb-perf-cell tb-perf-cell--num">${fmtPct(s.sharePct)}</div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          `;
+        });
+
+        container.innerHTML = html;
+      }
+
+      function renderTeamDailyChart(data, isDark) {
+        const wrapper = document.getElementById('team-daily-evolution');
+        const el = document.getElementById('team-daily-chart');
+        if (!wrapper || !el) return;
+
+        // Get current week dates (Mon-Fri)
+        const today = new Date();
+        const dayOfWeek = today.getDay(); // 0=Sun
+        const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+        const monday = new Date(today);
+        monday.setDate(today.getDate() + mondayOffset);
+
+        const weekDates = [];
+        const weekLabels = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+        for (let i = 0; i < 7; i++) {
+          const d = new Date(monday);
+          d.setDate(monday.getDate() + i);
+          weekDates.push(d.toISOString().substring(0, 10));
+        }
+
+        // Build series per seller across all groups
+        const series = [];
+        const colors = [];
+        data.groups.forEach((g) => {
+          g.sellers.forEach(s => {
+            const vals = weekDates.map(d => s.dailyRevenue[d] || 0);
+            if (vals.some(v => v > 0)) {
+              series.push({ name: s.name, data: vals });
+              colors.push(g.color);
+            }
+          });
+        });
+
+        if (series.length === 0) {
+          wrapper.style.display = 'none';
+          return;
+        }
+        wrapper.style.display = '';
+
+        if (__teamDailyChart) { try { __teamDailyChart.destroy(); } catch (e) {} }
+
+        __teamDailyChart = new ApexCharts(el, {
+          chart: {
+            type: 'bar', height: 320,
+            toolbar: { show: false },
+            background: 'transparent',
+            fontFamily: 'Inter, system-ui, sans-serif'
+          },
+          series,
+          colors,
+          xaxis: { categories: weekLabels.slice(0, weekDates.length) },
+          yaxis: { labels: { formatter: (v) => formatCurrencyCompact(v) } },
+          plotOptions: { bar: { borderRadius: 4, columnWidth: '60%' } },
+          dataLabels: { enabled: false },
+          legend: { position: 'top', fontSize: '11px', labels: { colors: isDark ? '#94a3b8' : '#64748b' } },
+          grid: { borderColor: isDark ? '#334155' : '#e2e8f0', strokeDashArray: 4 },
+          theme: { mode: isDark ? 'dark' : 'light' },
+          tooltip: { y: { formatter: (v) => formatCurrencyCompact(v) } }
+        });
+        __teamDailyChart.render();
+      }
+
+      function renderTeamForceChart(data, isDark) {
+        const wrapper = document.getElementById('team-force-line');
+        const el = document.getElementById('team-force-chart');
+        if (!wrapper || !el || data.groups.length < 2) return;
+
+        // Get all unique dates across groups, sorted
+        const allDatesSet = new Set();
+        data.groups.forEach(g => {
+          Object.keys(g.dailyRevenue).forEach(d => allDatesSet.add(d));
+        });
+        const allDates = Array.from(allDatesSet).sort();
+
+        if (allDates.length === 0) {
+          wrapper.style.display = 'none';
+          return;
+        }
+        wrapper.style.display = '';
+
+        // Build cumulative series per group
+        const series = data.groups.map(g => {
+          let cum = 0;
+          const vals = allDates.map(d => {
+            cum += (g.dailyRevenue[d] || 0);
+            return cum;
+          });
+          return { name: g.name, data: vals };
+        });
+
+        const colors = data.groups.map(g => g.color);
+
+        if (__teamForceChart) { try { __teamForceChart.destroy(); } catch (e) {} }
+
+        __teamForceChart = new ApexCharts(el, {
+          chart: {
+            type: 'area', height: 320,
+            toolbar: { show: false },
+            background: 'transparent',
+            fontFamily: 'Inter, system-ui, sans-serif'
+          },
+          series,
+          colors,
+          xaxis: {
+            categories: allDates.map(d => {
+              try { return new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }); }
+              catch (e) { return d; }
+            }),
+            labels: { style: { colors: isDark ? '#94a3b8' : '#64748b', fontSize: '10px' } }
+          },
+          yaxis: { labels: { formatter: (v) => formatCurrencyCompact(v) } },
+          stroke: { width: 3, curve: 'smooth' },
+          fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.3, opacityTo: 0.05, stops: [0, 100] } },
+          dataLabels: { enabled: false },
+          legend: { position: 'top', fontSize: '12px', fontWeight: 700, labels: { colors: isDark ? '#94a3b8' : '#64748b' } },
+          grid: { borderColor: isDark ? '#334155' : '#e2e8f0', strokeDashArray: 4 },
+          theme: { mode: isDark ? 'dark' : 'light' },
+          tooltip: { y: { formatter: (v) => formatCurrencyCompact(v) } }
+        });
+        __teamForceChart.render();
+      }
+
+      // Toggle view (Revenue/Deals)
+      window.__setTeamView = function(view) {
+        state.teamBattleView = view;
+        renderTeamBattle();
+      };
+
+      // ==========================================
       // RELATÓRIO DIÁRIO
       // ==========================================
 
@@ -5623,6 +6117,7 @@
              fetchChannelData(),
              fetchPipelineData(),
              fetchMetasData(),
+             fetchTeamBattleData(),
              fetchDailyReport()
          ];
          const results = await Promise.allSettled(tasks);
@@ -7392,7 +7887,7 @@
             'checkout_url', 'created_at',
             'lead:leadid(nome, empresa)',
             'celebridadeRef:celebridadesReferencia!compras_celebridade_fkey(nome, fotoPrincipal)',
-            'proposta:imagemProposta!compras_imagemproposta_id_fkey(idproposta)'
+            'proposta:imagemProposta!compras_imagemproposta_id_fkey(id,idproposta)'
           ].join(', ');
 
           let qAll = sbClient.from('compras').select(selectFields);
@@ -7427,7 +7922,7 @@
             const leadData = r.lead || {};
             const celebData = r.celebridadeRef || {};
             const propostaData = r.proposta || {};
-            const propostaId = (propostaData && propostaData.idproposta) || r.imagemproposta_id || null;
+            const propostaId = (propostaData && propostaData.id) || null;
 
             allItems.push({
               valor: parseCurrency(r.valor_total),
@@ -7535,33 +8030,34 @@
 
         // Tags
         const tags = [];
-        if (item.tipo) tags.push(`<span class="gpm-tag gpm-tag--tipo">${__gpmEscapeHtml(item.tipo)}</span>`);
-        if (item.celebridade) tags.push(`<span class="gpm-tag gpm-tag--celeb">${__gpmEscapeHtml(item.celebridade)}</span>`);
+        if (item.tipo) {
+          const tipoLabel = item.tipo === 'Renovacao' ? 'Renovação' : item.tipo;
+          tags.push(`<span class="gpm-tag gpm-tag--tipo">${__gpmEscapeHtml(tipoLabel)}</span>`);
+        }
+        if (item.seller && item.seller !== '—') tags.push(`<span class="gpm-tag gpm-tag--seller">${__gpmEscapeHtml(item.seller)}</span>`);
         if (item.regiao) tags.push(`<span class="gpm-tag gpm-tag--region">${__gpmEscapeHtml(item.regiao)}</span>`);
         tags.push(`<span class="gpm-tag gpm-tag--date">${fmtDate}</span>`);
         if (item.propostaId) {
-          const url = `https://crm.aureatech.io/proposta_v2/${item.propostaId}`;
+          const url = `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/propostas-pdf/${item.propostaId}.pdf`;
           tags.push(`<a href="${url}" target="_blank" rel="noopener" class="gpm-tag gpm-tag--link">proposta ↗</a>`);
         }
 
-        // Details
-        const dets = [];
-        if (item.cliente && item.cliente !== '—') dets.push(`<span class="gpm-card-cliente" title="${__gpmEscapeHtml(item.razaoSocial || item.cliente)}">${__gpmEscapeHtml(item.cliente)}</span>`);
-        if (item.seller && item.seller !== '—') dets.push(`<span class="gpm-card-seller">${__gpmEscapeHtml(item.seller)}</span>`);
-        const detsHtml = dets.join('<span class="gpm-card-sep">·</span>');
+        // Sub info: celebridade + cliente
+        const subParts = [];
+        if (item.celebridade) subParts.push(`<span class="gpm-card-celeb-name">${__gpmEscapeHtml(item.celebridade)}</span>`);
+        if (item.cliente && item.cliente !== '—') subParts.push(`<span class="gpm-card-cliente" title="${__gpmEscapeHtml(item.razaoSocial || item.cliente)}">${__gpmEscapeHtml(item.cliente)}</span>`);
+        const detsHtml = subParts.join('<span class="gpm-card-sep">·</span>');
 
         return `
           <div class="gpm-card-item ${isPending ? 'gpm-card-item--pending' : ''}">
-            ${avatarHtml}
-            <div class="gpm-card-body">
-              <div class="gpm-card-top">
-                <span class="gpm-card-value">${formatCurrency(item.valor)}</span>
-                <div class="gpm-timeline">${timelineHtml}</div>
-                <span class="gpm-card-num">#${idx + 1}</span>
-              </div>
-              <div class="gpm-tags">${tags.join('')}</div>
-              <div class="gpm-card-details">${detsHtml}</div>
+            <div class="gpm-col-avatar">${avatarHtml}</div>
+            <div class="gpm-col-info">
+              <span class="gpm-card-value">${formatCurrency(item.valor)}</span>
+              <div class="gpm-card-sub">${detsHtml}</div>
             </div>
+            <div class="gpm-col-tags">${tags.join('')}</div>
+            <div class="gpm-col-timeline"><div class="gpm-timeline">${timelineHtml}</div></div>
+            <div class="gpm-col-num">#${idx}</div>
           </div>
         `;
       }
@@ -7588,15 +8084,15 @@
           const pending = items.filter(i => !i.considered);
           const approved = items.filter(i => i.considered);
           let html = '';
-          if (pending.length > 0) {
-            const totalPending = pending.reduce((s, r) => s + r.valor, 0);
-            html += `<div class="gpm-section-label">Em aprovação · ${pending.length} compras · ${formatCurrencyCompact(totalPending)}</div>`;
-            html += pending.map((item, idx) => __gpmRenderCard(item, idx + 1)).join('');
-          }
           if (approved.length > 0) {
             const totalApproved = approved.reduce((s, r) => s + r.valor, 0);
-            html += `<div class="gpm-section-label" style="margin-top:12px">Consideradas no faturamento · ${approved.length} compras · ${formatCurrencyCompact(totalApproved)}</div>`;
+            html += `<div class="gpm-section-label">Consideradas no faturamento · ${approved.length} compras · ${formatCurrencyCompact(totalApproved)}</div>`;
             html += approved.map((item, idx) => __gpmRenderCard(item, idx + 1)).join('');
+          }
+          if (pending.length > 0) {
+            const totalPending = pending.reduce((s, r) => s + r.valor, 0);
+            html += `<div class="gpm-section-label" style="margin-top:12px">Em aprovação · ${pending.length} compras · ${formatCurrencyCompact(totalPending)}</div>`;
+            html += pending.map((item, idx) => __gpmRenderCard(item, idx + 1)).join('');
           }
           listEl.innerHTML = html;
         } else {

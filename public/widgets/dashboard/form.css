@@ -2504,81 +2504,71 @@
       display: flex; flex-direction: column; gap: 8px;
     }
 
-    /* Card */
+    /* === Card row === */
     #dashboard-acelerai-v2 .gpm-card-item {
       background: var(--bg-card); border: 1px solid var(--border-color);
-      border-radius: 12px; padding: 14px 16px;
-      display: flex; gap: 12px; align-items: flex-start;
-      transition: box-shadow 0.15s, border-color 0.15s;
+      border-radius: 12px; padding: 12px 16px;
+      display: flex; align-items: center; gap: 14px;
+      transition: border-color 0.15s;
     }
-    #dashboard-acelerai-v2 .gpm-card-item:hover {
-      border-color: var(--col-primary); box-shadow: 0 2px 12px rgba(59,130,246,0.08);
-    }
-    #dashboard-acelerai-v2 .gpm-card-item--pending {
-      opacity: 0.5; border-style: dashed;
-    }
-    #dashboard-acelerai-v2 .gpm-card-item--pending:hover { opacity: 0.7; }
+    #dashboard-acelerai-v2 .gpm-card-item:hover { border-color: rgba(59,130,246,0.3); }
+    #dashboard-acelerai-v2 .gpm-card-item--pending { opacity: 0.45; border-style: dashed; }
+    #dashboard-acelerai-v2 .gpm-card-item--pending:hover { opacity: 0.65; }
 
-    /* Celeb avatar */
+    /* Col 1: Avatar */
+    #dashboard-acelerai-v2 .gpm-col-avatar { flex: 0 0 auto; }
     #dashboard-acelerai-v2 .gpm-avatar {
-      flex: 0 0 56px; width: 56px; height: 56px;
-      border-radius: 12px; overflow: hidden;
+      width: 48px; height: 48px; border-radius: 10px; overflow: hidden;
       background: var(--bg-subtle); border: 1px solid var(--border-color);
     }
-    #dashboard-acelerai-v2 .gpm-avatar img {
-      width: 100%; height: 100%; object-fit: cover; display: block;
-    }
+    #dashboard-acelerai-v2 .gpm-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
     #dashboard-acelerai-v2 .gpm-avatar--empty {
       display: flex; align-items: center; justify-content: center;
-      color: var(--text-muted); font-size: 18px;
+      color: var(--text-muted);
     }
 
-    /* Card body */
-    #dashboard-acelerai-v2 .gpm-card-body { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
-    #dashboard-acelerai-v2 .gpm-card-top { display: flex; align-items: center; gap: 10px; }
+    /* Col 2: Main info (value + client/seller) */
+    #dashboard-acelerai-v2 .gpm-col-info {
+      flex: 0 0 180px; min-width: 0;
+      display: flex; flex-direction: column; gap: 2px;
+    }
     #dashboard-acelerai-v2 .gpm-card-value { font-size: 15px; font-weight: 600; color: var(--text-main); letter-spacing: -0.01em; }
-    #dashboard-acelerai-v2 .gpm-card-num { font-size: 10px; color: var(--text-muted); font-weight: 400; margin-left: auto; white-space: nowrap; }
+    #dashboard-acelerai-v2 .gpm-card-sub {
+      font-size: 11px; color: var(--text-muted); line-height: 1.3;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    #dashboard-acelerai-v2 .gpm-card-cliente { color: var(--text-main); font-weight: 500; }
 
-    /* Tags row */
-    #dashboard-acelerai-v2 .gpm-tags { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+    /* Col 3: Tags */
+    #dashboard-acelerai-v2 .gpm-col-tags {
+      flex: 1 1 auto; min-width: 0;
+      display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+    }
     #dashboard-acelerai-v2 .gpm-tag {
-      font-size: 10px; font-weight: 500; padding: 2px 8px; border-radius: 6px;
-      white-space: nowrap; line-height: 1.4;
+      font-size: 10px; font-weight: 500; padding: 3px 9px; border-radius: 6px;
+      white-space: nowrap; line-height: 1.3;
     }
     #dashboard-acelerai-v2 .gpm-tag--tipo { background: #eff6ff; color: #2563eb; }
     #dashboard-acelerai-v2 .gpm-tag--celeb { background: #faf5ff; color: #7c3aed; }
     #dashboard-acelerai-v2 .gpm-tag--region { background: #f0fdf4; color: #16a34a; }
     #dashboard-acelerai-v2 .gpm-tag--date { background: var(--bg-subtle); color: var(--text-muted); }
-    #dashboard-acelerai-v2.dark-mode .gpm-tag--tipo { background: rgba(37,99,235,0.15); color: #60a5fa; }
-    #dashboard-acelerai-v2.dark-mode .gpm-tag--celeb { background: rgba(124,58,237,0.15); color: #a78bfa; }
-    #dashboard-acelerai-v2.dark-mode .gpm-tag--region { background: rgba(22,163,106,0.15); color: #4ade80; }
-
-    /* Detail line */
-    #dashboard-acelerai-v2 .gpm-card-details {
-      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-      font-size: 11px; color: var(--text-muted); line-height: 1.3;
-    }
-    #dashboard-acelerai-v2 .gpm-card-details > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    #dashboard-acelerai-v2 .gpm-card-cliente { color: var(--text-main); font-weight: 500; max-width: 180px; }
-    #dashboard-acelerai-v2 .gpm-card-seller { max-width: 120px; }
-    #dashboard-acelerai-v2 .gpm-card-sep { color: var(--border-color); }
-
-    /* Section divider label */
-    #dashboard-acelerai-v2 .gpm-section-label {
-      font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em;
-      color: var(--text-muted); padding: 10px 4px 4px;
-    }
-    /* Proposta tag-link */
+    #dashboard-acelerai-v2 .gpm-tag--seller { background: #fef3c7; color: #92400e; }
     #dashboard-acelerai-v2 .gpm-tag--link {
       background: #eff6ff; color: #2563eb; text-decoration: none; cursor: pointer;
     }
     #dashboard-acelerai-v2 .gpm-tag--link:hover { background: #dbeafe; }
+    #dashboard-acelerai-v2 .gpm-card-celeb-name { color: #7c3aed; font-weight: 500; }
+    #dashboard-acelerai-v2.dark-mode .gpm-tag--tipo { background: rgba(37,99,235,0.15); color: #60a5fa; }
+    #dashboard-acelerai-v2.dark-mode .gpm-tag--celeb { background: rgba(124,58,237,0.15); color: #a78bfa; }
+    #dashboard-acelerai-v2.dark-mode .gpm-tag--seller { background: rgba(146,64,14,0.15); color: #fbbf24; }
+    #dashboard-acelerai-v2.dark-mode .gpm-tag--region { background: rgba(22,163,106,0.15); color: #4ade80; }
     #dashboard-acelerai-v2.dark-mode .gpm-tag--link { background: rgba(37,99,235,0.15); color: #60a5fa; }
-    #dashboard-acelerai-v2.dark-mode .gpm-tag--link:hover { background: rgba(37,99,235,0.25); }
+    #dashboard-acelerai-v2.dark-mode .gpm-card-celeb-name { color: #a78bfa; }
 
-    /* Timeline */
-    #dashboard-acelerai-v2 .gpm-timeline { display: flex; align-items: center; gap: 0; flex: 0 0 auto; }
-    #dashboard-acelerai-v2 .gpm-step { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+    /* Col 4: Timeline */
+    #dashboard-acelerai-v2 .gpm-col-timeline { flex: 0 0 auto; }
+    #dashboard-acelerai-v2 .gpm-timeline { display: flex; align-items: center; gap: 0; }
+    #dashboard-acelerai-v2 .gpm-step { display: flex; flex-direction: column; align-items: center; gap: 2px; }
     #dashboard-acelerai-v2 .gpm-step-dot {
       width: 22px; height: 22px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
@@ -2589,14 +2579,26 @@
     #dashboard-acelerai-v2 .gpm-step-dot i { width: 11px; height: 11px; }
     #dashboard-acelerai-v2 .gpm-step--done .gpm-step-dot { background: var(--col-success); border-color: var(--col-success); color: #fff; }
     #dashboard-acelerai-v2 .gpm-step--active .gpm-step-dot { border-color: var(--col-primary); color: var(--col-primary); }
-    #dashboard-acelerai-v2 .gpm-step-label { font-size: 9px; font-weight: 500; color: var(--text-muted); white-space: nowrap; }
+    #dashboard-acelerai-v2 .gpm-step-label { font-size: 8px; font-weight: 500; color: var(--text-muted); white-space: nowrap; }
     #dashboard-acelerai-v2 .gpm-step--done .gpm-step-label { color: var(--col-success); }
     #dashboard-acelerai-v2 .gpm-step--active .gpm-step-label { color: var(--col-primary); }
     #dashboard-acelerai-v2 .gpm-step-line {
-      width: 20px; height: 2px; background: var(--border-color);
+      width: 18px; height: 2px; background: var(--border-color);
       flex: 0 0 auto; align-self: flex-start; margin-top: 10px;
     }
     #dashboard-acelerai-v2 .gpm-step-line--done { background: var(--col-success); }
+
+    /* Col 5: # number */
+    #dashboard-acelerai-v2 .gpm-col-num {
+      flex: 0 0 30px; text-align: right;
+      font-size: 10px; color: var(--text-muted);
+    }
+
+    /* Section divider */
+    #dashboard-acelerai-v2 .gpm-section-label {
+      font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--text-muted); padding: 10px 4px 4px;
+    }
 
     /* Responsive */
     @media (max-width: 768px) {
@@ -2606,5 +2608,160 @@
       #dashboard-acelerai-v2 .gpm-filters { padding: 8px 16px; }
       #dashboard-acelerai-v2 .gpm-body { padding: 10px 12px 16px; }
       #dashboard-acelerai-v2 .gpm-list { gap: 8px; }
+      #dashboard-acelerai-v2 .gpm-card-item { flex-wrap: wrap; gap: 8px; }
+      #dashboard-acelerai-v2 .gpm-col-info { flex: 1 1 140px; }
+      #dashboard-acelerai-v2 .gpm-col-tags { flex-basis: 100%; order: 5; }
+      #dashboard-acelerai-v2 .gpm-col-timeline { order: 4; }
+      #dashboard-acelerai-v2 .gpm-col-num { order: 3; }
+    }
+
+    /* ==========================================
+       TEAM BATTLE
+       ========================================== */
+
+    /* Team Card */
+    #dashboard-acelerai-v2 .tb-team-card {
+      transition: all 0.2s ease;
+    }
+    #dashboard-acelerai-v2 .tb-team-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-hover);
+    }
+
+    #dashboard-acelerai-v2 .tb-team-icon {
+      display: flex; align-items: center; justify-content: center;
+      width: 36px; height: 36px; border-radius: 10px;
+    }
+
+    /* Toggle Revenue/Deals */
+    #dashboard-acelerai-v2 .tb-view-toggle {
+      display: flex; gap: 2px; background: var(--bg-subtle);
+      border-radius: 6px; padding: 2px;
+    }
+    #dashboard-acelerai-v2 .tb-toggle-btn {
+      padding: 4px 12px; font-size: 11px; font-weight: 600;
+      border: none; background: transparent; color: var(--text-muted);
+      border-radius: 5px; cursor: pointer; transition: all 0.15s ease;
+    }
+    #dashboard-acelerai-v2 .tb-toggle-btn.active {
+      background: var(--bg-card); color: var(--text-main);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+
+    /* VS Panel */
+    #dashboard-acelerai-v2 .tb-vs-container {
+      display: flex; align-items: stretch; gap: 0;
+    }
+    #dashboard-acelerai-v2 .tb-vs-side {
+      flex: 1; padding: 20px;
+    }
+    #dashboard-acelerai-v2 .tb-vs-center {
+      display: flex; align-items: center; justify-content: center;
+      padding: 0 12px; position: relative;
+    }
+    #dashboard-acelerai-v2 .tb-vs-center::before,
+    #dashboard-acelerai-v2 .tb-vs-center::after {
+      content: ''; position: absolute; width: 1px;
+      background: var(--border-color); top: 12px; bottom: 12px;
+    }
+    #dashboard-acelerai-v2 .tb-vs-center::before { left: 0; }
+    #dashboard-acelerai-v2 .tb-vs-center::after { right: 0; }
+
+    #dashboard-acelerai-v2 .tb-vs-circle {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: linear-gradient(135deg, #ef4444, #f97316);
+      color: #fff; font-size: 14px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 12px rgba(239,68,68,0.3);
+    }
+
+    #dashboard-acelerai-v2 .tb-vs-badge {
+      display: inline-flex; align-items: center;
+      padding: 2px 10px; border-radius: 999px;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
+    }
+    #dashboard-acelerai-v2 .tb-vs-badge--winning {
+      background: rgba(34,197,94,0.15); color: #16a34a;
+    }
+    #dashboard-acelerai-v2 .tb-vs-badge--challenger {
+      background: rgba(100,116,139,0.15); color: #64748b;
+    }
+
+    #dashboard-acelerai-v2 .tb-vs-bar-bg {
+      height: 8px; border-radius: 4px;
+      background: var(--bg-subtle); overflow: hidden;
+    }
+    #dashboard-acelerai-v2 .tb-vs-bar-fill {
+      height: 100%; border-radius: 4px;
+      transition: width 0.6s ease;
+    }
+
+    /* Performance Tables */
+    #dashboard-acelerai-v2 .tb-perf-card { overflow-x: auto; }
+
+    #dashboard-acelerai-v2 .tb-perf-table {
+      width: 100%; min-width: 400px;
+    }
+    #dashboard-acelerai-v2 .tb-perf-header {
+      display: flex; gap: 4px; padding: 8px 12px;
+      border-bottom: 1px solid var(--border-color);
+    }
+    #dashboard-acelerai-v2 .tb-perf-header .tb-perf-cell {
+      font-size: 10px; font-weight: 700; color: var(--text-muted);
+      letter-spacing: 0.5px; text-transform: uppercase;
+    }
+    #dashboard-acelerai-v2 .tb-perf-row {
+      display: flex; gap: 4px; padding: 10px 12px;
+      border-bottom: 1px solid var(--border-color);
+      transition: background 0.15s ease;
+    }
+    #dashboard-acelerai-v2 .tb-perf-row:hover {
+      background: var(--bg-subtle);
+    }
+    #dashboard-acelerai-v2 .tb-perf-row:last-child {
+      border-bottom: none;
+    }
+
+    #dashboard-acelerai-v2 .tb-perf-cell {
+      display: flex; align-items: center; font-size: 13px;
+    }
+    #dashboard-acelerai-v2 .tb-perf-cell--name {
+      flex: 1.5; gap: 8px; min-width: 0;
+    }
+    #dashboard-acelerai-v2 .tb-perf-cell--num {
+      flex: 1; justify-content: center; text-align: center;
+    }
+
+    #dashboard-acelerai-v2 .tb-perf-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      object-fit: cover; object-position: 50% 25%;
+      background: #e2e8f0; flex-shrink: 0;
+    }
+    #dashboard-acelerai-v2 .tb-perf-seller-name {
+      font-weight: 600; font-size: 13px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      color: var(--text-main);
+    }
+
+    /* Dark mode overrides */
+    #dashboard-acelerai-v2.dark-mode .tb-vs-badge--winning {
+      background: rgba(34,197,94,0.2); color: #4ade80;
+    }
+    #dashboard-acelerai-v2.dark-mode .tb-vs-badge--challenger {
+      background: rgba(148,163,184,0.2); color: #94a3b8;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      #dashboard-acelerai-v2 .tb-vs-container {
+        flex-direction: column;
+      }
+      #dashboard-acelerai-v2 .tb-vs-center {
+        padding: 12px 0;
+      }
+      #dashboard-acelerai-v2 .tb-vs-center::before,
+      #dashboard-acelerai-v2 .tb-vs-center::after {
+        display: none;
+      }
     }
 
