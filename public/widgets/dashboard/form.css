@@ -2619,33 +2619,21 @@
        TEAM BATTLE
        ========================================== */
 
-    /* Team Card */
-    #dashboard-acelerai-v2 .tb-team-card {
-      transition: all 0.2s ease;
-    }
-    #dashboard-acelerai-v2 .tb-team-card:hover {
-      transform: translateY(-2px);
-      box-shadow: var(--shadow-hover);
-    }
-
+    /* Team Icon */
     #dashboard-acelerai-v2 .tb-team-icon {
       display: flex; align-items: center; justify-content: center;
-      width: 36px; height: 36px; border-radius: 10px;
+      width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0;
     }
 
-    /* Toggle Revenue/Deals */
-    #dashboard-acelerai-v2 .tb-view-toggle {
-      display: flex; gap: 2px; background: var(--bg-subtle);
-      border-radius: 6px; padding: 2px;
+    /* KPI bar */
+    #dashboard-acelerai-v2 .tb-kpi { padding: 12px; }
+    #dashboard-acelerai-v2 .tb-kpi-bar-bg {
+      height: 4px; border-radius: 2px;
+      background: var(--bg-subtle); overflow: hidden;
     }
-    #dashboard-acelerai-v2 .tb-toggle-btn {
-      padding: 4px 12px; font-size: 11px; font-weight: 600;
-      border: none; background: transparent; color: var(--text-muted);
-      border-radius: 5px; cursor: pointer; transition: all 0.15s ease;
-    }
-    #dashboard-acelerai-v2 .tb-toggle-btn.active {
-      background: var(--bg-card); color: var(--text-main);
-      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    #dashboard-acelerai-v2 .tb-kpi-bar-fill {
+      height: 100%; border-radius: 2px;
+      transition: width 0.6s ease;
     }
 
     /* VS Panel */
