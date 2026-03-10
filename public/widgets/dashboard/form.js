@@ -5427,11 +5427,11 @@
                   ${dailyVals.map((v, i) => {
                     const h = maxDaily > 0 ? Math.max(5, (v / maxDaily) * 100) : 5;
                     const isToday = i === dailyVals.length - 1;
-                    const barBg = isToday ? `${g.color}88` : `${g.color}25`;
-                    const labelStyle = isToday ? `font-weight:700; color:${g.color};` : 'color:var(--text-muted);';
+                    const barBg = isToday ? 'var(--col-primary)' : 'var(--col-primary-light)';
+                    const labelStyle = isToday ? 'font-weight:700; color:var(--col-primary);' : 'color:var(--text-muted);';
                     return `
                       <div class="tb-trend-col">
-                        <div class="tb-trend-bar" style="height:${h}%; background:${barBg}; border-radius:999px;"></div>
+                        <div class="tb-trend-bar" style="height:${h}%; background:${barBg}; border-radius:4px;"></div>
                         <span class="tb-trend-label" style="${labelStyle}">${dailyLabels[i]}</span>
                       </div>`;
                   }).join('')}
