@@ -5121,82 +5121,101 @@
       async function fetchTeamBattleData() {
         if (!sbClient) return;
         try {
-          // 1. Fetch groups (metas_grupos) - select ALL columns to discover schema
+          // 1. Fetch groups with all columns (nome, cor_tema, etc.)
           const { data: gruposRaw, error: gruposErr } = await sbClient
             .from('crm_metas_grupos')
-            .select('*');
-          console.log('[TeamBattle] crm_metas_grupos raw:', gruposRaw, 'error:', gruposErr);
+            .select('id, nome, cor_tema, slug, meta_base_mensal, headcount_base, ciclos_json');
+          if (gruposErr) { console.error('[TeamBattle] Erro grupos:', gruposErr); }
           const grupos = Array.isArray(gruposRaw) ? gruposRaw.filter(g => g && g.id) : [];
           if (grupos.length < 2) {
-            console.warn('[TeamBattle] Menos de 2 grupos encontrados:', grupos.length);
             state.teamBattleData = null;
             return;
           }
 
-          // 2. Get seller→group mapping from RPC
+          // 2. Get seller→group mapping via RPC (uses shared cache)
           const { mes, ano, refDateYmd } = getCrmMetaContext();
           const rpc = await fetchCrmMetasRpc(mes, ano, refDateYmd);
           const rpcRows = rpc && Array.isArray(rpc.rows) ? rpc.rows : [];
-          console.log('[TeamBattle] RPC rows count:', rpcRows.length, 'sample:', rpcRows.slice(0, 3));
 
-          // 3. Fetch sellers
+          // If RPC cache is empty, call directly
+          let sellerRows = rpcRows;
+          if (sellerRows.length === 0) {
+            try {
+              const { data: directRpc } = await sbClient.rpc('crm_get_metas_vendedores', {
+                p_mes: mes, p_ano: ano, p_ref_date: refDateYmd
+              });
+              sellerRows = Array.isArray(directRpc) ? directRpc : [];
+            } catch (e) { console.error('[TeamBattle] RPC fallback error:', e); }
+          }
+
+          // Build seller→grupo_id map from RPC
+          const sellerGrupoMap = {};
+          const sellerInfoFromRpc = {}; // vendedor_id -> { nome, ... }
+          sellerRows.forEach(r => {
+            if (r && r.vendedor_id && r.grupo_id) {
+              sellerGrupoMap[String(r.vendedor_id)] = String(r.grupo_id);
+              sellerInfoFromRpc[String(r.vendedor_id)] = {
+                nome: r.vendedor_nome || null,
+                meta: __toNumber(r.meta_mensal_final) || 0,
+                realizado: __toNumber(r.realizado_mes) || 0
+              };
+            }
+          });
+
+          // 3. Fetch sellers for avatars
           const { data: sellersRaw } = await sbClient
             .from('vendedores')
             .select('id, nome, perfil_img, cargo, diretorVendas')
             .eq('usuarioInterno', false);
           const sellers = (sellersRaw || []).filter(s => s.diretorVendas !== true);
+          const sellerLookup = {};
+          sellers.forEach(s => { sellerLookup[String(s.id)] = s; });
 
-          // Build seller→grupo_id map
-          const sellerGrupoMap = {};
-          rpcRows.forEach(r => {
-            if (r && r.vendedor_id && r.grupo_id) sellerGrupoMap[String(r.vendedor_id)] = String(r.grupo_id);
-          });
-          console.log('[TeamBattle] sellerGrupoMap keys:', Object.keys(sellerGrupoMap).length, 'unique grupos:', [...new Set(Object.values(sellerGrupoMap))]);
-
-          // Detect name column: try nome, name, titulo, label
-          const nameCol = grupos[0].nome !== undefined ? 'nome'
-            : grupos[0].name !== undefined ? 'name'
-            : grupos[0].titulo !== undefined ? 'titulo'
-            : grupos[0].label !== undefined ? 'label'
-            : null;
-          console.log('[TeamBattle] Detected name column:', nameCol, 'columns:', Object.keys(grupos[0]));
-
-          // Build grupo map
+          // Build grupo map using real colors from DB
           const grupoMap = {};
           grupos.forEach((g, idx) => {
-            const gName = nameCol ? (g[nameCol] || `Grupo ${idx + 1}`) : `Grupo ${idx + 1}`;
+            const dbColor = g.cor_tema || TEAM_COLORS[idx % TEAM_COLORS.length];
+            // Convert hex to rgba for light version
+            const hexToRgba = (hex, alpha) => {
+              const h = hex.replace('#', '');
+              const r = parseInt(h.substring(0, 2), 16) || 0;
+              const gv = parseInt(h.substring(2, 4), 16) || 0;
+              const b = parseInt(h.substring(4, 6), 16) || 0;
+              return `rgba(${r},${gv},${b},${alpha})`;
+            };
             grupoMap[String(g.id)] = {
               id: String(g.id),
-              name: gName,
-              color: TEAM_COLORS[idx % TEAM_COLORS.length],
-              colorLight: TEAM_COLORS_LIGHT[idx % TEAM_COLORS_LIGHT.length],
+              name: g.nome || g.slug || `Grupo ${idx + 1}`,
+              color: dbColor,
+              colorLight: hexToRgba(dbColor, 0.12),
               sellers: [],
               totalRevenue: 0,
               totalDeals: 0,
               avgTicket: 0,
               sharePct: 0,
-              dailyRevenue: {},  // date -> value
-              dailyDeals: {}     // date -> count
+              dailyRevenue: {},
+              dailyDeals: {}
             };
           });
 
-          // Assign sellers to groups
-          sellers.forEach(s => {
-            const gid = sellerGrupoMap[String(s.id)];
-            if (gid && grupoMap[gid]) {
-              grupoMap[gid].sellers.push({
-                id: s.id,
-                name: s.nome || 'Sem nome',
-                avatarUrl: s.perfil_img || null,
-                role: s.cargo || 'Vendedor',
-                revenue: 0,
-                deals: 0,
-                avgTicket: 0,
-                convPct: 0,
-                sharePct: 0,
-                dailyRevenue: {} // date -> value
-              });
-            }
+          // Assign sellers to groups using sellerGrupoMap
+          Object.keys(sellerGrupoMap).forEach(sellerId => {
+            const gid = sellerGrupoMap[sellerId];
+            if (!gid || !grupoMap[gid]) return;
+            const sData = sellerLookup[sellerId];
+            const rpcInfo = sellerInfoFromRpc[sellerId];
+            grupoMap[gid].sellers.push({
+              id: sellerId,
+              name: (sData && sData.nome) || (rpcInfo && rpcInfo.nome) || 'Sem nome',
+              avatarUrl: (sData && sData.perfil_img) || null,
+              role: (sData && sData.cargo) || 'Vendedor',
+              revenue: 0,
+              deals: 0,
+              avgTicket: 0,
+              convPct: 0,
+              sharePct: 0,
+              dailyRevenue: {}
+            });
           });
 
           // 4. Fetch compras for the current period
@@ -5245,7 +5264,8 @@
 
           // 6. Calculate derived metrics
           const allGroups = Object.values(grupoMap);
-          console.log('[TeamBattle] allGroups:', allGroups.map(g => ({ name: g.name, id: g.id, sellersCount: g.sellers.length, revenue: g.totalRevenue })));
+          console.log('[TeamBattle] Groups:', allGroups.map(g => `${g.name}: ${g.sellers.length} sellers, R$${g.totalRevenue}`));
+          // Show groups even if they have 0 revenue (but must have sellers)
           const groupList = allGroups.filter(g => g.sellers.length > 0);
           groupList.forEach(g => {
             g.avgTicket = g.totalDeals > 0 ? g.totalRevenue / g.totalDeals : 0;
