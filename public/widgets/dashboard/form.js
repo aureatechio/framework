@@ -5388,7 +5388,7 @@
           const kpiCard = (label, value, target, pct, useTeamColor) => {
             const barColor = useTeamColor === 'danger' ? 'var(--col-danger)' : (useTeamColor === 'success' ? 'var(--col-success)' : g.color);
             return `
-              <div class="tb-kpi-card">
+              <div class="tb-kpi-card" style="border-left: 3px solid ${g.color}50">
                 <div class="tb-kpi-label">${label}</div>
                 <div class="tb-kpi-bottom">
                   <div class="flex justify-between items-baseline">
@@ -5427,7 +5427,7 @@
                   ${dailyVals.map((v, i) => {
                     const h = maxDaily > 0 ? Math.max(5, (v / maxDaily) * 100) : 5;
                     const isToday = i === dailyVals.length - 1;
-                    const barBg = isToday ? `${g.color}66` : 'var(--bg-subtle)';
+                    const barBg = isToday ? `${g.color}88` : `${g.color}25`;
                     const labelStyle = isToday ? `font-weight:700; color:${g.color};` : 'color:var(--text-muted);';
                     return `
                       <div class="tb-trend-col">
