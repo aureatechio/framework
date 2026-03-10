@@ -2616,140 +2616,159 @@
     }
 
     /* ==========================================
-       TEAM BATTLE
+       TEAM BATTLE — Two-column layout
        ========================================== */
 
-    /* Team Icon */
-    #dashboard-acelerai-v2 .tb-team-icon {
-      display: flex; align-items: center; justify-content: center;
-      width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0;
+    /* Columns with separator */
+    #dashboard-acelerai-v2 .tb-columns { position: relative; }
+    @media (min-width: 1280px) {
+      #dashboard-acelerai-v2 .tb-columns::after {
+        content: ''; position: absolute;
+        left: 50%; top: 0; bottom: 0; width: 1px;
+        background: var(--border-color); transform: translateX(-50%);
+      }
     }
 
-    /* KPI bar */
-    #dashboard-acelerai-v2 .tb-kpi { padding: 12px; }
+    /* Column container */
+    #dashboard-acelerai-v2 .tb-column {
+      display: flex; flex-direction: column; gap: 24px;
+    }
+
+    /* Team Header */
+    #dashboard-acelerai-v2 .tb-header {
+      display: flex; justify-content: space-between; align-items: flex-end;
+      border-bottom: 1px solid var(--border-color); padding-bottom: 20px;
+    }
+    #dashboard-acelerai-v2 .tb-team-name {
+      font-size: 28px; font-weight: 800; letter-spacing: -0.02em;
+      line-height: 1.1; margin: 0;
+    }
+    #dashboard-acelerai-v2 .tb-header-rev {
+      margin-top: 8px; display: flex; align-items: baseline; gap: 8px;
+    }
+    #dashboard-acelerai-v2 .tb-rev-value {
+      font-size: 22px; font-weight: 600; color: var(--text-main);
+    }
+    #dashboard-acelerai-v2 .tb-rev-target {
+      font-size: 12px; color: var(--text-muted); font-weight: 500;
+    }
+    #dashboard-acelerai-v2 .tb-status {
+      padding: 4px 12px; border-radius: 999px; font-size: 11px;
+      font-weight: 700; display: flex; align-items: center; gap: 6px;
+      white-space: nowrap;
+    }
+    #dashboard-acelerai-v2 .tb-status::before {
+      content: ''; width: 6px; height: 6px; border-radius: 50%;
+    }
+    #dashboard-acelerai-v2 .tb-status--ontrack {
+      background: var(--col-primary-light); color: var(--col-primary);
+    }
+    #dashboard-acelerai-v2 .tb-status--ontrack::before { background: var(--col-primary); }
+    #dashboard-acelerai-v2 .tb-status--above {
+      background: var(--col-success-light); color: var(--col-success);
+    }
+    #dashboard-acelerai-v2 .tb-status--above::before { background: var(--col-success); }
+
+    /* Daily Sales Trend */
+    #dashboard-acelerai-v2 .tb-trend-card { padding: 20px; }
+    #dashboard-acelerai-v2 .tb-trend-badge {
+      font-size: 9px; font-weight: 700; text-transform: uppercase;
+      padding: 3px 10px; border-radius: 999px;
+    }
+    #dashboard-acelerai-v2 .tb-trend-bars {
+      display: flex; align-items: flex-end; justify-content: space-between;
+      gap: 10px; height: 100px; padding: 0 4px;
+    }
+    #dashboard-acelerai-v2 .tb-trend-col {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; gap: 8px; height: 100%;
+      justify-content: flex-end;
+    }
+    #dashboard-acelerai-v2 .tb-trend-bar {
+      width: 100%; transition: height 0.5s ease;
+    }
+    #dashboard-acelerai-v2 .tb-trend-label {
+      font-size: 9px; font-weight: 500;
+    }
+
+    /* KPI Cards */
+    #dashboard-acelerai-v2 .tb-kpi-grid-4,
+    #dashboard-acelerai-v2 .tb-kpi-grid-3 {
+      display: grid; gap: 12px;
+    }
+    #dashboard-acelerai-v2 .tb-kpi-grid-4 { grid-template-columns: repeat(4, 1fr); }
+    #dashboard-acelerai-v2 .tb-kpi-grid-3 { grid-template-columns: 2fr 1fr 1fr; }
+
+    #dashboard-acelerai-v2 .tb-kpi-card {
+      background: var(--bg-card); border: 1px solid var(--border-color);
+      border-radius: var(--radius-xl); padding: 16px;
+      display: flex; flex-direction: column; justify-content: space-between;
+      min-height: 110px; box-shadow: var(--shadow-sm);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    #dashboard-acelerai-v2 .tb-kpi-card:hover {
+      transform: scale(1.02); box-shadow: var(--shadow-md);
+    }
+    #dashboard-acelerai-v2 .tb-kpi-label {
+      font-size: 10px; font-weight: 700; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px;
+    }
+    #dashboard-acelerai-v2 .tb-kpi-value {
+      font-size: 20px; font-weight: 700; color: var(--text-main);
+    }
+    #dashboard-acelerai-v2 .tb-kpi-target {
+      font-size: 9px; font-weight: 600; color: var(--text-muted); opacity: 0.6;
+    }
     #dashboard-acelerai-v2 .tb-kpi-bar-bg {
-      height: 4px; border-radius: 2px;
-      background: var(--bg-subtle); overflow: hidden;
+      height: 3px; border-radius: 2px; background: var(--bg-subtle);
+      overflow: hidden; margin-top: 10px;
     }
     #dashboard-acelerai-v2 .tb-kpi-bar-fill {
-      height: 100%; border-radius: 2px;
-      transition: width 0.6s ease;
+      height: 100%; border-radius: 2px; transition: width 0.6s ease;
     }
 
-    /* VS Panel */
-    #dashboard-acelerai-v2 .tb-vs-container {
-      display: flex; align-items: stretch; gap: 0;
+    /* Top Sellers Table */
+    #dashboard-acelerai-v2 .tb-sellers-card {
+      padding: 0; overflow: hidden;
     }
-    #dashboard-acelerai-v2 .tb-vs-side {
-      flex: 1; padding: 20px;
-    }
-    #dashboard-acelerai-v2 .tb-vs-center {
-      display: flex; align-items: center; justify-content: center;
-      padding: 0 12px; position: relative;
-    }
-    #dashboard-acelerai-v2 .tb-vs-center::before,
-    #dashboard-acelerai-v2 .tb-vs-center::after {
-      content: ''; position: absolute; width: 1px;
-      background: var(--border-color); top: 12px; bottom: 12px;
-    }
-    #dashboard-acelerai-v2 .tb-vs-center::before { left: 0; }
-    #dashboard-acelerai-v2 .tb-vs-center::after { right: 0; }
-
-    #dashboard-acelerai-v2 .tb-vs-circle {
-      width: 44px; height: 44px; border-radius: 50%;
-      background: linear-gradient(135deg, #ef4444, #f97316);
-      color: #fff; font-size: 14px; font-weight: 800;
-      display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 4px 12px rgba(239,68,68,0.3);
-    }
-
-    #dashboard-acelerai-v2 .tb-vs-badge {
-      display: inline-flex; align-items: center;
-      padding: 2px 10px; border-radius: 999px;
-      font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
-    }
-    #dashboard-acelerai-v2 .tb-vs-badge--winning {
-      background: rgba(34,197,94,0.15); color: #16a34a;
-    }
-    #dashboard-acelerai-v2 .tb-vs-badge--challenger {
-      background: rgba(100,116,139,0.15); color: #64748b;
-    }
-
-    #dashboard-acelerai-v2 .tb-vs-bar-bg {
-      height: 8px; border-radius: 4px;
-      background: var(--bg-subtle); overflow: hidden;
-    }
-    #dashboard-acelerai-v2 .tb-vs-bar-fill {
-      height: 100%; border-radius: 4px;
-      transition: width 0.6s ease;
-    }
-
-    /* Performance Tables */
-    #dashboard-acelerai-v2 .tb-perf-card { overflow-x: auto; }
-
-    #dashboard-acelerai-v2 .tb-perf-table {
-      width: 100%; min-width: 400px;
-    }
-    #dashboard-acelerai-v2 .tb-perf-header {
-      display: flex; gap: 4px; padding: 8px 12px;
-      border-bottom: 1px solid var(--border-color);
-    }
-    #dashboard-acelerai-v2 .tb-perf-header .tb-perf-cell {
-      font-size: 10px; font-weight: 700; color: var(--text-muted);
-      letter-spacing: 0.5px; text-transform: uppercase;
-    }
-    #dashboard-acelerai-v2 .tb-perf-row {
-      display: flex; gap: 4px; padding: 10px 12px;
-      border-bottom: 1px solid var(--border-color);
-      transition: background 0.15s ease;
-    }
-    #dashboard-acelerai-v2 .tb-perf-row:hover {
+    #dashboard-acelerai-v2 .tb-sellers-header {
+      padding: 14px 20px; border-bottom: 1px solid var(--border-color);
       background: var(--bg-subtle);
     }
-    #dashboard-acelerai-v2 .tb-perf-row:last-child {
+    #dashboard-acelerai-v2 .tb-sellers-table {
+      width: 100%; border-collapse: collapse; font-size: 13px;
+    }
+    #dashboard-acelerai-v2 .tb-sellers-table thead {
+      background: var(--bg-subtle);
+    }
+    #dashboard-acelerai-v2 .tb-sellers-table th {
+      padding: 10px 20px; font-size: 10px; font-weight: 700;
+      color: var(--text-muted); text-transform: uppercase;
+      letter-spacing: 0.5px; text-align: left;
+    }
+    #dashboard-acelerai-v2 .tb-sellers-table td {
+      padding: 12px 20px; border-bottom: 1px solid var(--border-color);
+    }
+    #dashboard-acelerai-v2 .tb-sellers-table tr:last-child td {
       border-bottom: none;
     }
-
-    #dashboard-acelerai-v2 .tb-perf-cell {
-      display: flex; align-items: center; font-size: 13px;
-    }
-    #dashboard-acelerai-v2 .tb-perf-cell--name {
-      flex: 1.5; gap: 8px; min-width: 0;
-    }
-    #dashboard-acelerai-v2 .tb-perf-cell--num {
-      flex: 1; justify-content: center; text-align: center;
-    }
-
-    #dashboard-acelerai-v2 .tb-perf-avatar {
-      width: 32px; height: 32px; border-radius: 50%;
+    #dashboard-acelerai-v2 .tb-seller-avatar {
+      width: 28px; height: 28px; border-radius: 50%;
       object-fit: cover; object-position: 50% 25%;
-      background: #e2e8f0; flex-shrink: 0;
+      flex-shrink: 0;
     }
-    #dashboard-acelerai-v2 .tb-perf-seller-name {
-      font-weight: 600; font-size: 13px;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      color: var(--text-main);
-    }
-
-    /* Dark mode overrides */
-    #dashboard-acelerai-v2.dark-mode .tb-vs-badge--winning {
-      background: rgba(34,197,94,0.2); color: #4ade80;
-    }
-    #dashboard-acelerai-v2.dark-mode .tb-vs-badge--challenger {
-      background: rgba(148,163,184,0.2); color: #94a3b8;
+    #dashboard-acelerai-v2 .tb-seller-initials {
+      width: 28px; height: 28px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 700; flex-shrink: 0;
     }
 
     /* Responsive */
-    @media (max-width: 768px) {
-      #dashboard-acelerai-v2 .tb-vs-container {
-        flex-direction: column;
-      }
-      #dashboard-acelerai-v2 .tb-vs-center {
-        padding: 12px 0;
-      }
-      #dashboard-acelerai-v2 .tb-vs-center::before,
-      #dashboard-acelerai-v2 .tb-vs-center::after {
-        display: none;
-      }
+    @media (max-width: 640px) {
+      #dashboard-acelerai-v2 .tb-kpi-grid-4 { grid-template-columns: repeat(2, 1fr); }
+      #dashboard-acelerai-v2 .tb-kpi-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+      #dashboard-acelerai-v2 .tb-team-name { font-size: 22px; }
+      #dashboard-acelerai-v2 .tb-sellers-table th,
+      #dashboard-acelerai-v2 .tb-sellers-table td { padding: 8px 12px; }
     }
 

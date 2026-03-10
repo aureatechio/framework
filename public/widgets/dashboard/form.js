@@ -5114,9 +5114,7 @@
       const TEAM_COLORS = ['#3b82f6', '#22c55e', '#8b5cf6', '#f97316', '#06b6d4', '#ec4899'];
       const TEAM_COLORS_LIGHT = ['rgba(59,130,246,0.12)', 'rgba(34,197,94,0.12)', 'rgba(139,92,246,0.12)', 'rgba(249,115,22,0.12)', 'rgba(6,182,212,0.12)', 'rgba(236,72,153,0.12)'];
 
-      let __teamDailyChart = null;
-      let __teamForceChart = null;
-      let __teamSparkCharts = {};
+      // (chart instances removed — using pure CSS bars now)
 
       async function fetchTeamBattleData() {
         if (!sbClient) return;
@@ -5331,6 +5329,13 @@
         }
       }
 
+      // Metas fixas conforme briefing
+      const TB_METAS = {
+        propostas: 40, reunioes: 20, vendas: 195,
+        leadGen: 1820, faturamento: 3500000,
+        txConversao: 2.4, ticketMedio: 18000
+      };
+
       function renderTeamBattle() {
         const data = state.teamBattleData;
         const section = document.getElementById('team-battle-section');
@@ -5340,307 +5345,163 @@
         }
         if (section) section.style.display = '';
 
-        const isDark = state.theme === 'dark';
+        const container = document.getElementById('team-battle-columns');
+        if (!container) return;
+
         const fc = (v) => formatCurrencyCompact(v);
         const fn = (v) => new Intl.NumberFormat('pt-BR').format(v);
         const fp = (v) => `${v.toFixed(1)}%`;
 
-        // Render in order: daily chart → KPIs → team cards → VS → perf tables → force line
-        renderTeamDailyChart(data, isDark);
-        renderTeamKPIs(data, fc, fn, fp);
-        renderTeamSummaryCards(data, isDark, fc, fn, fp);
-        renderTeamVsPanel(data, isDark, fc, fn, fp);
-        renderTeamPerfTables(data, isDark, fc, fn, fp);
-        renderTeamForceChart(data, isDark);
-
-        try { lucide.createIcons(); } catch (e) {}
-      }
-
-      // ---- KPIs do Battle ----
-      // Metas fixas conforme briefing
-      const TB_METAS = {
-        propostasSemana: 40,   // 8x5 por vendedor/semana
-        reunioesSemana: 20,    // 4x5 por vendedor/semana
-        vendasMes: 195,
-        oportSemana: 1820,     // 5x364/semana
-        faturamento: 3500000,
-        txConversao: 2.4,      // mínimo %
-        ticketMedio: 18000     // mínimo R$
-      };
-
-      function renderTeamKPIs(data, fc, fn, fp) {
-        const container = document.getElementById('team-kpi-grid');
-        if (!container) return;
-
-        const totalSellers = data.groups.reduce((s, g) => s + g.sellers.length, 0);
-        const totalDeals = data.totalDeals || 0;
-        const totalRevenue = data.totalRevenue || 0;
-        const avgTicket = totalDeals > 0 ? totalRevenue / totalDeals : 0;
-
-        // Use propostas/reunioes/oportunidades from extended data if available, else estimate
-        const propostas = data.totalPropostas || 0;
-        const reunioes = data.totalReunioes || 0;
-        const oportunidades = data.totalOportunidades || 0;
-        const txConversao = oportunidades > 0 ? (totalDeals / oportunidades) * 100 : 0;
-
-        const kpis = [
-          { t: 'Propostas Enviadas', v: fn(propostas), meta: `Meta: ${fn(TB_METAS.propostasSemana)}/sem`, pct: TB_METAS.propostasSemana > 0 ? Math.min(100, (propostas / TB_METAS.propostasSemana) * 100) : 0, color: 'var(--col-primary)' },
-          { t: 'Reuniões Realizadas', v: fn(reunioes), meta: `Meta: ${fn(TB_METAS.reunioesSemana)}/sem`, pct: TB_METAS.reunioesSemana > 0 ? Math.min(100, (reunioes / TB_METAS.reunioesSemana) * 100) : 0, color: '#8b5cf6' },
-          { t: 'Vendas', v: fn(totalDeals), meta: `Meta: ${fn(TB_METAS.vendasMes)} (mês)`, pct: TB_METAS.vendasMes > 0 ? Math.min(100, (totalDeals / TB_METAS.vendasMes) * 100) : 0, color: 'var(--col-success)' },
-          { t: 'Oportunidades', v: fn(oportunidades), meta: `Meta: ${fn(TB_METAS.oportSemana)}/sem`, pct: TB_METAS.oportSemana > 0 ? Math.min(100, (oportunidades / TB_METAS.oportSemana) * 100) : 0, color: '#06b6d4' },
-          { t: 'Faturamento', v: fc(totalRevenue), meta: `Meta: ${fc(TB_METAS.faturamento)}`, pct: TB_METAS.faturamento > 0 ? Math.min(100, (totalRevenue / TB_METAS.faturamento) * 100) : 0, color: 'var(--col-warning)' },
-          { t: 'Tx Conversão', v: fp(txConversao), meta: `Mín: ${fp(TB_METAS.txConversao)}`, pct: txConversao >= TB_METAS.txConversao ? 100 : (txConversao / TB_METAS.txConversao) * 100, color: txConversao >= TB_METAS.txConversao ? 'var(--col-success)' : 'var(--col-danger)' },
-          { t: 'Ticket Médio', v: fc(avgTicket), meta: `Mín: ${fc(TB_METAS.ticketMedio)}`, pct: avgTicket >= TB_METAS.ticketMedio ? 100 : (avgTicket / TB_METAS.ticketMedio) * 100, color: avgTicket >= TB_METAS.ticketMedio ? 'var(--col-success)' : 'var(--col-danger)' }
-        ];
-
-        container.innerHTML = kpis.map(k => `
-          <div class="kpi-card tb-kpi">
-            <div class="kpi-header">
-              <div class="kpi-title">${k.t}</div>
-            </div>
-            <div class="text-xl font-bold" style="color:var(--text-main); margin-bottom:4px;">${k.v}</div>
-            <div class="text-xs text-muted" style="margin-bottom:6px;">${k.meta}</div>
-            <div class="tb-kpi-bar-bg">
-              <div class="tb-kpi-bar-fill" style="width:${k.pct.toFixed(0)}%; background:${k.color};"></div>
-            </div>
-          </div>
-        `).join('');
-      }
-
-      // ---- Team Summary Cards ----
-      function renderTeamSummaryCards(data, isDark, fc, fn, fp) {
-        const container = document.getElementById('team-summary-cards');
-        if (!container) return;
-
-        let html = '';
-        data.groups.forEach((g, idx) => {
-          const isWinner = idx === 0;
-          html += `
-            <div class="card" style="border-top: 3px solid ${g.color};">
-              <div class="flex justify-between items-center mb-3">
-                <div class="flex items-center gap-2">
-                  <div class="tb-team-icon" style="background:${g.colorLight}; color:${g.color};">
-                    <i data-lucide="${isWinner ? 'trophy' : 'target'}" size="16"></i>
-                  </div>
-                  <div>
-                    <div class="section-title" style="margin-bottom:0;">Team ${g.name}</div>
-                    <div class="text-xs text-muted">${g.sellers.length} vendedores</div>
-                  </div>
-                </div>
-                ${isWinner ? '<span class="tb-vs-badge tb-vs-badge--winning"><i data-lucide="crown" size="10"></i> Liderando</span>' : ''}
-              </div>
-              <div class="text-2xl font-bold" style="color:${g.color}; margin-bottom:12px;">${fc(g.totalRevenue)}</div>
-              <div class="grid grid-cols-4 gap-3" style="border-top:1px solid var(--border-color); padding-top:12px;">
-                <div>
-                  <div class="text-xs text-muted font-medium">Vendas</div>
-                  <div class="text-sm font-bold">${fn(g.totalDeals)}</div>
-                </div>
-                <div>
-                  <div class="text-xs text-muted font-medium">Ticket</div>
-                  <div class="text-sm font-bold">${fc(g.avgTicket)}</div>
-                </div>
-                <div>
-                  <div class="text-xs text-muted font-medium">Share</div>
-                  <div class="text-sm font-bold">${fp(g.sharePct)}</div>
-                </div>
-                <div>
-                  <div class="text-xs text-muted font-medium">Média/Rep</div>
-                  <div class="text-sm font-bold">${g.sellers.length > 0 ? fc(g.totalRevenue / g.sellers.length) : '--'}</div>
-                </div>
-              </div>
-              <div id="tb-spark-${idx}" style="width:100%; height:50px; margin-top:12px;"></div>
-            </div>
-          `;
-        });
-        container.innerHTML = html;
-
-        // Sparklines
-        data.groups.forEach((g, idx) => {
-          const el = document.getElementById(`tb-spark-${idx}`);
-          if (!el) return;
-          const dates = Object.keys(g.dailyRevenue).sort();
-          const vals = dates.map(d => g.dailyRevenue[d] || 0);
-          if (__teamSparkCharts[idx]) { try { __teamSparkCharts[idx].destroy(); } catch (e) {} }
-          if (vals.length === 0) return;
-          __teamSparkCharts[idx] = new ApexCharts(el, {
-            chart: { type: 'area', height: 50, sparkline: { enabled: true }, animations: { enabled: false } },
-            series: [{ data: vals }],
-            stroke: { width: 2, curve: 'smooth' },
-            colors: [g.color],
-            fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.35, opacityTo: 0.05, stops: [0, 100] } },
-            tooltip: { fixed: { enabled: false }, x: { show: false }, y: { formatter: (v) => formatCurrencyCompact(v) } }
-          });
-          __teamSparkCharts[idx].render();
-        });
-      }
-
-      // ---- VS Comparison Panel ----
-      function renderTeamVsPanel(data, isDark, fc, fn, fp) {
-        const panel = document.getElementById('team-vs-panel');
-        if (!panel || data.groups.length < 2) return;
-        panel.style.display = '';
-
-        const g1 = data.groups[0];
-        const g2 = data.groups[1];
-        const maxRev = Math.max(g1.totalRevenue, g2.totalRevenue, 1);
-
-        const renderSide = (g, badge, align) => `
-          <div class="tb-vs-side" style="text-align:${align};">
-            <div class="flex items-center gap-2 mb-2" style="justify-content:${align === 'right' ? 'flex-end' : 'flex-start'};">
-              <span class="section-title" style="color:${g.color}; margin-bottom:0; text-transform:uppercase; letter-spacing:0.5px;">${g.name}</span>
-              <span class="tb-vs-badge tb-vs-badge--${badge}">${badge === 'winning' ? 'WINNING' : 'CHALLENGER'}</span>
-            </div>
-            <div class="text-xs text-muted mb-2">${g.sellers.length} Vendedores</div>
-            <div class="flex items-center gap-2 mb-3" style="justify-content:${align === 'right' ? 'flex-end' : 'flex-start'};">
-              <span class="text-xs text-muted">Faturamento</span>
-              <div class="tb-vs-bar-bg grow"><div class="tb-vs-bar-fill" style="width:${(g.totalRevenue / maxRev * 100).toFixed(0)}%; background:${g.color};"></div></div>
-              <span class="text-base font-bold" style="color:var(--text-main);">${fc(g.totalRevenue)}</span>
-            </div>
-            <div class="grid grid-cols-3 gap-3">
-              <div><div class="text-xs text-muted">VENDAS</div><div class="text-sm font-bold">${fn(g.totalDeals)}</div></div>
-              <div><div class="text-xs text-muted">TICKET</div><div class="text-sm font-bold">${fc(g.avgTicket)}</div></div>
-              <div><div class="text-xs text-muted">SHARE</div><div class="text-sm font-bold">${fp(g.sharePct)}</div></div>
-            </div>
-          </div>
-        `;
-
-        panel.innerHTML = `
-          <div class="tb-vs-container">
-            ${renderSide(g1, 'winning', 'left')}
-            <div class="tb-vs-center"><div class="tb-vs-circle">VS</div></div>
-            ${renderSide(g2, 'challenger', 'right')}
-          </div>
-        `;
-      }
-
-      // ---- Performance Tables ----
-      function renderTeamPerfTables(data, isDark, fc, fn, fp) {
-        const container = document.getElementById('team-perf-tables');
-        if (!container) return;
-
-        container.innerHTML = data.groups.map((g, idx) => `
-          <div class="card" style="border-top: 3px solid ${g.color}; padding:16px;">
-            <div class="flex items-center gap-2 mb-3">
-              <div class="tb-team-icon" style="background:${g.colorLight}; color:${g.color}; width:28px; height:28px;">
-                <i data-lucide="${idx === 0 ? 'trophy' : 'target'}" size="14"></i>
-              </div>
-              <span class="section-title" style="margin-bottom:0; text-transform:uppercase; letter-spacing:0.5px;">${g.name}</span>
-            </div>
-            <div class="tb-perf-table">
-              <div class="tb-perf-header">
-                <div class="tb-perf-cell tb-perf-cell--name">VENDEDOR</div>
-                <div class="tb-perf-cell tb-perf-cell--num">VENDAS</div>
-                <div class="tb-perf-cell tb-perf-cell--num">RECEITA</div>
-                <div class="tb-perf-cell tb-perf-cell--num">TICKET</div>
-                <div class="tb-perf-cell tb-perf-cell--num">SHARE</div>
-              </div>
-              ${g.sellers.map(s => {
-                const av = s.avatarUrl || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(s.name) + '&background=e2e8f0&color=64748b';
-                return `
-                  <div class="tb-perf-row">
-                    <div class="tb-perf-cell tb-perf-cell--name">
-                      <img src="${av}" alt="${s.name}" class="tb-perf-avatar" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=e2e8f0&color=64748b'">
-                      <span class="tb-perf-seller-name">${s.name}</span>
-                    </div>
-                    <div class="tb-perf-cell tb-perf-cell--num">${fn(s.deals)}</div>
-                    <div class="tb-perf-cell tb-perf-cell--num" style="color:${g.color}; font-weight:700;">${fc(s.revenue)}</div>
-                    <div class="tb-perf-cell tb-perf-cell--num">${fc(s.avgTicket)}</div>
-                    <div class="tb-perf-cell tb-perf-cell--num">${fp(s.sharePct)}</div>
-                  </div>
-                `;
-              }).join('')}
-            </div>
-          </div>
-        `).join('');
-      }
-
-      // ---- Daily Chart (últimos 7 dias) ----
-      function renderTeamDailyChart(data, isDark) {
-        const wrapper = document.getElementById('team-daily-evolution');
-        const el = document.getElementById('team-daily-chart');
-        if (!wrapper || !el) return;
-
-        // Últimos 7 dias (não semana corrente)
+        // Últimos 7 dias
         const today = new Date();
         const last7 = [];
-        const labels = [];
         for (let i = 6; i >= 0; i--) {
           const d = new Date(today);
           d.setDate(today.getDate() - i);
           last7.push(d.toISOString().substring(0, 10));
-          labels.push(d.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' }));
         }
 
-        // Series per group (aggregated, not per seller - cleaner)
-        const series = data.groups.map(g => ({
-          name: g.name,
-          data: last7.map(d => g.dailyRevenue[d] || 0)
-        }));
-        const colors = data.groups.map(g => g.color);
+        container.innerHTML = data.groups.map((g, idx) => {
+          const isAboveGoal = g.totalRevenue >= TB_METAS.faturamento;
+          const statusLabel = isAboveGoal ? 'Acima da Meta' : 'Em Andamento';
+          const statusClass = isAboveGoal ? 'tb-status--above' : 'tb-status--ontrack';
 
-        const hasData = series.some(s => s.data.some(v => v > 0));
-        if (!hasData) { wrapper.style.display = 'none'; return; }
-        wrapper.style.display = '';
+          // Daily bars (últimos 7 dias)
+          const dailyVals = last7.map(d => g.dailyRevenue[d] || 0);
+          const maxDaily = Math.max(...dailyVals, 1);
+          const dailyLabels = last7.map((d, i) => {
+            const isToday = i === last7.length - 1;
+            try {
+              return isToday ? 'Hoje' : new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+            } catch (e) { return d.substring(5); }
+          });
 
-        if (__teamDailyChart) { try { __teamDailyChart.destroy(); } catch (e) {} }
+          // KPIs por time (usamos proporção do total global)
+          const teamShare = data.totalDeals > 0 ? g.totalDeals / data.totalDeals : 0.5;
+          const teamPropostas = Math.round((data.totalPropostas || 0) * teamShare);
+          const teamReunioes = Math.round((data.totalReunioes || 0) * teamShare);
+          const teamOport = Math.round((data.totalOportunidades || 0) * teamShare);
+          const teamConv = teamOport > 0 ? (g.totalDeals / teamOport) * 100 : 0;
+          const convOk = teamConv >= TB_METAS.txConversao;
+          const ticketOk = g.avgTicket >= TB_METAS.ticketMedio;
 
-        __teamDailyChart = new ApexCharts(el, {
-          chart: { type: 'bar', height: 300, toolbar: { show: false }, background: 'transparent', fontFamily: 'Inter, system-ui, sans-serif' },
-          series, colors,
-          xaxis: { categories: labels, labels: { style: { colors: isDark ? '#94a3b8' : '#64748b', fontSize: '11px' } } },
-          yaxis: { labels: { formatter: (v) => formatCurrencyCompact(v), style: { colors: isDark ? '#94a3b8' : '#64748b' } } },
-          plotOptions: { bar: { borderRadius: 4, columnWidth: '55%' } },
-          dataLabels: { enabled: false },
-          legend: { position: 'top', fontSize: '12px', fontWeight: 600, labels: { colors: isDark ? '#e2e8f0' : '#334155' } },
-          grid: { borderColor: isDark ? '#334155' : '#e2e8f0', strokeDashArray: 4 },
-          theme: { mode: isDark ? 'dark' : 'light' },
-          tooltip: { y: { formatter: (v) => formatCurrencyCompact(v) } }
-        });
-        __teamDailyChart.render();
+          const kpiCard = (label, value, target, pct, useTeamColor) => {
+            const barColor = useTeamColor === 'danger' ? 'var(--col-danger)' : (useTeamColor === 'success' ? 'var(--col-success)' : g.color);
+            return `
+              <div class="tb-kpi-card">
+                <div class="tb-kpi-label">${label}</div>
+                <div class="tb-kpi-bottom">
+                  <div class="flex justify-between items-baseline">
+                    <span class="tb-kpi-value" ${useTeamColor === 'success' ? 'style="color:var(--col-success)"' : (useTeamColor === 'danger' ? 'style="color:var(--col-danger)"' : '')}>${value}</span>
+                    <span class="tb-kpi-target">${target}</span>
+                  </div>
+                  <div class="tb-kpi-bar-bg"><div class="tb-kpi-bar-fill" style="width:${Math.min(100, pct).toFixed(0)}%; background:${barColor};"></div></div>
+                </div>
+              </div>`;
+          };
+
+          // Top sellers table
+          const topSellers = g.sellers.slice(0, 8);
+
+          return `
+            <div class="tb-column">
+              <!-- Header -->
+              <div class="tb-header">
+                <div>
+                  <h2 class="tb-team-name" style="color:${g.color};">${g.name.toUpperCase()}</h2>
+                  <div class="tb-header-rev">
+                    <span class="tb-rev-value">${formatCurrency(g.totalRevenue)}</span>
+                    <span class="tb-rev-target">/ ${fc(TB_METAS.faturamento)} Target</span>
+                  </div>
+                </div>
+                <div class="tb-status ${statusClass}">${statusLabel}</div>
+              </div>
+
+              <!-- Daily Sales Trend -->
+              <div class="card tb-trend-card">
+                <div class="flex justify-between items-center mb-4">
+                  <span class="tb-kpi-label" style="margin:0;">DAILY SALES TREND</span>
+                  <span class="tb-trend-badge" style="color:${g.color}; background:${g.colorLight};">VOLUME</span>
+                </div>
+                <div class="tb-trend-bars">
+                  ${dailyVals.map((v, i) => {
+                    const h = maxDaily > 0 ? Math.max(5, (v / maxDaily) * 100) : 5;
+                    const isToday = i === dailyVals.length - 1;
+                    const barBg = isToday ? `${g.color}66` : 'var(--bg-subtle)';
+                    const labelStyle = isToday ? `font-weight:700; color:${g.color};` : 'color:var(--text-muted);';
+                    return `
+                      <div class="tb-trend-col">
+                        <div class="tb-trend-bar" style="height:${h}%; background:${barBg}; border-radius:999px;"></div>
+                        <span class="tb-trend-label" style="${labelStyle}">${dailyLabels[i]}</span>
+                      </div>`;
+                  }).join('')}
+                </div>
+              </div>
+
+              <!-- KPI Grid (4 + 3) -->
+              <div class="tb-kpi-grid-4">
+                ${kpiCard('PROPOSTAS', fn(teamPropostas), `Target ${fn(TB_METAS.propostas)}`, (teamPropostas / TB_METAS.propostas) * 100)}
+                ${kpiCard('REUNIÕES', fn(teamReunioes), `Target ${fn(TB_METAS.reunioes)}`, (teamReunioes / TB_METAS.reunioes) * 100)}
+                ${kpiCard('VENDAS', fn(g.totalDeals), `Target ${fn(TB_METAS.vendas)}`, (g.totalDeals / TB_METAS.vendas) * 100)}
+                ${kpiCard('LEAD GEN', fn(teamOport), `Target ${fn(TB_METAS.leadGen)}`, (teamOport / TB_METAS.leadGen) * 100)}
+              </div>
+              <div class="tb-kpi-grid-3">
+                ${kpiCard('FATURAMENTO', fc(g.totalRevenue), `Target ${fc(TB_METAS.faturamento)}`, (g.totalRevenue / TB_METAS.faturamento) * 100)}
+                ${kpiCard('CONVERSÃO', fp(teamConv), `Min ${fp(TB_METAS.txConversao)}`, (teamConv / TB_METAS.txConversao) * 100, convOk ? 'success' : 'danger')}
+                ${kpiCard('TICKET MÉDIO', fc(g.avgTicket), `Min ${fc(TB_METAS.ticketMedio)}`, (g.avgTicket / TB_METAS.ticketMedio) * 100, ticketOk ? '' : 'danger')}
+              </div>
+
+              <!-- Top Sellers -->
+              <div class="card tb-sellers-card">
+                <div class="tb-sellers-header">
+                  <span class="tb-kpi-label" style="margin:0;">TOP SELLERS — ${g.name.toUpperCase()}</span>
+                </div>
+                <table class="tb-sellers-table">
+                  <thead>
+                    <tr>
+                      <th>RANK</th><th>SELLER</th><th>PROP.</th><th class="text-center">TREND</th><th>REV.</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${topSellers.map((s, si) => {
+                      const rank = si + 1;
+                      const isFirst = rank === 1;
+                      const initials = (s.name || '').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+                      const rowBg = isFirst ? g.colorLight : 'transparent';
+                      const rankColor = isFirst ? g.color : 'var(--text-muted)';
+                      // Mini trend bars from daily data
+                      const sDailyVals = last7.map(d => s.dailyRevenue[d] || 0);
+                      const sMax = Math.max(...sDailyVals, 1);
+                      const trendBars = sDailyVals.map(v => {
+                        const h = Math.max(2, (v / sMax) * 20);
+                        return `<div style="width:3px; height:${h}px; background:${isFirst ? g.color + '80' : 'var(--text-muted)'}; border-radius:1px; opacity:${isFirst ? 1 : 0.25};"></div>`;
+                      }).join('');
+
+                      return `
+                        <tr style="background:${rowBg};">
+                          <td style="color:${rankColor}; font-weight:700;">#${rank}</td>
+                          <td>
+                            <div class="flex items-center gap-2">
+                              ${s.avatarUrl
+                                ? `<img src="${s.avatarUrl}" class="tb-seller-avatar" onerror="this.outerHTML='<div class=\\'tb-seller-initials\\' style=\\'background:${g.colorLight}; color:${g.color}\\'>${initials}</div>'">`
+                                : `<div class="tb-seller-initials" style="background:${isFirst ? g.colorLight : 'var(--bg-subtle)'}; color:${isFirst ? g.color : 'var(--text-muted)'}">${initials}</div>`
+                              }
+                              <span style="font-weight:${isFirst ? 600 : 500}; color:${isFirst ? 'var(--text-main)' : 'var(--text-muted)'};">${s.name}</span>
+                            </div>
+                          </td>
+                          <td style="color:var(--text-muted);">${fn(s.deals)}</td>
+                          <td><div class="flex items-center justify-center gap-1" style="height:20px;">${trendBars}</div></td>
+                          <td style="font-weight:700; color:${isFirst ? 'var(--text-main)' : 'var(--text-muted)'};">${fc(s.revenue)}</td>
+                        </tr>`;
+                    }).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </div>`;
+        }).join('');
+
+        try { lucide.createIcons(); } catch (e) {}
       }
-
-      // ---- Force Line (acumulado mês) ----
-      function renderTeamForceChart(data, isDark) {
-        const wrapper = document.getElementById('team-force-line');
-        const el = document.getElementById('team-force-chart');
-        if (!wrapper || !el || data.groups.length < 2) return;
-
-        const allDates = [...new Set(data.groups.flatMap(g => Object.keys(g.dailyRevenue)))].sort();
-        if (allDates.length === 0) { wrapper.style.display = 'none'; return; }
-        wrapper.style.display = '';
-
-        const series = data.groups.map(g => {
-          let cum = 0;
-          return { name: g.name, data: allDates.map(d => { cum += (g.dailyRevenue[d] || 0); return cum; }) };
-        });
-        const colors = data.groups.map(g => g.color);
-
-        if (__teamForceChart) { try { __teamForceChart.destroy(); } catch (e) {} }
-
-        __teamForceChart = new ApexCharts(el, {
-          chart: { type: 'area', height: 300, toolbar: { show: false }, background: 'transparent', fontFamily: 'Inter, system-ui, sans-serif' },
-          series, colors,
-          xaxis: {
-            categories: allDates.map(d => { try { return new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }); } catch (e) { return d; } }),
-            labels: { style: { colors: isDark ? '#94a3b8' : '#64748b', fontSize: '10px' }, rotate: -45, rotateAlways: allDates.length > 15 }
-          },
-          yaxis: { labels: { formatter: (v) => formatCurrencyCompact(v), style: { colors: isDark ? '#94a3b8' : '#64748b' } } },
-          stroke: { width: 3, curve: 'smooth' },
-          fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.25, opacityTo: 0.02, stops: [0, 100] } },
-          dataLabels: { enabled: false },
-          legend: { position: 'top', fontSize: '12px', fontWeight: 700, labels: { colors: isDark ? '#e2e8f0' : '#334155' } },
-          grid: { borderColor: isDark ? '#334155' : '#e2e8f0', strokeDashArray: 4 },
-          theme: { mode: isDark ? 'dark' : 'light' },
-          tooltip: { y: { formatter: (v) => formatCurrencyCompact(v) } }
-        });
-        __teamForceChart.render();
-      }
-
-      // Toggle view
-      window.__setTeamView = function(view) {
-        state.teamBattleView = view;
-        renderTeamBattle();
-      };
 
       // ==========================================
       // RELATÓRIO DIÁRIO
