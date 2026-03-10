@@ -5121,13 +5121,14 @@
       async function fetchTeamBattleData() {
         if (!sbClient) return;
         try {
-          // 1. Fetch groups (metas_grupos) with name
-          const { data: gruposRaw } = await sbClient
+          // 1. Fetch groups (metas_grupos) - select ALL columns to discover schema
+          const { data: gruposRaw, error: gruposErr } = await sbClient
             .from('crm_metas_grupos')
-            .select('id, nome, ciclos_json');
+            .select('*');
+          console.log('[TeamBattle] crm_metas_grupos raw:', gruposRaw, 'error:', gruposErr);
           const grupos = Array.isArray(gruposRaw) ? gruposRaw.filter(g => g && g.id) : [];
           if (grupos.length < 2) {
-            // Need at least 2 groups for battle
+            console.warn('[TeamBattle] Menos de 2 grupos encontrados:', grupos.length);
             state.teamBattleData = null;
             return;
           }
@@ -5136,6 +5137,7 @@
           const { mes, ano, refDateYmd } = getCrmMetaContext();
           const rpc = await fetchCrmMetasRpc(mes, ano, refDateYmd);
           const rpcRows = rpc && Array.isArray(rpc.rows) ? rpc.rows : [];
+          console.log('[TeamBattle] RPC rows count:', rpcRows.length, 'sample:', rpcRows.slice(0, 3));
 
           // 3. Fetch sellers
           const { data: sellersRaw } = await sbClient
@@ -5149,13 +5151,23 @@
           rpcRows.forEach(r => {
             if (r && r.vendedor_id && r.grupo_id) sellerGrupoMap[String(r.vendedor_id)] = String(r.grupo_id);
           });
+          console.log('[TeamBattle] sellerGrupoMap keys:', Object.keys(sellerGrupoMap).length, 'unique grupos:', [...new Set(Object.values(sellerGrupoMap))]);
+
+          // Detect name column: try nome, name, titulo, label
+          const nameCol = grupos[0].nome !== undefined ? 'nome'
+            : grupos[0].name !== undefined ? 'name'
+            : grupos[0].titulo !== undefined ? 'titulo'
+            : grupos[0].label !== undefined ? 'label'
+            : null;
+          console.log('[TeamBattle] Detected name column:', nameCol, 'columns:', Object.keys(grupos[0]));
 
           // Build grupo map
           const grupoMap = {};
           grupos.forEach((g, idx) => {
+            const gName = nameCol ? (g[nameCol] || `Grupo ${idx + 1}`) : `Grupo ${idx + 1}`;
             grupoMap[String(g.id)] = {
               id: String(g.id),
-              name: g.nome || `Grupo ${idx + 1}`,
+              name: gName,
               color: TEAM_COLORS[idx % TEAM_COLORS.length],
               colorLight: TEAM_COLORS_LIGHT[idx % TEAM_COLORS_LIGHT.length],
               sellers: [],
@@ -5232,7 +5244,9 @@
           });
 
           // 6. Calculate derived metrics
-          const groupList = Object.values(grupoMap).filter(g => g.sellers.length > 0);
+          const allGroups = Object.values(grupoMap);
+          console.log('[TeamBattle] allGroups:', allGroups.map(g => ({ name: g.name, id: g.id, sellersCount: g.sellers.length, revenue: g.totalRevenue })));
+          const groupList = allGroups.filter(g => g.sellers.length > 0);
           groupList.forEach(g => {
             g.avgTicket = g.totalDeals > 0 ? g.totalRevenue / g.totalDeals : 0;
             g.sharePct = grandTotalRevenue > 0 ? (g.totalRevenue / grandTotalRevenue) * 100 : 0;
@@ -5253,9 +5267,10 @@
             totalDeals: grandTotalDeals
           };
 
+          console.log('[TeamBattle] Final groupList:', groupList.length, 'groups with sellers');
           renderTeamBattle();
         } catch (e) {
-          console.error('Erro ao buscar team battle:', e);
+          console.error('[TeamBattle] Erro ao buscar team battle:', e);
           state.teamBattleData = null;
         }
       }
