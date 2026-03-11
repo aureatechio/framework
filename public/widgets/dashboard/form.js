@@ -6632,13 +6632,22 @@
         const svgWidth = 500;
         const svgHeight = 100;
         const sectionWidth = svgWidth / steps;
+        const maxVal = data[0].v || 1; // primeiro estágio é o 100%
 
-        // Funil sempre afunila linearmente da esquerda para direita (forma fixa)
+        // Funil proporcional: largura de cada estágio reflete o valor real
+        // yPoint = distância do topo → quanto maior o valor, menor o y (mais largo)
+        // Garantir que nunca sobe (monotonicamente crescente)
+        let prevY = 0;
         const yPoints = data.map((d, idx) => {
-          const t = idx / (steps - 1); // 0 → 1
-          return 5 + t * 80; // y varia de 5 (largo) a 85 (estreito)
+          const ratio = maxVal > 0 ? d.v / maxVal : 0; // 1.0 = largura total, 0 = mínimo
+          let y = 5 + (1 - ratio) * 85; // 5 = topo (largo), 90 = fundo (estreito)
+          // Garantir que cada estágio é pelo menos tão estreito quanto o anterior
+          if (y < prevY) y = prevY;
+          prevY = y;
+          return y;
         });
-        yPoints.push(90);
+        // Ponto final: pelo menos tão estreito quanto o último
+        yPoints.push(Math.max(prevY + 3, 93));
 
         // Gerar o path do SVG (curva horizontal que afunila da esquerda para direita)
         // M 0,{y0} -> início no topo-esquerda
