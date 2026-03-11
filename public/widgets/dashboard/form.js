@@ -5343,11 +5343,15 @@
 
           // Calcular meta por time: meta_total / total_elegiveis * elegiveis_no_time
           const totalElegiveis = groupList.reduce((sum, g) => sum + g.sellers.filter(s => s.elegivelRotacao).length, 0);
-          const metaPorElegivel = totalElegiveis > 0 ? TB_METAS.faturamento / totalElegiveis : 0;
+          const metaFatPorElegivel = totalElegiveis > 0 ? TB_METAS.faturamento / totalElegiveis : 0;
+          const metaVendasPorElegivel = totalElegiveis > 0 ? TB_METAS.vendas / totalElegiveis : 0;
+          const metaLeadGenPorElegivel = totalElegiveis > 0 ? TB_METAS.leadGen / totalElegiveis : 0;
 
           groupList.forEach(g => {
             const elegiveisNoTime = g.sellers.filter(s => s.elegivelRotacao).length;
-            g.metaFaturamento = metaPorElegivel * elegiveisNoTime;
+            g.metaFaturamento = metaFatPorElegivel * elegiveisNoTime;
+            g.metaVendas = Math.round(metaVendasPorElegivel * elegiveisNoTime);
+            g.metaOportunidades = Math.round(metaLeadGenPorElegivel * elegiveisNoTime);
             g.avgTicket = g.totalDeals > 0 ? g.totalRevenue / g.totalDeals : 0;
             g.sharePct = grandTotalRevenue > 0 ? (g.totalRevenue / grandTotalRevenue) * 100 : 0;
             // Somar propostas e reuniões reais do grupo
@@ -5501,8 +5505,8 @@
               <div class="tb-kpi-grid-4">
                 ${kpiCard('PROPOSTAS', fn(teamPropostas), `Meta ${fn(TB_METAS.propostas)}`, (teamPropostas / TB_METAS.propostas) * 100)}
                 ${kpiCard('REUNIÕES', fn(teamReunioes), `Meta ${fn(TB_METAS.reunioes)}`, (teamReunioes / TB_METAS.reunioes) * 100)}
-                ${kpiCard('VENDAS', fn(g.totalDeals), `Meta ${fn(TB_METAS.vendas)}`, (g.totalDeals / TB_METAS.vendas) * 100)}
-                ${kpiCard('OPORTUNIDADES', fn(teamOport), `Meta ${fn(TB_METAS.leadGen)}`, (teamOport / TB_METAS.leadGen) * 100)}
+                ${kpiCard('VENDAS', fn(g.totalDeals), `Meta ${fn(g.metaVendas || 0)}`, g.metaVendas > 0 ? (g.totalDeals / g.metaVendas) * 100 : 0)}
+                ${kpiCard('OPORTUNIDADES', fn(teamOport), `Meta ${fn(g.metaOportunidades || 0)}`, g.metaOportunidades > 0 ? (teamOport / g.metaOportunidades) * 100 : 0)}
               </div>
               <div class="tb-kpi-grid-3">
                 ${kpiCard('FATURAMENTO', fc(g.totalRevenue), `Meta ${fc(teamMeta)}`, teamMeta > 0 ? (g.totalRevenue / teamMeta) * 100 : 0)}
