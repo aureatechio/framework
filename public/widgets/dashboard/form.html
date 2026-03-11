@@ -249,8 +249,8 @@
     </div>
 
     <!-- Meetings Card -->
-    <div class="card flex-col bg-white" style="background: var(--bg-card); gap: 10px;">
-      <div class="section-title" style="margin-bottom:2px;">Reuniões</div>
+    <div class="card flex-col bg-white" style="background: var(--bg-card); gap: 6px;">
+      <div class="section-title" style="margin-bottom:0;">Reuniões</div>
 
       <div class="meeting-card now">
         <div class="icon-box"><i data-lucide="video"></i></div>
@@ -324,6 +324,24 @@
     <div class="section-title mb-4">Funil de Vendas</div>
     <div id="funnel-bars" class="flex flex-col gap-2 grow py-2">
         <div class="text-xs text-muted text-center p-4">Carregando funil...</div>
+    </div>
+  </section>
+
+  <!-- 5a. MÉTRICAS DE EFICIÊNCIA -->
+  <section class="card mb-12">
+    <div class="section-title">Métricas de Eficiência</div>
+    <div class="grid grid-cols-2 md-grid-cols-4 gap-4 text-center">
+      <div class="p-4 bg-gray-50 rounded-xl" style="background:var(--bg-subtle)"><div class="text-3xl font-bold text-primary" id="eff-cycle-days">--</div><div class="text-xs text-muted">Dias de ciclo (vida)</div></div>
+      <div class="p-4 bg-gray-50 rounded-xl" style="background:var(--bg-subtle)"><div class="text-3xl font-bold text-success" id="eff-sla-overall">--%</div><div class="text-xs text-muted">SLA</div></div>
+      <div class="p-4 bg-gray-50 rounded-xl eff-nps-muted" style="background:var(--bg-subtle)"><div class="text-3xl font-bold text-primary" id="eff-nps-score">4.2</div><div class="text-xs text-muted">NPS Score</div></div>
+      <div class="p-4 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-center gap-3 text-left" style="background:var(--col-primary-light); border-color:var(--col-primary-light)">
+        <i data-lucide="target" class="text-primary" size="24"></i>
+        <div>
+          <div class="text-xs font-bold" style="color:var(--text-main)">Projeção</div>
+          <div class="text-lg font-bold text-primary" id="eff-projection-val">--</div>
+          <div class="text-xs text-muted" id="eff-projection-sub" style="margin-top: 2px;">--</div>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -467,13 +485,9 @@
     </div>
   </section>
 
-  <!-- 7. CONVERSIONS & CHANNELS -->
-  <section class="grid grid-cols-1 xl-grid-cols-5 gap-6 mb-12 grid-no-stretch">
-    <div class="card conversion-card flex-col items-center">
-      <div class="section-title mb-2">Taxas de Conversão</div>
-      <div id="conversion-chart" style="width: 100%;"></div>
-    </div>
-    <div class="card xl-col-span-4 flex-col">
+  <!-- 7. CHANNELS -->
+  <section class="mb-12">
+    <div class="card flex-col">
       <div class="section-title">Performance por Canal</div>
       <div class="grid grid-cols-1 md-grid-cols-4 gap-4" id="channel-grid"></div>
     </div>
@@ -483,24 +497,6 @@
   <section class="card mb-12">
     <div class="section-title">Tempos por Etapa do Funil</div>
     <div id="pipeline-container" class="pipeline-diagram-scroll"></div>
-  </section>
-
-  <!-- 9. BOTTOM METRICS -->
-  <section class="card">
-    <div class="section-title">Métricas de Eficiência</div>
-    <div class="grid grid-cols-2 md-grid-cols-4 gap-4 text-center">
-      <div class="p-4 bg-gray-50 rounded-xl" style="background:var(--bg-subtle)"><div class="text-3xl font-bold text-primary" id="eff-cycle-days">--</div><div class="text-xs text-muted">Dias de ciclo (vida)</div></div>
-      <div class="p-4 bg-gray-50 rounded-xl" style="background:var(--bg-subtle)"><div class="text-3xl font-bold text-success" id="eff-sla-overall">--%</div><div class="text-xs text-muted">SLA</div></div>
-      <div class="p-4 bg-gray-50 rounded-xl eff-nps-muted" style="background:var(--bg-subtle)"><div class="text-3xl font-bold text-primary" id="eff-nps-score">4.2</div><div class="text-xs text-muted">NPS Score</div></div>
-      <div class="p-4 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-center gap-3 text-left" style="background:var(--col-primary-light); border-color:var(--col-primary-light)">
-        <i data-lucide="target" class="text-primary" size="24"></i>
-        <div>
-          <div class="text-xs font-bold" style="color:var(--text-main)">Projeção</div>
-          <div class="text-lg font-bold text-primary" id="eff-projection-val">--</div>
-          <div class="text-xs text-muted" id="eff-projection-sub" style="margin-top: 2px;">--</div>
-        </div>
-      </div>
-    </div>
   </section>
 
   <!-- 10. RELATÓRIO DIÁRIO -->

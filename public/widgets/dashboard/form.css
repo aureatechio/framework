@@ -1164,12 +1164,12 @@
 
     /* Meetings Sidebar Refined */
     .meeting-card {
-        padding: 12px 14px;
-        border-radius: 10px;
+        padding: 8px 12px;
+        border-radius: 8px;
         border: 1px solid transparent;
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 10px;
         transition: all 0.2s;
         background: var(--bg-card);
     }
@@ -1213,10 +1213,10 @@
     .dark-mode .meeting-card.created-today .icon-box { background: rgba(139,92,246,0.2); }
 
     .meeting-card .icon-box {
-        width: 32px; height: 32px; border-radius: 8px;
+        width: 28px; height: 28px; border-radius: 7px;
         display: flex; align-items: center; justify-content: center;
     }
-    .meeting-card .count { font-size: 18px; font-weight: 700; line-height: 1; margin-left: auto; }
+    .meeting-card .count { font-size: 16px; font-weight: 700; line-height: 1; margin-left: auto; }
 
     /* Utilities Adicionais para o Gauge */
     .gauge-legend {
