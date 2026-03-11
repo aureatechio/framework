@@ -6652,14 +6652,9 @@
 
         // yPoint = borda superior proporcional ao valor. Base sempre em svgHeight.
         // Quanto maior o valor, menor o y (mais alto = mais largo).
-        // Garantir monotonicamente crescente (nunca sobe/alarga).
-        let prevY = 0;
         const yPoints = data.map((d) => {
           const ratio = maxVal > 0 ? d.v / maxVal : 0;
-          let y = minY + (1 - ratio) * (maxY - minY);
-          if (y < prevY) y = prevY;
-          prevY = y;
-          return y;
+          return minY + (1 - ratio) * (maxY - minY);
         });
         yPoints.push(Math.min(maxY + 3, 95));
 
