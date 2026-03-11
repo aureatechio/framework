@@ -5223,6 +5223,8 @@
               role: (sData && sData.cargo) || 'Vendedor',
               revenue: 0,
               deals: 0,
+              propostas: 0,
+              reunioes: 0,
               avgTicket: 0,
               convPct: 0,
               sharePct: 0,
@@ -5274,7 +5276,7 @@
             }
           });
 
-          // 5b. Fetch propostas (dedup: 1 por lead por vendedor)
+          // 5b. Fetch propostas (dedup: 1 por lead por vendedor) + por seller
           let totalPropostas = 0;
           try {
             let qProp = sbClient.from('imagemProposta').select('id, id_vendedor, id_lead');
@@ -5285,12 +5287,22 @@
             props.forEach(p => {
               if (p.id_vendedor && p.id_lead) {
                 const k = `${p.id_vendedor}_${p.id_lead}`;
-                if (!seenProp[k]) { seenProp[k] = true; totalPropostas++; }
+                if (!seenProp[k]) {
+                  seenProp[k] = true;
+                  totalPropostas++;
+                  // Agregar por seller no grupo
+                  const sid = String(p.id_vendedor);
+                  const gid = sellerGrupoMap[sid];
+                  if (gid && grupoMap[gid]) {
+                    const seller = grupoMap[gid].sellers.find(s => s.id === sid);
+                    if (seller) seller.propostas++;
+                  }
+                }
               }
             });
           } catch (e) {}
 
-          // 5c. Fetch reuniões realizadas
+          // 5c. Fetch reuniões realizadas + por seller
           let totalReunioes = 0;
           try {
             const meetRange = getMeetingsDateRange(state.dateFilter);
@@ -5298,7 +5310,20 @@
             qMeet = applyCutoffDateYmd(qMeet, 'data').gte('data', meetRange.startYmd).lte('data', meetRange.endYmd);
             const { data: meetRaw } = await qMeet;
             const meets = await filterRowsByAgencyViaLeadId((meetRaw || []), (m) => m && m.leadId);
-            meets.forEach(m => { if (isValidMeeting(m)) totalReunioes++; });
+            meets.forEach(m => {
+              if (isValidMeeting(m)) {
+                totalReunioes++;
+                // Agregar por seller no grupo
+                if (m.vendedor) {
+                  const sid = String(m.vendedor);
+                  const gid = sellerGrupoMap[sid];
+                  if (gid && grupoMap[gid]) {
+                    const seller = grupoMap[gid].sellers.find(s => s.id === sid);
+                    if (seller) seller.reunioes++;
+                  }
+                }
+              }
+            });
           } catch (e) {}
 
           // 5d. Fetch oportunidades (leads criados no período)
@@ -5317,6 +5342,9 @@
           groupList.forEach(g => {
             g.avgTicket = g.totalDeals > 0 ? g.totalRevenue / g.totalDeals : 0;
             g.sharePct = grandTotalRevenue > 0 ? (g.totalRevenue / grandTotalRevenue) * 100 : 0;
+            // Somar propostas e reuniões reais do grupo
+            g.totalPropostas = g.sellers.reduce((sum, s) => sum + (s.propostas || 0), 0);
+            g.totalReunioes = g.sellers.reduce((sum, s) => sum + (s.reunioes || 0), 0);
             g.sellers.forEach(s => {
               s.avgTicket = s.deals > 0 ? s.revenue / s.deals : 0;
               s.sharePct = g.totalRevenue > 0 ? (s.revenue / g.totalRevenue) * 100 : 0;
@@ -5392,12 +5420,13 @@
             } catch (e) { return d.substring(5); }
           });
 
-          // KPIs por time (usamos proporção do total global)
+          // KPIs por time (dados reais agregados)
+          const teamPropostas = g.totalPropostas || 0;
+          const teamReunioes = g.totalReunioes || 0;
           const teamShare = data.totalDeals > 0 ? g.totalDeals / data.totalDeals : 0.5;
-          const teamPropostas = Math.round((data.totalPropostas || 0) * teamShare);
-          const teamReunioes = Math.round((data.totalReunioes || 0) * teamShare);
           const teamOport = Math.round((data.totalOportunidades || 0) * teamShare);
-          const teamConv = teamOport > 0 ? (g.totalDeals / teamOport) * 100 : 0;
+          // Conversão: propostas → vendas
+          const teamConv = teamPropostas > 0 ? (g.totalDeals / teamPropostas) * 100 : 0;
           const convOk = teamConv >= TB_METAS.txConversao;
           const ticketOk = g.avgTicket >= TB_METAS.ticketMedio;
 
@@ -5448,8 +5477,8 @@
                   ${dailyVals.map((v, i) => {
                     const h = maxDaily > 0 ? Math.max(5, (v / maxDaily) * 100) : 5;
                     const isToday = i === dailyVals.length - 1;
-                    const barBg = isToday ? 'var(--col-primary)' : 'var(--col-primary-light)';
-                    const labelStyle = isToday ? 'font-weight:700; color:var(--col-primary);' : 'color:var(--text-muted);';
+                    const barBg = isToday ? g.color : g.colorLight.replace('0.12', '0.35');
+                    const labelStyle = isToday ? `font-weight:700; color:${g.color};` : 'color:var(--text-muted);';
                     return `
                       <div class="tb-trend-col">
                         <div class="tb-trend-bar" style="height:${h}%; background:${barBg}; border-radius:4px;"></div>
@@ -5475,13 +5504,13 @@
               <!-- Top Sellers -->
               <div class="card tb-sellers-card">
                 <div class="tb-sellers-header">
-                  <span class="tb-kpi-label" style="margin:0;">SELLERS — ${g.name.toUpperCase()}</span>
+                  <span class="tb-kpi-label" style="margin:0;">VENDEDORES — ${g.name.toUpperCase()}</span>
                 </div>
                 <div class="tb-sellers-table-wrap">
                 <table class="tb-sellers-table">
                   <thead>
                     <tr>
-                      <th>#</th><th>VENDEDOR</th><th>VENDAS</th><th class="text-center">TENDÊNCIA</th><th>FATURAMENTO</th>
+                      <th>#</th><th>VENDEDOR</th><th>PROP.</th><th>REUN.</th><th>VENDAS</th><th>FATURAMENTO</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -5491,13 +5520,6 @@
                       const initials = (s.name || '').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
                       const rowBg = isFirst ? g.colorLight : 'transparent';
                       const rankColor = isFirst ? g.color : 'var(--text-muted)';
-                      // Mini trend bars from daily data
-                      const sDailyVals = last7.map(d => s.dailyRevenue[d] || 0);
-                      const sMax = Math.max(...sDailyVals, 1);
-                      const trendBars = sDailyVals.map(v => {
-                        const h = Math.max(2, (v / sMax) * 20);
-                        return `<div style="width:3px; height:${h}px; background:${isFirst ? g.color + '80' : 'var(--text-muted)'}; border-radius:1px; opacity:${isFirst ? 1 : 0.25};"></div>`;
-                      }).join('');
 
                       return `
                         <tr style="background:${rowBg};">
@@ -5511,8 +5533,9 @@
                               <span style="font-weight:${isFirst ? 600 : 500}; color:${isFirst ? 'var(--text-main)' : 'var(--text-muted)'};">${s.name}</span>
                             </div>
                           </td>
+                          <td style="color:var(--text-muted);">${fn(s.propostas || 0)}</td>
+                          <td style="color:var(--text-muted);">${fn(s.reunioes || 0)}</td>
                           <td style="color:var(--text-muted);">${fn(s.deals)}</td>
-                          <td><div class="flex items-center justify-center gap-1" style="height:20px;">${trendBars}</div></td>
                           <td style="font-weight:700; color:${isFirst ? 'var(--text-main)' : 'var(--text-muted)'};">${fc(s.revenue)}</td>
                         </tr>`;
                     }).join('')}

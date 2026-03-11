@@ -1164,7 +1164,7 @@
 
     /* Meetings Sidebar Refined */
     .meeting-card {
-        padding: 14px 16px;
+        padding: 16px 18px;
         border-radius: 12px;
         border: 1px solid transparent;
         display: flex;
@@ -1172,6 +1172,7 @@
         gap: 14px;
         transition: all 0.2s;
         background: var(--bg-card);
+        margin-bottom: 4px;
     }
     .meeting-card:hover { transform: scale(1.02); }
     
