@@ -6636,47 +6636,60 @@
         const svgWidth = 500;
         const svgHeight = 100;
         const sectionWidth = svgWidth / steps;
-        const maxVal = data[0].v || 1; // primeiro estágio é o 100%
+        const maxVal = data[0].v || 1;
+        const centerY = svgHeight / 2;
+        const maxHalf = 45; // metade máxima da altura do funil (total = 90 de 100)
+        const minHalf = 3;  // metade mínima (para o menor estágio não sumir)
 
-        // Funil proporcional: largura de cada estágio reflete o valor real
-        // yPoint = distância do topo → quanto maior o valor, menor o y (mais largo)
-        // Garantir que nunca sobe (monotonicamente crescente)
-        let prevY = 0;
-        const yPoints = data.map((d, idx) => {
-          const ratio = maxVal > 0 ? d.v / maxVal : 0; // 1.0 = largura total, 0 = mínimo
-          let y = 5 + (1 - ratio) * 85; // 5 = topo (largo), 90 = fundo (estreito)
-          // Garantir que cada estágio é pelo menos tão estreito quanto o anterior
-          if (y < prevY) y = prevY;
-          prevY = y;
-          return y;
+        // Calcular meia-altura proporcional para cada ponto de transição
+        // Garantir monotonicamente decrescente (nunca alarga)
+        let prevHalf = maxHalf + 1;
+        const halfHeights = data.map((d) => {
+          const ratio = maxVal > 0 ? d.v / maxVal : 0;
+          let h = minHalf + ratio * (maxHalf - minHalf);
+          if (h > prevHalf) h = prevHalf; // nunca alarga
+          prevHalf = h;
+          return h;
         });
-        // Ponto final: pelo menos tão estreito quanto o último
-        yPoints.push(Math.max(prevY + 3, 93));
+        // Ponto final após o último estágio
+        halfHeights.push(Math.max(prevHalf * 0.6, minHalf));
 
-        // Gerar o path do SVG (curva horizontal que afunila da esquerda para direita)
-        // M 0,{y0} -> início no topo-esquerda
-        // Curvas suaves até o final
-        // L svgWidth,100 L 0,100 Z -> fecha o path na base
-        let pathD = `M 0,${yPoints[0]} `;
+        // Gerar paths: borda superior (centerY - half) e inferior (centerY + half)
+        // Borda superior (esquerda→direita)
+        let topPath = `M 0,${centerY - halfHeights[0]} `;
+        let botPath = `M 0,${centerY + halfHeights[0]} `;
         for (let i = 0; i < steps; i++) {
-          const xStart = i * sectionWidth;
           const xEnd = (i + 1) * sectionWidth;
-          const yStart = yPoints[i];
-          const yEnd = yPoints[i + 1];
-          
-          // Curva de Bézier suave
+          const hStart = halfHeights[i];
+          const hEnd = halfHeights[i + 1];
+          const xStart = i * sectionWidth;
           const cpX = xStart + (xEnd - xStart) / 2;
-          pathD += `C ${cpX},${yStart} ${cpX},${yEnd} ${xEnd},${yEnd} `;
+          topPath += `C ${cpX},${centerY - hStart} ${cpX},${centerY - hEnd} ${xEnd},${centerY - hEnd} `;
+          botPath += `C ${cpX},${centerY + hStart} ${cpX},${centerY + hEnd} ${xEnd},${centerY + hEnd} `;
         }
-        pathD += `L ${svgWidth},${svgHeight} L 0,${svgHeight} Z`;
+
+        // Path combinado: top esq→dir, depois bot dir→esq (fecha o shape)
+        const lastX = svgWidth;
+        const lastHalf = halfHeights[halfHeights.length - 1];
+        const pathD = topPath + `L ${lastX},${centerY + lastHalf} ` +
+          // Voltar pela borda inferior (direita→esquerda) usando linhas retas
+          [...Array(steps)].map((_, i) => {
+            const idx = steps - i;
+            const x = idx * sectionWidth;
+            const prevIdx = idx - 1;
+            const prevX = prevIdx * sectionWidth;
+            const hEnd = halfHeights[prevIdx];
+            const hStart = halfHeights[idx];
+            const cpX = prevX + (x - prevX) / 2;
+            return `C ${cpX},${centerY + hStart} ${cpX},${centerY + hEnd} ${prevX},${centerY + hEnd}`;
+          }).join(' ') + ' Z';
 
         // Linhas verticais brancas separando as seções
         let lines = '';
         for (let i = 1; i < steps; i++) {
           const x = i * sectionWidth;
-          const yAtX = yPoints[i];
-          // Linha vertical do topo do funil até a base
-          lines += `<line x1="${x}" y1="${yAtX}" x2="${x}" y2="${svgHeight}" stroke="white" stroke-width="2" stroke-opacity="0.6" />`;
+          const h = halfHeights[i];
+          lines += `<line x1="${x}" y1="${centerY - h}" x2="${x}" y2="${centerY + h}" stroke="white" stroke-width="2" stroke-opacity="0.6" />`;
         }
 
         const svgHtml = `
