@@ -1162,6 +1162,15 @@
       background: rgba(148, 163, 184, 0.22);
     }
 
+    /* Meetings Summary Card Container */
+    #dashboard-acelerai-v2 #meetings-summary-card {
+        gap: 14px !important;
+        padding: 18px !important;
+    }
+    #dashboard-acelerai-v2 #meetings-summary-card .section-title {
+        margin-bottom: 4px;
+    }
+
     /* Meetings Sidebar Refined */
     .meeting-card {
         padding: 12px 16px;
