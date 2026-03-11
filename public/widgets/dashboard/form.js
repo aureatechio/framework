@@ -5378,7 +5378,8 @@
 
         container.innerHTML = data.groups.map((g, idx) => {
           const isAboveGoal = g.totalRevenue >= TB_METAS.faturamento;
-          const statusLabel = isAboveGoal ? 'Acima da Meta' : 'Em Andamento';
+          const revPct = TB_METAS.faturamento > 0 ? ((g.totalRevenue / TB_METAS.faturamento) * 100).toFixed(0) : 0;
+          const statusLabel = isAboveGoal ? 'Acima da Meta' : `${revPct}% da Meta`;
           const statusClass = isAboveGoal ? 'tb-status--above' : 'tb-status--ontrack';
 
           // Daily bars (últimos 7 dias)
@@ -5430,7 +5431,7 @@
                     <h2 class="tb-team-name" style="color:${g.color};">${g.name.toUpperCase()}</h2>
                     <div class="tb-header-rev">
                       <span class="tb-rev-value">${formatCurrency(g.totalRevenue)}</span>
-                      <span class="tb-rev-target">/ ${fc(TB_METAS.faturamento)} Target</span>
+                      <span class="tb-rev-target">/ ${fc(TB_METAS.faturamento)} Meta</span>
                     </div>
                   </div>
                 </div>
@@ -5440,8 +5441,8 @@
               <!-- Daily Sales Trend -->
               <div class="card tb-trend-card">
                 <div class="flex justify-between items-center mb-4">
-                  <span class="tb-kpi-label" style="margin:0;">DAILY SALES TREND</span>
-                  <span class="tb-trend-badge" style="color:${g.color}; background:${g.colorLight};">VOLUME</span>
+                  <span class="tb-kpi-label" style="margin:0;">VENDAS DIÁRIAS</span>
+                  <span class="tb-trend-badge" style="color:${g.color}; background:${g.colorLight};">ÚLTIMOS 7 DIAS</span>
                 </div>
                 <div class="tb-trend-bars">
                   ${dailyVals.map((v, i) => {
@@ -5460,15 +5461,15 @@
 
               <!-- KPI Grid (4 + 3) -->
               <div class="tb-kpi-grid-4">
-                ${kpiCard('PROPOSTAS', fn(teamPropostas), `Target ${fn(TB_METAS.propostas)}`, (teamPropostas / TB_METAS.propostas) * 100)}
-                ${kpiCard('REUNIÕES', fn(teamReunioes), `Target ${fn(TB_METAS.reunioes)}`, (teamReunioes / TB_METAS.reunioes) * 100)}
-                ${kpiCard('VENDAS', fn(g.totalDeals), `Target ${fn(TB_METAS.vendas)}`, (g.totalDeals / TB_METAS.vendas) * 100)}
-                ${kpiCard('LEAD GEN', fn(teamOport), `Target ${fn(TB_METAS.leadGen)}`, (teamOport / TB_METAS.leadGen) * 100)}
+                ${kpiCard('PROPOSTAS', fn(teamPropostas), `Meta ${fn(TB_METAS.propostas)}`, (teamPropostas / TB_METAS.propostas) * 100)}
+                ${kpiCard('REUNIÕES', fn(teamReunioes), `Meta ${fn(TB_METAS.reunioes)}`, (teamReunioes / TB_METAS.reunioes) * 100)}
+                ${kpiCard('VENDAS', fn(g.totalDeals), `Meta ${fn(TB_METAS.vendas)}`, (g.totalDeals / TB_METAS.vendas) * 100)}
+                ${kpiCard('OPORTUNIDADES', fn(teamOport), `Meta ${fn(TB_METAS.leadGen)}`, (teamOport / TB_METAS.leadGen) * 100)}
               </div>
               <div class="tb-kpi-grid-3">
-                ${kpiCard('FATURAMENTO', fc(g.totalRevenue), `Target ${fc(TB_METAS.faturamento)}`, (g.totalRevenue / TB_METAS.faturamento) * 100)}
-                ${kpiCard('CONVERSÃO', fp(teamConv), `Min ${fp(TB_METAS.txConversao)}`, (teamConv / TB_METAS.txConversao) * 100, convOk ? 'success' : 'danger')}
-                ${kpiCard('TICKET MÉDIO', fc(g.avgTicket), `Min ${fc(TB_METAS.ticketMedio)}`, (g.avgTicket / TB_METAS.ticketMedio) * 100, ticketOk ? '' : 'danger')}
+                ${kpiCard('FATURAMENTO', fc(g.totalRevenue), `Meta ${fc(TB_METAS.faturamento)}`, (g.totalRevenue / TB_METAS.faturamento) * 100)}
+                ${kpiCard('CONVERSÃO', fp(teamConv), `Mín ${fp(TB_METAS.txConversao)}`, (teamConv / TB_METAS.txConversao) * 100, convOk ? 'success' : 'danger')}
+                ${kpiCard('TICKET MÉDIO', fc(g.avgTicket), `Mín ${fc(TB_METAS.ticketMedio)}`, (g.avgTicket / TB_METAS.ticketMedio) * 100, ticketOk ? '' : 'danger')}
               </div>
 
               <!-- Top Sellers -->
@@ -5480,7 +5481,7 @@
                 <table class="tb-sellers-table">
                   <thead>
                     <tr>
-                      <th>RANK</th><th>SELLER</th><th>PROP.</th><th class="text-center">TREND</th><th>REV.</th>
+                      <th>#</th><th>VENDEDOR</th><th>VENDAS</th><th class="text-center">TENDÊNCIA</th><th>FATURAMENTO</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -6696,7 +6697,21 @@
         if (state.selectedSeller) queryCaptados = queryCaptados.eq('vendedorResponsavel', state.selectedSeller);
         const { count: countCaptados } = await queryCaptados;
 
-        // 2. Leads Prioridade (passou_prioridade = true)
+        // 2. Oportunidades (leads com CNPJ preenchido)
+        let queryOportunidades = sbClient
+          .from('leads')
+          .select('lead_id', { count: 'exact', head: true })
+          .not('cpf_cnpj', 'is', null)
+          .neq('cpf_cnpj', '');
+        queryOportunidades = applyAgencyFilterToLeadQuery(queryOportunidades);
+        queryOportunidades = applyNotImportedLeadFilter(queryOportunidades);
+        queryOportunidades = applyCutoffTimestamp(queryOportunidades, 'created_at')
+          .gte('created_at', start)
+          .lte('created_at', end);
+        if (state.selectedSeller) queryOportunidades = queryOportunidades.eq('vendedorResponsavel', state.selectedSeller);
+        const { count: countOportunidades } = await queryOportunidades;
+
+        // 3. Prioridade (leads com passou_prioridade = true)
         let queryPrioridade = sbClient
           .from('leads')
           .select('lead_id', { count: 'exact', head: true })
@@ -6803,7 +6818,8 @@
 
         const funnelData = [
             { l:"Leads Captados", v: countCaptados || 0, color:"#3b82f6" },
-            { l:"Leads Prioridade", v: countPrioridade || 0, color:"#818cf8" },
+            { l:"Oportunidades", v: countOportunidades || 0, color:"#6366f1" },
+            { l:"Prioridade", v: countPrioridade || 0, color:"#818cf8" },
             { l:"Propostas", v: countPropostas || 0, color:"#22c55e" },
             { l:"Reuniões", v: countReunioes || 0, color:"#f59e0b" },
             { l:"Vendas", v: countVendas || 0, color:"#16a34a" }
