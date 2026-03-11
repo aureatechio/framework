@@ -249,47 +249,47 @@
     </div>
 
     <!-- Meetings Card -->
-    <div class="card flex-col bg-white" style="background: var(--bg-card); gap: 8px; padding: 16px;">
-      <div class="section-title" style="margin-bottom:4px;">Reuniões</div>
+    <div class="card flex-col bg-white" style="background: var(--bg-card); gap: 6px; padding: 14px;">
+      <div class="section-title" style="margin-bottom:2px;">Reuniões</div>
 
       <div class="meeting-card now">
         <div class="icon-box"><i data-lucide="video"></i></div>
-        <div class="grow">
-          <div class="text-xs font-medium mb-0.5 opacity-80" style="color:#ef4444">Acontecendo agora</div>
-          <div class="count" id="meetings-now">--</div>
+        <div class="grow" style="display:flex;align-items:center;gap:6px;">
+          <span class="text-xs font-medium opacity-80" style="color:#ef4444">Acontecendo agora</span>
+          <span class="count" id="meetings-now">--</span>
         </div>
         <div class="dot-pulse" style="background:#ef4444"></div>
       </div>
-      
+
       <div class="meeting-card today">
         <div class="icon-box"><i data-lucide="calendar"></i></div>
-        <div class="grow">
-          <div class="text-xs font-medium mb-0.5 opacity-80" style="color:#3b82f6" id="meetings-label-a">Hoje</div>
-          <div class="count" id="meetings-today">--</div>
+        <div class="grow" style="display:flex;align-items:center;gap:6px;">
+          <span class="text-xs font-medium opacity-80" style="color:#3b82f6" id="meetings-label-a">Hoje</span>
+          <span class="count" id="meetings-today">--</span>
         </div>
       </div>
-      
+
       <div class="meeting-card week">
         <div class="icon-box"><i data-lucide="calendar-days"></i></div>
-        <div class="grow">
-          <div class="text-xs font-medium mb-0.5 opacity-80" style="color:var(--text-muted)" id="meetings-label-b">Esta semana</div>
-          <div class="count" id="meetings-week">--</div>
+        <div class="grow" style="display:flex;align-items:center;gap:6px;">
+          <span class="text-xs font-medium opacity-80" style="color:var(--text-muted)" id="meetings-label-b">Esta semana</span>
+          <span class="count" id="meetings-week">--</span>
         </div>
       </div>
-      
+
       <div class="meeting-card month">
         <div class="icon-box"><i data-lucide="calendar-range"></i></div>
-        <div class="grow">
-          <div class="text-xs font-medium mb-0.5 opacity-80" style="color:#16a34a" id="meetings-label-c">Este mês</div>
-          <div class="count" id="meetings-month">--</div>
+        <div class="grow" style="display:flex;align-items:center;gap:6px;">
+          <span class="text-xs font-medium opacity-80" style="color:#16a34a" id="meetings-label-c">Este mês</span>
+          <span class="count" id="meetings-month">--</span>
         </div>
       </div>
 
       <div class="meeting-card created-today">
         <div class="icon-box"><i data-lucide="calendar-plus"></i></div>
-        <div class="grow">
-          <div class="text-xs font-medium mb-0.5 opacity-80" style="color:#8b5cf6">Criadas hoje</div>
-          <div class="count" id="meetings-created-today">--</div>
+        <div class="grow" style="display:flex;align-items:center;gap:6px;">
+          <span class="text-xs font-medium opacity-80" style="color:#8b5cf6">Criadas hoje</span>
+          <span class="count" id="meetings-created-today">--</span>
         </div>
       </div>
     </div>
