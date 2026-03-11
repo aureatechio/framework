@@ -5110,6 +5110,20 @@
       // TEAM BATTLE (Grupos vs Grupos)
       // ==========================================
 
+      // Logos dos times (base64 120px)
+      const TEAM_LOGOS = {
+        'soberano': 'data:image/jpeg;base64,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',
+        'ragnarok': 'data:image/jpeg;base64,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'
+      };
+      // Helper to find team logo by name (case-insensitive partial match)
+      function getTeamLogo(teamName) {
+        const lower = (teamName || '').toLowerCase();
+        for (const key of Object.keys(TEAM_LOGOS)) {
+          if (lower.includes(key)) return TEAM_LOGOS[key];
+        }
+        return null;
+      }
+
       // Cores padrão por índice de grupo (azul, verde, roxo, laranja, cyan...)
       const TEAM_COLORS = ['#3b82f6', '#22c55e', '#8b5cf6', '#f97316', '#06b6d4', '#ec4899'];
       const TEAM_COLORS_LIGHT = ['rgba(59,130,246,0.12)', 'rgba(34,197,94,0.12)', 'rgba(139,92,246,0.12)', 'rgba(249,115,22,0.12)', 'rgba(6,182,212,0.12)', 'rgba(236,72,153,0.12)'];
@@ -5400,18 +5414,23 @@
               </div>`;
           };
 
-          // Top sellers table
-          const topSellers = g.sellers.slice(0, 8);
+          // Top sellers table (todos os vendedores)
+          const topSellers = g.sellers;
+
+          const teamLogo = getTeamLogo(g.name);
 
           return `
             <div class="tb-column">
               <!-- Header -->
               <div class="tb-header">
-                <div>
-                  <h2 class="tb-team-name" style="color:${g.color};">${g.name.toUpperCase()}</h2>
-                  <div class="tb-header-rev">
-                    <span class="tb-rev-value">${formatCurrency(g.totalRevenue)}</span>
-                    <span class="tb-rev-target">/ ${fc(TB_METAS.faturamento)} Target</span>
+                <div class="flex items-center gap-3">
+                  ${teamLogo ? `<img src="${teamLogo}" alt="${g.name}" style="width:52px; height:52px; border-radius:50%; object-fit:cover; border:2px solid ${g.color}; box-shadow:0 0 12px ${g.color}40;">` : ''}
+                  <div>
+                    <h2 class="tb-team-name" style="color:${g.color};">${g.name.toUpperCase()}</h2>
+                    <div class="tb-header-rev">
+                      <span class="tb-rev-value">${formatCurrency(g.totalRevenue)}</span>
+                      <span class="tb-rev-target">/ ${fc(TB_METAS.faturamento)} Target</span>
+                    </div>
                   </div>
                 </div>
                 <div class="tb-status ${statusClass}">${statusLabel}</div>
@@ -5454,7 +5473,7 @@
               <!-- Top Sellers -->
               <div class="card tb-sellers-card">
                 <div class="tb-sellers-header">
-                  <span class="tb-kpi-label" style="margin:0;">TOP SELLERS — ${g.name.toUpperCase()}</span>
+                  <span class="tb-kpi-label" style="margin:0;">SELLERS — ${g.name.toUpperCase()}</span>
                 </div>
                 <table class="tb-sellers-table">
                   <thead>
