@@ -5348,6 +5348,25 @@
             });
           } catch (e) {}
 
+          // 5e. Fetch leads captados (todos) por vendedor → grupo (para conversão)
+          let totalLeadsCaptados = 0;
+          try {
+            let qCaptados = sbClient.from('leads').select('lead_id, vendedorResponsavel');
+            qCaptados = applyCutoffTimestamp(qCaptados, 'created_at').gte('created_at', start).lte('created_at', end);
+            qCaptados = applyNotImportedLeadFilter(qCaptados);
+            const { data: leadsCaptRaw } = await qCaptados;
+            (leadsCaptRaw || []).forEach(l => {
+              if (!l || !l.vendedorResponsavel) return;
+              totalLeadsCaptados++;
+              const sid = String(l.vendedorResponsavel);
+              const gid = sellerGrupoMap[sid];
+              if (gid && grupoMap[gid]) {
+                if (!grupoMap[gid].totalLeadsCaptados) grupoMap[gid].totalLeadsCaptados = 0;
+                grupoMap[gid].totalLeadsCaptados++;
+              }
+            });
+          } catch (e) {}
+
           // 6. Calculate derived metrics
           const allGroups = Object.values(grupoMap);
           const groupList = allGroups.filter(g => g.sellers.length > 0);
@@ -5358,17 +5377,17 @@
           const metaVendasPorElegivel = totalElegiveis > 0 ? TB_METAS.vendas / totalElegiveis : 0;
           const metaLeadGenPorElegivel = totalElegiveis > 0 ? TB_METAS.leadGen / totalElegiveis : 0;
 
-          // Dias úteis no mês (padrão 22)
-          const DIAS_UTEIS_MES = 22;
+          // Semanas úteis no mês (padrão 4)
+          const SEMANAS_MES = 4;
 
           groupList.forEach(g => {
             const elegiveisNoTime = g.sellers.filter(s => s.elegivelRotacao).length;
             g.metaFaturamento = metaFatPorElegivel * elegiveisNoTime;
             g.metaVendas = Math.round(metaVendasPorElegivel * elegiveisNoTime);
             g.metaOportunidades = Math.round(metaLeadGenPorElegivel * elegiveisNoTime);
-            // Propostas e reuniões: meta diária × dias úteis × elegíveis no time
-            g.metaPropostas = Math.round(TB_METAS.propostas * DIAS_UTEIS_MES * elegiveisNoTime);
-            g.metaReunioes = Math.round(TB_METAS.reunioes * DIAS_UTEIS_MES * elegiveisNoTime);
+            // Propostas e reuniões: meta semanal × 4 semanas × elegíveis no time
+            g.metaPropostas = Math.round(TB_METAS.propostas * SEMANAS_MES * elegiveisNoTime);
+            g.metaReunioes = Math.round(TB_METAS.reunioes * SEMANAS_MES * elegiveisNoTime);
             g.avgTicket = g.totalDeals > 0 ? g.totalRevenue / g.totalDeals : 0;
             g.sharePct = grandTotalRevenue > 0 ? (g.totalRevenue / grandTotalRevenue) * 100 : 0;
             // Somar propostas e reuniões reais do grupo
@@ -5454,8 +5473,9 @@
           const teamPropostas = g.totalPropostas || 0;
           const teamReunioes = g.totalReunioes || 0;
           const teamOport = g.totalOportunidades || 0;
-          // Conversão: propostas → vendas
-          const teamConv = teamPropostas > 0 ? (g.totalDeals / teamPropostas) * 100 : 0;
+          // Conversão: leads captados → vendas
+          const teamLeadsCaptados = g.totalLeadsCaptados || 0;
+          const teamConv = teamLeadsCaptados > 0 ? (g.totalDeals / teamLeadsCaptados) * 100 : 0;
           const convOk = teamConv >= TB_METAS.txConversao;
           const ticketOk = g.avgTicket >= TB_METAS.ticketMedio;
 
