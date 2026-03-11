@@ -5174,10 +5174,10 @@
             }
           });
 
-          // 3. Fetch sellers for avatars
+          // 3. Fetch sellers for avatars + elegivel_rotacao
           const { data: sellersRaw } = await sbClient
             .from('vendedores')
-            .select('id, nome, perfil_img, cargo, diretorVendas')
+            .select('id, nome, perfil_img, cargo, diretorVendas, elegivel_rotacao')
             .eq('usuarioInterno', false);
           const sellers = (sellersRaw || []).filter(s => s.diretorVendas !== true);
           const sellerLookup = {};
@@ -5221,6 +5221,7 @@
               name: (sData && sData.nome) || (rpcInfo && rpcInfo.nome) || 'Sem nome',
               avatarUrl: (sData && sData.perfil_img) || null,
               role: (sData && sData.cargo) || 'Vendedor',
+              elegivelRotacao: sData ? (sData.elegivel_rotacao !== false) : true,
               revenue: 0,
               deals: 0,
               propostas: 0,
@@ -5339,7 +5340,14 @@
           // 6. Calculate derived metrics
           const allGroups = Object.values(grupoMap);
           const groupList = allGroups.filter(g => g.sellers.length > 0);
+
+          // Calcular meta por time: meta_total / total_elegiveis * elegiveis_no_time
+          const totalElegiveis = groupList.reduce((sum, g) => sum + g.sellers.filter(s => s.elegivelRotacao).length, 0);
+          const metaPorElegivel = totalElegiveis > 0 ? TB_METAS.faturamento / totalElegiveis : 0;
+
           groupList.forEach(g => {
+            const elegiveisNoTime = g.sellers.filter(s => s.elegivelRotacao).length;
+            g.metaFaturamento = metaPorElegivel * elegiveisNoTime;
             g.avgTicket = g.totalDeals > 0 ? g.totalRevenue / g.totalDeals : 0;
             g.sharePct = grandTotalRevenue > 0 ? (g.totalRevenue / grandTotalRevenue) * 100 : 0;
             // Somar propostas e reuniões reais do grupo
@@ -5405,8 +5413,9 @@
         }
 
         container.innerHTML = data.groups.map((g, idx) => {
-          const isAboveGoal = g.totalRevenue >= TB_METAS.faturamento;
-          const revPct = TB_METAS.faturamento > 0 ? ((g.totalRevenue / TB_METAS.faturamento) * 100).toFixed(0) : 0;
+          const teamMeta = g.metaFaturamento || TB_METAS.faturamento;
+          const isAboveGoal = g.totalRevenue >= teamMeta;
+          const revPct = teamMeta > 0 ? ((g.totalRevenue / teamMeta) * 100).toFixed(0) : 0;
           const statusLabel = isAboveGoal ? 'Acima da Meta' : `${revPct}% da Meta`;
           const statusClass = isAboveGoal ? 'tb-status--above' : 'tb-status--ontrack';
 
@@ -5455,12 +5464,12 @@
               <!-- Header -->
               <div class="tb-header">
                 <div class="flex items-center gap-3">
-                  ${teamLogo ? `<img src="${teamLogo}" alt="${g.name}" style="width:52px; height:52px; border-radius:50%; object-fit:cover; border:2px solid ${g.color}; box-shadow:0 0 12px ${g.color}40;">` : ''}
+                  ${teamLogo ? `<img src="${teamLogo}" alt="${g.name}" style="width:72px; height:72px; border-radius:50%; object-fit:cover; border:3px solid ${g.color}; box-shadow:0 0 16px ${g.color}50;">` : ''}
                   <div>
                     <h2 class="tb-team-name" style="color:${g.color};">${g.name.toUpperCase()}</h2>
                     <div class="tb-header-rev">
                       <span class="tb-rev-value">${formatCurrency(g.totalRevenue)}</span>
-                      <span class="tb-rev-target">/ ${fc(TB_METAS.faturamento)} Meta</span>
+                      <span class="tb-rev-target">/ ${fc(teamMeta)} Meta</span>
                     </div>
                   </div>
                 </div>
@@ -5496,7 +5505,7 @@
                 ${kpiCard('OPORTUNIDADES', fn(teamOport), `Meta ${fn(TB_METAS.leadGen)}`, (teamOport / TB_METAS.leadGen) * 100)}
               </div>
               <div class="tb-kpi-grid-3">
-                ${kpiCard('FATURAMENTO', fc(g.totalRevenue), `Meta ${fc(TB_METAS.faturamento)}`, (g.totalRevenue / TB_METAS.faturamento) * 100)}
+                ${kpiCard('FATURAMENTO', fc(g.totalRevenue), `Meta ${fc(teamMeta)}`, teamMeta > 0 ? (g.totalRevenue / teamMeta) * 100 : 0)}
                 ${kpiCard('CONVERSÃO', fp(teamConv), `Mín ${fp(TB_METAS.txConversao)}`, (teamConv / TB_METAS.txConversao) * 100, convOk ? 'success' : 'danger')}
                 ${kpiCard('TICKET MÉDIO', fc(g.avgTicket), `Mín ${fc(TB_METAS.ticketMedio)}`, (g.avgTicket / TB_METAS.ticketMedio) * 100, ticketOk ? '' : 'danger')}
               </div>
