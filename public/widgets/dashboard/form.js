@@ -5336,6 +5336,7 @@
           };
 
           console.log('[TeamBattle] Final groupList:', groupList.length, 'groups with sellers');
+          groupList.forEach(g => console.log('[TeamBattle] Group:', g.name, '| Logo match:', !!getTeamLogo(g.name)));
           renderTeamBattle();
         } catch (e) {
           console.error('[TeamBattle] Erro ao buscar team battle:', e);
