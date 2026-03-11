@@ -6440,8 +6440,13 @@
               <div class="kpi-comp-label" title="${item.l}">${shortLabel(item.l)}</div>
             </div>`;
 
+          const isClickable = k.id === KPI_IDS.QTD_VENDAS || k.id === KPI_IDS.FATURAMENTO;
+          const clickAttr = isClickable ? `onclick="window.openGaugePurchasesModal && window.openGaugePurchasesModal()" style="cursor:pointer;"` : '';
+          const clickHint = isClickable ? `<div style="position:absolute; top:8px; right:8px; opacity:0.3; font-size:10px;"><i data-lucide="external-link" size="12"></i></div>` : '';
+
           return `
-          <div class="kpi-card">
+          <div class="kpi-card" ${clickAttr}>
+            ${clickHint}
             <div class="kpi-header">
               <span class="kpi-title">${k.t}</span>
               <div class="kpi-icon-box ${k.bg}">
