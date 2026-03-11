@@ -2717,7 +2717,7 @@
       font-size: 20px; font-weight: 700; color: var(--text-main);
     }
     #dashboard-acelerai-v2 .tb-kpi-target {
-      font-size: 9px; font-weight: 600; color: var(--text-muted); opacity: 0.6;
+      font-size: 9px; font-weight: 600; color: var(--text-main); opacity: 0.55;
     }
     #dashboard-acelerai-v2 .tb-kpi-bar-bg {
       height: 3px; border-radius: 2px; background: var(--bg-subtle);
