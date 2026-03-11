@@ -5464,7 +5464,7 @@
               <!-- Header -->
               <div class="tb-header">
                 <div class="flex items-center gap-3">
-                  ${teamLogo ? `<img src="${teamLogo}" alt="${g.name}" style="width:72px; height:72px; border-radius:50%; object-fit:cover; border:3px solid ${g.color}; box-shadow:0 0 16px ${g.color}50;">` : ''}
+                  ${teamLogo ? `<img src="${teamLogo}" alt="${g.name}" style="width:96px; height:96px; border-radius:50%; object-fit:cover; border:3px solid ${g.color}; box-shadow:0 0 20px ${g.color}60;">` : ''}
                   <div>
                     <h2 class="tb-team-name" style="color:${g.color};">${g.name.toUpperCase()}</h2>
                     <div class="tb-header-rev">
@@ -6730,14 +6730,14 @@
         if (state.selectedSeller) queryCaptados = queryCaptados.eq('vendedorResponsavel', state.selectedSeller);
         const { count: countCaptados } = await queryCaptados;
 
-        // 2. Oportunidades (leads com CPF/CNPJ preenchido)
+        // 2. Oportunidades (leads com empresa preenchida)
         let countOportunidades = 0;
         try {
           let queryOportunidades = sbClient
             .from('leads')
             .select('lead_id', { count: 'exact', head: true })
-            .not('cpf_cnpj', 'is', null)
-            .not('cpf_cnpj', 'eq', '');
+            .not('empresa', 'is', null)
+            .not('empresa', 'eq', '');
           queryOportunidades = applyAgencyFilterToLeadQuery(queryOportunidades);
           queryOportunidades = applyNotImportedLeadFilter(queryOportunidades);
           queryOportunidades = applyCutoffTimestamp(queryOportunidades, 'created_at')
