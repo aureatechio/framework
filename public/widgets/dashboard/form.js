@@ -6720,19 +6720,23 @@
         if (state.selectedSeller) queryCaptados = queryCaptados.eq('vendedorResponsavel', state.selectedSeller);
         const { count: countCaptados } = await queryCaptados;
 
-        // 2. Oportunidades (leads com CNPJ preenchido)
-        let queryOportunidades = sbClient
-          .from('leads')
-          .select('lead_id', { count: 'exact', head: true })
-          .not('cpf_cnpj', 'is', null)
-          .neq('cpf_cnpj', '');
-        queryOportunidades = applyAgencyFilterToLeadQuery(queryOportunidades);
-        queryOportunidades = applyNotImportedLeadFilter(queryOportunidades);
-        queryOportunidades = applyCutoffTimestamp(queryOportunidades, 'created_at')
-          .gte('created_at', start)
-          .lte('created_at', end);
-        if (state.selectedSeller) queryOportunidades = queryOportunidades.eq('vendedorResponsavel', state.selectedSeller);
-        const { count: countOportunidades } = await queryOportunidades;
+        // 2. Oportunidades (leads com CPF/CNPJ preenchido)
+        let countOportunidades = 0;
+        try {
+          let queryOportunidades = sbClient
+            .from('leads')
+            .select('lead_id', { count: 'exact', head: true })
+            .not('cpf_cnpj', 'is', null)
+            .not('cpf_cnpj', 'eq', '');
+          queryOportunidades = applyAgencyFilterToLeadQuery(queryOportunidades);
+          queryOportunidades = applyNotImportedLeadFilter(queryOportunidades);
+          queryOportunidades = applyCutoffTimestamp(queryOportunidades, 'created_at')
+            .gte('created_at', start)
+            .lte('created_at', end);
+          if (state.selectedSeller) queryOportunidades = queryOportunidades.eq('vendedorResponsavel', state.selectedSeller);
+          const { count } = await queryOportunidades;
+          countOportunidades = count || 0;
+        } catch (e) { console.error('[Funnel] Erro oportunidades:', e); }
 
         // 3. Prioridade (leads com passou_prioridade = true)
         let queryPrioridade = sbClient
