@@ -6614,21 +6614,17 @@
             return;
         }
 
-        const maxVal = Math.max(...data.map(d => d.v)) || 1;
         const steps = data.length;
         const svgWidth = 500;
         const svgHeight = 100;
         const sectionWidth = svgWidth / steps;
 
-        // Calcular pontos Y para cada etapa (o funil afunila de cima para baixo, da esquerda para direita)
-        // Primeira etapa: y pequeno (topo), última etapa: y grande (fundo)
+        // Funil sempre afunila linearmente da esquerda para direita (forma fixa)
         const yPoints = data.map((d, idx) => {
-          // Inverter: primeiro item tem y pequeno, último tem y grande
-          const ratio = 1 - (d.v / maxVal);
-          return Math.max(5, ratio * 85); // y varia de 5 (topo) a ~90 (fundo)
+          const t = idx / (steps - 1); // 0 → 1
+          return 5 + t * 80; // y varia de 5 (largo) a 85 (estreito)
         });
-        // Adicionar ponto final
-        yPoints.push(95);
+        yPoints.push(90);
 
         // Gerar o path do SVG (curva horizontal que afunila da esquerda para direita)
         // M 0,{y0} -> início no topo-esquerda
