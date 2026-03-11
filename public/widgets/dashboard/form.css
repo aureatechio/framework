@@ -1164,8 +1164,8 @@
 
     /* Meetings Sidebar Refined */
     .meeting-card {
-        padding: 8px 12px;
-        border-radius: 8px;
+        padding: 10px 14px;
+        border-radius: 10px;
         border: 1px solid transparent;
         display: flex;
         align-items: center;
@@ -1213,7 +1213,7 @@
     .dark-mode .meeting-card.created-today .icon-box { background: rgba(139,92,246,0.2); }
 
     .meeting-card .icon-box {
-        width: 28px; height: 28px; border-radius: 7px;
+        width: 30px; height: 30px; border-radius: 8px;
         display: flex; align-items: center; justify-content: center;
     }
     .meeting-card .count { font-size: 16px; font-weight: 700; line-height: 1; margin-left: auto; }
