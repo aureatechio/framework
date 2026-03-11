@@ -2730,16 +2730,23 @@
     /* Top Sellers Table */
     #dashboard-acelerai-v2 .tb-sellers-card {
       padding: 0; overflow: hidden;
+      max-height: 480px; display: flex; flex-direction: column;
     }
     #dashboard-acelerai-v2 .tb-sellers-header {
       padding: 14px 20px; border-bottom: 1px solid var(--border-color);
       background: var(--bg-subtle);
     }
+    #dashboard-acelerai-v2 .tb-sellers-table-wrap {
+      flex: 1; overflow-y: auto; min-height: 0;
+    }
+    #dashboard-acelerai-v2 .tb-sellers-table-wrap::-webkit-scrollbar { width: 4px; }
+    #dashboard-acelerai-v2 .tb-sellers-table-wrap::-webkit-scrollbar-track { background: transparent; }
+    #dashboard-acelerai-v2 .tb-sellers-table-wrap::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 4px; opacity: 0.3; }
     #dashboard-acelerai-v2 .tb-sellers-table {
       width: 100%; border-collapse: collapse; font-size: 13px;
     }
     #dashboard-acelerai-v2 .tb-sellers-table thead {
-      background: var(--bg-subtle);
+      background: var(--bg-subtle); position: sticky; top: 0; z-index: 1;
     }
     #dashboard-acelerai-v2 .tb-sellers-table th {
       padding: 10px 20px; font-size: 10px; font-weight: 700;

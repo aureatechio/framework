@@ -5475,6 +5475,7 @@
                 <div class="tb-sellers-header">
                   <span class="tb-kpi-label" style="margin:0;">SELLERS — ${g.name.toUpperCase()}</span>
                 </div>
+                <div class="tb-sellers-table-wrap">
                 <table class="tb-sellers-table">
                   <thead>
                     <tr>
@@ -5515,6 +5516,7 @@
                     }).join('')}
                   </tbody>
                 </table>
+                </div>
               </div>
             </div>`;
         }).join('');
