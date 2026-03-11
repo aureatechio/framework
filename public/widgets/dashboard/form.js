@@ -5327,14 +5327,25 @@
             });
           } catch (e) {}
 
-          // 5d. Fetch oportunidades (leads criados no período)
+          // 5d. Fetch oportunidades (leads com empresa preenchida) por vendedor → grupo
           let totalOportunidades = 0;
           try {
-            let qLeads = sbClient.from('leads').select('id', { count: 'exact', head: true });
+            let qLeads = sbClient.from('leads').select('lead_id, vendedorResponsavel')
+              .not('empresa', 'is', null)
+              .not('empresa', 'eq', '');
             qLeads = applyCutoffTimestamp(qLeads, 'created_at').gte('created_at', start).lte('created_at', end);
             qLeads = applyNotImportedLeadFilter(qLeads);
-            const { count } = await qLeads;
-            totalOportunidades = count || 0;
+            const { data: leadsOport } = await qLeads;
+            (leadsOport || []).forEach(l => {
+              if (!l || !l.vendedorResponsavel) return;
+              totalOportunidades++;
+              const sid = String(l.vendedorResponsavel);
+              const gid = sellerGrupoMap[sid];
+              if (gid && grupoMap[gid]) {
+                if (!grupoMap[gid].totalOportunidades) grupoMap[gid].totalOportunidades = 0;
+                grupoMap[gid].totalOportunidades++;
+              }
+            });
           } catch (e) {}
 
           // 6. Calculate derived metrics
@@ -5436,8 +5447,7 @@
           // KPIs por time (dados reais agregados)
           const teamPropostas = g.totalPropostas || 0;
           const teamReunioes = g.totalReunioes || 0;
-          const teamShare = data.totalDeals > 0 ? g.totalDeals / data.totalDeals : 0.5;
-          const teamOport = Math.round((data.totalOportunidades || 0) * teamShare);
+          const teamOport = g.totalOportunidades || 0;
           // Conversão: propostas → vendas
           const teamConv = teamPropostas > 0 ? (g.totalDeals / teamPropostas) * 100 : 0;
           const convOk = teamConv >= TB_METAS.txConversao;
