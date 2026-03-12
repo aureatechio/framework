@@ -6235,25 +6235,25 @@
         return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
       }
 
-      function sortStageColumns(stageNames) {
-        const ordered = [];
-        const used = new Set();
-        for (const known of KNOWN_STAGE_ORDER) {
-          for (const name of stageNames) {
-            if (!used.has(name) && known.match.test(name)) {
-              ordered.push({ name, short: known.short });
-              used.add(name);
-              break;
-            }
-          }
-        }
-        const rest = stageNames.filter(n => !used.has(n)).sort();
-        rest.forEach(n => ordered.push({ name: n, short: n.length > 8 ? n.substring(0, 7) + '.' : n }));
-        return ordered;
+      function sortStageColumns(stageNames, etapaIdsByName) {
+        return stageNames
+          .map(name => {
+            const short = name.length > 8 ? name.substring(0, 7) + '.' : name;
+            const ids = etapaIdsByName[name] || [];
+            let minIdx = 999;
+            ids.forEach(id => {
+              const idx = __etapaIndexCache.get(id);
+              if (idx != null && idx < minIdx) minIdx = idx;
+            });
+            return { name, short, idx: minIdx };
+          })
+          .sort((a, b) => a.idx - b.idx)
+          .map(({ name, short }) => ({ name, short }));
       }
 
       const __etapaFunilByIdCache = new Map(); // etapaId -> funilId|null
       const __etapaNovoCRMCache = new Map(); // etapaId -> boolean
+      const __etapaIndexCache = new Map(); // etapaId -> number|null
 
       async function fetchEtapaNamesByIds(ids) {
         const result = new Map();
@@ -6262,13 +6262,14 @@
           for (const chunk of chunkArray(ids, 500)) {
             const { data } = await sbClient
               .from('etapa')
-              .select('id, name, funil, novoCRM')
+              .select('id, name, funil, novoCRM, index')
               .in('id', chunk);
             (data || []).forEach(r => {
               if (r && r.id && r.name) result.set(r.id, r.name);
               if (r && r.id) {
                 __etapaFunilByIdCache.set(r.id, (r.funil) ? String(r.funil) : null);
                 __etapaNovoCRMCache.set(r.id, r.novoCRM === true);
+                __etapaIndexCache.set(r.id, (r.index != null) ? Number(r.index) : 999);
               }
             });
           }
@@ -6389,11 +6390,16 @@
 
           // 5) Montar dados para renderização
           const stageNamesList = [];
+          const etapaIdsByName = {};
           allEtapaIds.forEach(id => {
             const n = etapaNames.get(id);
-            if (n) stageNamesList.push(n);
+            if (n) {
+              stageNamesList.push(n);
+              if (!etapaIdsByName[n]) etapaIdsByName[n] = [];
+              etapaIdsByName[n].push(id);
+            }
           });
-          const stageColumns = sortStageColumns([...new Set(stageNamesList)]);
+          const stageColumns = sortStageColumns([...new Set(stageNamesList)], etapaIdsByName);
 
           const etapaIdToName = {};
           allEtapaIds.forEach(id => { etapaIdToName[id] = etapaNames.get(id) || null; });
