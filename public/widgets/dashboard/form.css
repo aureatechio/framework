@@ -1803,7 +1803,10 @@
       color: var(--text-muted);
     }
     .stage-dwell-card {
+      display: flex;
+      flex-direction: column;
       overflow: hidden;
+      min-height: 0;
     }
     .stage-dwell-card > .section-title {
       flex-shrink: 0;
