@@ -6419,8 +6419,15 @@
 
         // Renderiza os charts APÓS exibir (evita width/height 0 no primeiro paint)
         setTimeout(() => {
-          try { renderGauge(); } catch (e) {}
-          try { renderRevenue(); } catch (e) {}
+          try {
+            const ga = state.__gaugeArgs;
+            if (ga) renderGauge(ga[0], ga[1], ga[2], ga[3], ga[4]);
+            else renderGauge();
+          } catch (e) {}
+          try {
+            if (state.revenueChartData) renderRevenue(state.revenueChartData);
+            else renderRevenue();
+          } catch (e) {}
           try { window.dispatchEvent(new Event('resize')); } catch (e) {}
         }, 0);
         setTimeout(() => {
@@ -8005,6 +8012,9 @@
       }
 
       function renderGauge(gaugePct = 0, currentRevenue = 0, targetRevenue = TARGET_REVENUE_MONTHLY, prevRevenue = 0, missing = 0) {
+        // Salvar args no state para re-render pós-reveal
+        state.__gaugeArgs = [gaugePct, currentRevenue, targetRevenue, prevRevenue, missing];
+
         const chartEl = document.querySelector("#gauge-chart");
         if (!chartEl) return;
         chartEl.innerHTML = "";

@@ -5253,8 +5253,12 @@
                     content.classList.add('visible');
                     // Recalcula tamanhos dos gráficos após exibir (ApexCharts bug fix)
                     window.dispatchEvent(new Event('resize'));
-                    // Se a receita foi calculada enquanto o conteúdo estava oculto, renderiza agora.
+                    // Re-renderizar gauge e revenue com dados reais (charts precisam de container visível)
                     try {
+                      if (state && state.__gaugeArgs) {
+                        const ga = state.__gaugeArgs;
+                        setTimeout(() => { try { renderGauge(ga[0], ga[1], ga[2], ga[3], ga[4]); } catch (e) {} }, 0);
+                      }
                       if (state && state.__pendingRevenueChartData) {
                         const d = state.__pendingRevenueChartData;
                         state.__pendingRevenueChartData = null;
@@ -7036,6 +7040,9 @@
       }
 
       function renderGauge(gaugePct = 0, currentRevenue = 0, targetRevenue = TARGET_REVENUE_MONTHLY, prevRevenue = 0, missing = 0) {
+        // Salvar args no state para re-render pós-reveal
+        state.__gaugeArgs = [gaugePct, currentRevenue, targetRevenue, prevRevenue, missing];
+
         const chartEl = document.querySelector("#gauge-chart");
         if (!chartEl) return;
         chartEl.innerHTML = "";
