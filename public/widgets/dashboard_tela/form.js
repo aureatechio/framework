@@ -5045,6 +5045,15 @@
         try { if (typeof lucide !== 'undefined') lucide.createIcons(); } catch (e) {}
       }
 
+      function updateSkeletonProgress(done, total, label) {
+        try {
+          const textEl = document.getElementById('skeleton-progress-text');
+          const barEl = document.getElementById('skeleton-progress-bar');
+          if (textEl) textEl.textContent = label ? `${label} (${done}/${total})` : `Carregando dados... ${done}/${total}`;
+          if (barEl) barEl.style.width = `${Math.round((done / total) * 100)}%`;
+        } catch (e) {}
+      }
+
       async function fetchData() {
          // TV: priorizar o gráfico. O "Personalizado" no TV NÃO tem popover/calendário aqui,
          // então o gargalo mais comum é a chamada ao Meta Ads. Não bloqueamos o gráfico por isso.
@@ -5099,28 +5108,48 @@
            }
          })();
 
+         updateSkeletonProgress(0, 11, 'Receita...');
+
          // Prioriza o gráfico (renderRevenue acontece cedo dentro do fetchRevenue).
          try { await fetchRevenue(); } catch (e) {}
 
-         // Demais blocos rodam em background (não bloqueiam render inicial)
-         const tasks = [
-             fetchMeetings(),
-             fetchMeetingsTab(),
-             fetchSLAs(),
-             fetchRankingData(),
-             fetchMetasData(),
-             fetchFunnelData(),
-             fetchConversionRates(),
-             fetchChannelData(),
-             fetchStageDwellTimes()
+         updateSkeletonProgress(1, 11, 'Carregando métricas...');
+
+         // Demais blocos rodam em background com progresso
+         let done = 1;
+         const total = 11; // revenue + marketing + 9 tasks
+         const taskDefs = [
+             { fn: fetchMeetings, label: 'Reuniões' },
+             { fn: fetchMeetingsTab, label: 'Agenda' },
+             { fn: fetchSLAs, label: 'SLAs' },
+             { fn: fetchRankingData, label: 'Ranking' },
+             { fn: fetchMetasData, label: 'Metas' },
+             { fn: fetchFunnelData, label: 'Funil' },
+             { fn: fetchConversionRates, label: 'Conversão' },
+             { fn: fetchChannelData, label: 'Canais' },
+             { fn: fetchStageDwellTimes, label: 'Tempos Etapa' }
          ];
-         Promise.allSettled([marketingP, ...tasks]).then((results) => {
-           try {
-             results.forEach((r) => {
-               if (r && r.status === 'rejected') console.error('Erro em fetchData task:', r.reason);
-             });
-           } catch (e) {}
+         const tasks = taskDefs.map(t =>
+           t.fn().then(r => {
+             done++;
+             updateSkeletonProgress(done, total, t.label + '...');
+             return r;
+           }).catch(err => {
+             done++;
+             updateSkeletonProgress(done, total, t.label + '...');
+             throw err;
+           })
+         );
+         const marketingWrapped = marketingP.then(r => {
+           done++;
+           updateSkeletonProgress(done, total, 'Investimento Mkt...');
+           return r;
+         }).catch(err => {
+           done++;
+           updateSkeletonProgress(done, total, 'Investimento Mkt...');
+           throw err;
          });
+         await Promise.allSettled([marketingWrapped, ...tasks]);
       }
 
 

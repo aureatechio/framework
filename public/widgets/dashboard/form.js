@@ -6117,27 +6117,52 @@
         try { lucide.createIcons(); } catch (e) {}
       }
 
+      function updateSkeletonProgress(done, total, label) {
+        try {
+          const textEl = document.getElementById('skeleton-progress-text');
+          const barEl = document.getElementById('skeleton-progress-bar');
+          if (textEl) textEl.textContent = label ? `${label} (${done}/${total})` : `Carregando dados... ${done}/${total}`;
+          if (barEl) barEl.style.width = `${Math.round((done / total) * 100)}%`;
+        } catch (e) {}
+      }
+
       async function fetchData() {
          // 1) Investimento Mkt precisa vir antes para CAC/ROAS e KPI saírem corretos.
+         updateSkeletonProgress(0, 13, 'Investimento Mkt...');
          await fetchMarketingSpend();
 
          // 1.1) Best-effort: detectar se `compras.is_test` existe para filtrar compras de teste sem quebrar.
          try { await ensureComprasIsTestSupport(); } catch (e) {}
 
-         const tasks = [
-             fetchRevenue(),
-             fetchMeetings(),
-             fetchMeetingsTab(),
-             fetchSLAs(),
-             fetchRankingData(),
-             fetchFunnelData(),
-             fetchConversionRates(),
-             fetchChannelData(),
-             fetchStageDwellTimes(),
-             fetchMetasData(),
-             fetchTeamBattleData(),
-             fetchDailyReport()
+         updateSkeletonProgress(1, 13, 'Carregando métricas...');
+
+         const taskDefs = [
+             { fn: fetchRevenue, label: 'Receita' },
+             { fn: fetchMeetings, label: 'Reuniões' },
+             { fn: fetchMeetingsTab, label: 'Agenda' },
+             { fn: fetchSLAs, label: 'SLAs' },
+             { fn: fetchRankingData, label: 'Ranking' },
+             { fn: fetchFunnelData, label: 'Funil' },
+             { fn: fetchConversionRates, label: 'Conversão' },
+             { fn: fetchChannelData, label: 'Canais' },
+             { fn: fetchStageDwellTimes, label: 'Tempos Etapa' },
+             { fn: fetchMetasData, label: 'Metas' },
+             { fn: fetchTeamBattleData, label: 'Team Battle' },
+             { fn: fetchDailyReport, label: 'Daily Report' }
          ];
+         let done = 1;
+         const total = taskDefs.length + 1; // +1 para marketing spend
+         const tasks = taskDefs.map(t =>
+           t.fn().then(r => {
+             done++;
+             updateSkeletonProgress(done, total, t.label + '...');
+             return r;
+           }).catch(err => {
+             done++;
+             updateSkeletonProgress(done, total, t.label + '...');
+             throw err;
+           })
+         );
          const results = await Promise.allSettled(tasks);
          results.forEach((r) => {
            if (r && r.status === 'rejected') console.error('Erro em fetchData task:', r.reason);
@@ -6336,19 +6361,7 @@
           return;
         }
 
-        // Mostra UI imediatamente; dados reais entram em background.
-        revealDashboardContent();
-
-        // Renderiza os charts APÓS exibir (evita width/height 0 no primeiro paint)
-        setTimeout(() => {
-          try { renderGauge(); } catch (e) {}
-          try { renderRevenue(); } catch (e) {}
-          // 2º resize para garantir que Apex recalcule após layout/CSS do Bubble
-          try { window.dispatchEvent(new Event('resize')); } catch (e) {}
-        }, 0);
-        setTimeout(() => {
-          try { window.dispatchEvent(new Event('resize')); } catch (e) {}
-        }, 800);
+        // Renderiza estrutura base (sem dados) ANTES de revelar — mantém skeleton visível
 
         // --- BUBBLE VISIBILITY GUARD ---
         // Quando o widget nasce dentro de um container oculto no Bubble (display:none),
@@ -6394,14 +6407,28 @@
           }
         } catch (e) {}
 
-        // Carregar dados reais (background) — não bloquear a exibição inicial
-        Promise.all([
-          // Só líderes precisam carregar a lista completa de executivos
-          (access.isLeader ? fetchSellers() : Promise.resolve()),
-          fetchDataWithStamp('init')
-        ]).catch((err) => {
+        // Carregar dados reais, depois revelar o dashboard
+        try {
+          await Promise.all([
+            (access.isLeader ? fetchSellers() : Promise.resolve()),
+            fetchDataWithStamp('init')
+          ]);
+        } catch (err) {
           console.error("Erro ao carregar dados:", err);
-        });
+        }
+
+        // Dados carregados — revelar dashboard
+        revealDashboardContent();
+
+        // Renderiza os charts APÓS exibir (evita width/height 0 no primeiro paint)
+        setTimeout(() => {
+          try { renderGauge(); } catch (e) {}
+          try { renderRevenue(); } catch (e) {}
+          try { window.dispatchEvent(new Event('resize')); } catch (e) {}
+        }, 0);
+        setTimeout(() => {
+          try { window.dispatchEvent(new Event('resize')); } catch (e) {}
+        }, 800);
       }
 
       function initSupabase() {

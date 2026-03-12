@@ -68,6 +68,14 @@
        <div class="skeleton" style="height: 100px; border-radius: 12px;"></div>
        <div class="skeleton" style="height: 100px; border-radius: 12px;"></div>
     </section>
+
+    <!-- Loading Progress -->
+    <div id="skeleton-progress" style="text-align:center; padding: 16px 0; font-family: 'Inter', system-ui, sans-serif; font-size: 13px; color: #94a3b8; letter-spacing: 0.02em;">
+      <span id="skeleton-progress-text">Carregando dados...</span>
+      <div style="margin: 10px auto 0; width: 200px; height: 4px; background: rgba(148,163,184,0.2); border-radius: 2px; overflow: hidden;">
+        <div id="skeleton-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #3b82f6, #6366f1); border-radius: 2px; transition: width 0.3s ease;"></div>
+      </div>
+    </div>
   </div>
 
   <!-- REAL CONTENT (Hidden initially) -->
