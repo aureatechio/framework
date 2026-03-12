@@ -1803,7 +1803,7 @@
       color: var(--text-muted);
     }
     .stage-dwell-card {
-      max-height: 600px;
+      overflow: hidden;
     }
     .stage-dwell-card > .section-title {
       flex-shrink: 0;
