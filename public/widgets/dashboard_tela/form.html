@@ -445,22 +445,20 @@
     </div>
   </section>
 
-  <!-- 7. CONVERSIONS & CHANNELS -->
+  <!-- 7. CONVERSIONS & CHANNELS & TEMPOS POR ETAPA -->
   <section class="grid grid-cols-1 xl-grid-cols-5 gap-6 mb-12 grid-no-stretch">
     <div class="card conversion-card flex-col items-center">
       <div class="section-title mb-2">Taxas de Conversão</div>
       <div id="conversion-chart" style="width: 100%;"></div>
     </div>
-    <div class="card xl-col-span-4 flex-col">
+    <div class="card xl-col-span-2 flex-col">
       <div class="section-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">Performance por Canal <span class="channel-period-badge">Mês Atual</span></div>
       <div class="grid grid-cols-1 md-grid-cols-2 gap-4" id="channel-grid"></div>
     </div>
-  </section>
-
-  <!-- 8. TEMPOS POR ETAPA DO FUNIL -->
-  <section class="card mb-12">
-    <div class="section-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">Tempos por Etapa do Funil <span class="stage-dwell-subtitle" id="stage-dwell-subtitle"></span></div>
-    <div id="pipeline-container" class="stage-dwell-table-scroll"></div>
+    <div class="card xl-col-span-2 flex-col" style="min-width:0;">
+      <div class="section-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">Tempos por Etapa do Funil <span class="stage-dwell-subtitle" id="stage-dwell-subtitle"></span></div>
+      <div id="pipeline-container" class="stage-dwell-table-scroll"></div>
+    </div>
   </section>
 
   <!-- 8. BOTTOM METRICS -->

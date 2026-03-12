@@ -107,6 +107,7 @@
       .xl-grid-cols-7 { grid-template-columns: repeat(7, 1fr); }
       .xl-grid-cols-8 { grid-template-columns: repeat(8, 1fr); }
       .xl-grid-cols-9 { grid-template-columns: repeat(9, 1fr); }
+      .xl-col-span-2 { grid-column: span 2; }
       .xl-col-span-3 { grid-column: span 3; }
       .xl-col-span-4 { grid-column: span 4; }
     }
