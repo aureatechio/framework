@@ -1823,7 +1823,18 @@
     }
     .stage-dwell-table-scroll {
       overflow-x: auto;
+      overflow-y: auto;
+      max-height: 420px;
       padding: 8px 0 6px 0;
+    }
+    .stage-dwell-table thead th {
+      position: sticky;
+      top: 0;
+      z-index: 4;
+      background: var(--bg-card);
+    }
+    .stage-dwell-table thead th:first-child {
+      z-index: 5;
     }
     .stage-dwell-table {
       width: 100%;
@@ -1881,6 +1892,13 @@
       color: #fff;
       flex-shrink: 0;
       line-height: 1;
+      overflow: hidden;
+    }
+    .stage-dwell-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 999px;
     }
     .stage-dwell-seller-name {
       font-size: 13px;

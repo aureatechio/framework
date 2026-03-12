@@ -7423,6 +7423,9 @@
         const bodyRows = rows.map((r, rIdx) => {
           const initials = getSellerInitials(r.name);
           const avatarColor = AVATAR_PALETTE[rIdx % AVATAR_PALETTE.length];
+          const avatarInner = r.avatarUrl
+            ? `<img src="${String(r.avatarUrl).replace(/"/g, '&quot;')}" alt="${escapeHtmlLite(initials)}" onerror="this.onerror=null;this.parentNode.textContent='${escapeHtmlLite(initials)}';">`
+            : escapeHtmlLite(initials);
 
           const cells = cols.map((col, cIdx) => {
             const agg = r.stageAvgs[col.name];
@@ -7434,7 +7437,7 @@
           return `<tr>
             <td class="stage-dwell-sticky-col">
               <div class="stage-dwell-seller">
-                <div class="stage-dwell-avatar" style="background:${avatarColor}">${escapeHtmlLite(initials)}</div>
+                <div class="stage-dwell-avatar" style="background:${avatarColor}">${avatarInner}</div>
                 <div class="stage-dwell-seller-name">${escapeHtmlLite(r.name)}</div>
               </div>
             </td>
