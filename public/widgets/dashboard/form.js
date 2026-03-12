@@ -6361,8 +6361,6 @@
           return;
         }
 
-        // Renderiza estrutura base (sem dados) ANTES de revelar — mantém skeleton visível
-
         // --- BUBBLE VISIBILITY GUARD ---
         // Quando o widget nasce dentro de um container oculto no Bubble (display:none),
         // TODO o elemento renderiza com dimensões zero e não recupera ao ficar visível.
@@ -6407,17 +6405,16 @@
           }
         } catch (e) {}
 
-        // Carregar dados reais, depois revelar o dashboard
-        try {
-          await Promise.all([
-            (access.isLeader ? fetchSellers() : Promise.resolve()),
-            fetchDataWithStamp('init')
-          ]);
-        } catch (err) {
-          console.error("Erro ao carregar dados:", err);
-        }
+        // Carregar dados reais, revelar quando pronto OU após timeout de segurança (8s)
+        const dataPromise = Promise.all([
+          (access.isLeader ? fetchSellers() : Promise.resolve()),
+          fetchDataWithStamp('init')
+        ]).catch(err => { console.error("Erro ao carregar dados:", err); });
 
-        // Dados carregados — revelar dashboard
+        const timeoutPromise = new Promise(resolve => setTimeout(resolve, 8000));
+        await Promise.race([dataPromise, timeoutPromise]);
+
+        // Revelar dashboard (dados prontos ou timeout)
         revealDashboardContent();
 
         // Renderiza os charts APÓS exibir (evita width/height 0 no primeiro paint)

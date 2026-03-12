@@ -5226,11 +5226,13 @@
             const ok = await initAccessControl();
             if (!ok) return;
 
-            await Promise.all([
-                // Só líderes precisam carregar a lista completa de executivos
+            const dataPromise = Promise.all([
                 (access.isLeader ? fetchSellers() : Promise.resolve()),
                 fetchDataWithStamp('init')
-            ]);
+            ]).catch(err => { console.error("Erro ao carregar dados:", err); });
+
+            const timeoutPromise = new Promise(resolve => setTimeout(resolve, 8000));
+            await Promise.race([dataPromise, timeoutPromise]);
         } catch(err) {
             console.error("Erro ao carregar dados:", err);
         }
