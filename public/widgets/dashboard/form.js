@@ -966,6 +966,7 @@
         meetingsTab: { upcoming: [], past: [], total: 0 },
         meetingsById: {}, // lookup para modal
         pipelineRows: [], // [{ id, name, eff, avgs:{...}, times:{...} }]
+        dwellStageColumns: [],
         metasData: {
           global: {
             propostas: { current: 0, target: 0, pct: 0 },
@@ -1818,7 +1819,7 @@
             if (doMeetings) tasks.push(fetchMeetings());
             if (doMeetings) tasks.push(fetchMeetingsTab());
             if (doRanking) tasks.push(fetchRankingData());
-            if (doPipeline) tasks.push(fetchPipelineData());
+            if (doPipeline) tasks.push(fetchStageDwellTimes());
             if (doMetas) tasks.push(fetchMetasData());
             const results = await Promise.allSettled(tasks);
             results.forEach((r) => {
@@ -6115,7 +6116,7 @@
              fetchFunnelData(),
              fetchConversionRates(),
              fetchChannelData(),
-             fetchPipelineData(),
+             fetchStageDwellTimes(),
              fetchMetasData(),
              fetchTeamBattleData(),
              fetchDailyReport()
@@ -7217,6 +7218,236 @@
         if (!Number.isFinite(n)) return null;
         const p = Math.pow(10, decimals);
         return Math.round(n * p) / p;
+      }
+
+      // === Stage Dwell Time (Tempos por Etapa do Funil) ===
+      const STAGE_DWELL_MAX_HOURS = 720; // 30 days guard
+
+      const KNOWN_STAGE_ORDER = [
+        { match: /oportunidade/i, short: 'OPORT.' },
+        { match: /proposta/i, short: 'PROPOSTA' },
+        { match: /negocia/i, short: 'NEGOC.' },
+        { match: /fechamento/i, short: 'FECHAM.' }
+      ];
+
+      const AVATAR_PALETTE = [
+        '#3b82f6', '#0d9488', '#f59e0b', '#ef4444',
+        '#8b5cf6', '#ec4899', '#14b8a6', '#ea580c'
+      ];
+
+      function formatDwellTime(hours) {
+        if (!Number.isFinite(hours) || hours <= 0) return '--';
+        if (hours < 1) return `${Math.round(hours * 60)}m`;
+        if (hours < 24) return `${Math.round(hours)}h`;
+        const d = Math.floor(hours / 24);
+        const h = Math.round(hours % 24);
+        return h > 0 ? `${d}d ${h}h` : `${d}d`;
+      }
+
+      function getSellerInitials(name) {
+        if (!name) return '?';
+        const parts = String(name).trim().split(/\s+/).filter(Boolean);
+        if (parts.length === 0) return '?';
+        if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+        return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+      }
+
+      function sortStageColumns(stageNames) {
+        const ordered = [];
+        const used = new Set();
+        for (const known of KNOWN_STAGE_ORDER) {
+          for (const name of stageNames) {
+            if (!used.has(name) && known.match.test(name)) {
+              ordered.push({ name, short: known.short });
+              used.add(name);
+              break;
+            }
+          }
+        }
+        const rest = stageNames.filter(n => !used.has(n)).sort();
+        rest.forEach(n => ordered.push({ name: n, short: n.length > 8 ? n.substring(0, 7) + '.' : n }));
+        return ordered;
+      }
+
+      async function fetchStageDwellTimes() {
+        if (!sbClient) return;
+        try {
+          const { start, end } = getDateRange(state.dateFilter);
+
+          // 0) Vendedores
+          const { data: sellersDb } = await sbClient
+            .from('vendedores')
+            .select('id, nome, perfil_img')
+            .eq('usuarioInterno', false)
+            .order('nome');
+          const sellerMap = {};
+          (sellersDb || []).forEach(s => {
+            if (s && s.id) sellerMap[s.id] = { name: s.nome || String(s.id), img: s.perfil_img || null };
+          });
+
+          // 1) Buscar loogsLeads no período
+          let qLogs = sbClient
+            .from('loogsLeads')
+            .select('lead, etapa_anterior, etapa_posterior, created_at')
+            .gte('created_at', start)
+            .lte('created_at', end);
+          qLogs = applyCutoffTimestamp(qLogs, 'created_at');
+          const { data: logsRaw } = await qLogs;
+
+          // Agrupar por lead
+          const logsByLead = {};
+          (logsRaw || []).forEach(r => {
+            if (!r || !r.lead || !r.created_at) return;
+            logsByLead[r.lead] = logsByLead[r.lead] || [];
+            logsByLead[r.lead].push(r);
+          });
+
+          const leadIds = Object.keys(logsByLead);
+          if (!leadIds.length) {
+            state.pipelineRows = [];
+            renderStageDwellTable();
+            return;
+          }
+
+          // 2) Buscar leads -> vendedorResponsavel
+          const leadToSeller = {};
+          for (const chunk of chunkArray(leadIds, 500)) {
+            let q = sbClient.from('leads').select('lead_id, vendedorResponsavel').in('lead_id', chunk);
+            q = applyAgencyFilterToLeadQuery(q);
+            q = applyNotImportedLeadFilter(q);
+            if (state.selectedSeller) q = q.eq('vendedorResponsavel', state.selectedSeller);
+            const { data } = await q;
+            (data || []).forEach(l => {
+              if (l && l.lead_id && l.vendedorResponsavel) leadToSeller[l.lead_id] = l.vendedorResponsavel;
+            });
+          }
+
+          // 3) Calcular tempos por (vendedor, etapa)
+          const allEtapaIds = new Set();
+          const dwellAgg = {}; // sellerId -> { etapaId -> { sum, count } }
+
+          for (const leadId of leadIds) {
+            const sellerId = leadToSeller[leadId];
+            if (!sellerId || !sellerMap[sellerId]) continue;
+
+            const logs = logsByLead[leadId].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+
+            for (let i = 0; i < logs.length - 1; i++) {
+              const etapaId = logs[i].etapa_posterior;
+              if (!etapaId) continue;
+              const t1 = new Date(logs[i].created_at).getTime();
+              const t2 = new Date(logs[i + 1].created_at).getTime();
+              const diffHours = (t2 - t1) / 3600000;
+              if (diffHours <= 0 || diffHours > STAGE_DWELL_MAX_HOURS) continue;
+
+              allEtapaIds.add(etapaId);
+              if (!dwellAgg[sellerId]) dwellAgg[sellerId] = {};
+              if (!dwellAgg[sellerId][etapaId]) dwellAgg[sellerId][etapaId] = { sum: 0, count: 0 };
+              dwellAgg[sellerId][etapaId].sum += diffHours;
+              dwellAgg[sellerId][etapaId].count += 1;
+            }
+          }
+
+          // 4) Resolver nomes das etapas
+          const etapaNames = await fetchEtapaNamesByIds(Array.from(allEtapaIds));
+
+          // 5) Montar dados para renderização
+          const stageNamesList = [];
+          allEtapaIds.forEach(id => {
+            const n = etapaNames.get(id);
+            if (n) stageNamesList.push(n);
+          });
+          const stageColumns = sortStageColumns([...new Set(stageNamesList)]);
+
+          // Map etapaId -> stageName
+          const etapaIdToName = {};
+          allEtapaIds.forEach(id => { etapaIdToName[id] = etapaNames.get(id) || null; });
+
+          const rows = [];
+          const sellerIds = Object.keys(dwellAgg);
+          sellerIds.forEach(sellerId => {
+            const seller = sellerMap[sellerId];
+            if (!seller) return;
+            const stageAvgs = {};
+            const agg = dwellAgg[sellerId];
+            for (const etapaId of Object.keys(agg)) {
+              const name = etapaIdToName[etapaId];
+              if (!name) continue;
+              const { sum, count } = agg[etapaId];
+              // If multiple etapaIds resolve to the same name, aggregate
+              if (!stageAvgs[name]) stageAvgs[name] = { sum: 0, count: 0 };
+              stageAvgs[name].sum += sum;
+              stageAvgs[name].count += count;
+            }
+            rows.push({
+              id: sellerId,
+              name: seller.name,
+              avatarUrl: seller.img || null,
+              stageAvgs
+            });
+          });
+
+          rows.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+          state.pipelineRows = rows;
+          state.dwellStageColumns = stageColumns;
+          renderStageDwellTable();
+        } catch (e) {
+          console.error('[stageDwell] erro geral:', e);
+          state.pipelineRows = [];
+          state.dwellStageColumns = [];
+          renderStageDwellTable();
+        }
+      }
+
+      function renderStageDwellTable() {
+        const c = document.getElementById('pipeline-container');
+        if (!c) return;
+
+        const rows = Array.isArray(state.pipelineRows) ? state.pipelineRows : [];
+        const cols = Array.isArray(state.dwellStageColumns) ? state.dwellStageColumns : [];
+
+        // Update subtitle
+        const sub = document.getElementById('stage-dwell-subtitle');
+        if (sub) sub.textContent = rows.length ? `${rows.length} executivo${rows.length > 1 ? 's' : ''}` : '';
+
+        if (!rows.length || !cols.length) {
+          c.innerHTML = '<div style="padding:16px 0;color:var(--text-muted);font-size:13px;">Sem dados no período</div>';
+          return;
+        }
+
+        const headerCells = cols.map(col =>
+          `<th>${escapeHtmlLite(col.short)}</th>`
+        ).join('');
+
+        const bodyRows = rows.map((r, rIdx) => {
+          const initials = getSellerInitials(r.name);
+          const avatarColor = AVATAR_PALETTE[rIdx % AVATAR_PALETTE.length];
+
+          const cells = cols.map((col, cIdx) => {
+            const agg = r.stageAvgs[col.name];
+            const avg = agg && agg.count > 0 ? agg.sum / agg.count : null;
+            const pillClass = avg != null ? `stage-time-pill stage-time-pill--${cIdx % 5}` : 'stage-time-pill stage-time-pill--empty';
+            return `<td><span class="${pillClass}">${formatDwellTime(avg)}</span></td>`;
+          }).join('');
+
+          return `<tr>
+            <td class="stage-dwell-sticky-col">
+              <div class="stage-dwell-seller">
+                <div class="stage-dwell-avatar" style="background:${avatarColor}">${escapeHtmlLite(initials)}</div>
+                <div class="stage-dwell-seller-name">${escapeHtmlLite(r.name)}</div>
+              </div>
+            </td>
+            ${cells}
+          </tr>`;
+        }).join('');
+
+        c.innerHTML = `
+          <table class="stage-dwell-table">
+            <thead><tr><th>EXECUTIVO</th>${headerCells}</tr></thead>
+            <tbody>${bodyRows}</tbody>
+          </table>
+        `;
       }
 
       function formatPipelineValue(stageKey, val) {
