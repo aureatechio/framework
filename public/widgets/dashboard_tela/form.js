@@ -55,6 +55,12 @@
         ACELERAI: '75f34688-c054-4519-a445-e350fe146870',
       };
 
+      // Mapeamento: Agência → Funil no CRM (tabela funil)
+      const AGENCY_FUNIL_MAP = {
+        [AGENCY_IDS.MGS]: 'bac48b56-5e08-48ab-8e6c-b2be3945d68e',       // Educação
+        [AGENCY_IDS.ACELERAI]: 'd2bc9ef3-4db7-41aa-abf1-0b6cc69cf60a',   // Aceleraí
+      };
+
       // Mapeamento: Agência → IDs de Campanhas Meta (Facebook)
       // Usado para segregar investimento/faturamento por agência nos filtros do header (pills).
       const META_CAMPAIGN_IDS_BY_AGENCY = {
@@ -399,7 +405,7 @@
       function getSelectedAgencyLabel() {
         const id = state && state.selectedAgencyId ? String(state.selectedAgencyId) : '';
         if (!id) return '';
-        if (id === AGENCY_IDS.MGS) return 'MGS';
+        if (id === AGENCY_IDS.MGS) return 'Educação';
         if (id === AGENCY_IDS.ACELERAI) return 'Aceleraí';
         return 'Agência';
       }
@@ -6246,6 +6252,8 @@
         return ordered;
       }
 
+      const __etapaFunilByIdCache = new Map(); // etapaId -> funilId|null
+
       async function fetchEtapaNamesByIds(ids) {
         const result = new Map();
         if (!sbClient || !ids || !ids.length) return result;
@@ -6253,10 +6261,11 @@
           for (const chunk of chunkArray(ids, 500)) {
             const { data } = await sbClient
               .from('etapa')
-              .select('id, name')
+              .select('id, name, funil')
               .in('id', chunk);
             (data || []).forEach(r => {
               if (r && r.id && r.name) result.set(r.id, r.name);
+              if (r && r.id) __etapaFunilByIdCache.set(r.id, (r.funil) ? String(r.funil) : null);
             });
           }
         } catch (e) {
@@ -6357,6 +6366,17 @@
 
           // 4) Resolver nomes das etapas
           const etapaNames = await fetchEtapaNamesByIds(Array.from(allEtapaIds));
+
+          // 4.1) Filtrar etapas pelo funil da agência selecionada
+          const selectedFunilId = state.selectedAgencyId ? (AGENCY_FUNIL_MAP[state.selectedAgencyId] || null) : null;
+          if (selectedFunilId) {
+            const toRemove = [];
+            allEtapaIds.forEach(id => {
+              const funilId = __etapaFunilByIdCache.get(id) || null;
+              if (funilId && funilId !== selectedFunilId) toRemove.push(id);
+            });
+            toRemove.forEach(id => allEtapaIds.delete(id));
+          }
 
           // 5) Montar dados para renderização
           const stageNamesList = [];
