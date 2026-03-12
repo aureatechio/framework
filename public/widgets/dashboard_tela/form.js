@@ -6253,6 +6253,7 @@
       }
 
       const __etapaFunilByIdCache = new Map(); // etapaId -> funilId|null
+      const __etapaNovoCRMCache = new Map(); // etapaId -> boolean
 
       async function fetchEtapaNamesByIds(ids) {
         const result = new Map();
@@ -6261,11 +6262,14 @@
           for (const chunk of chunkArray(ids, 500)) {
             const { data } = await sbClient
               .from('etapa')
-              .select('id, name, funil')
+              .select('id, name, funil, novoCRM')
               .in('id', chunk);
             (data || []).forEach(r => {
               if (r && r.id && r.name) result.set(r.id, r.name);
-              if (r && r.id) __etapaFunilByIdCache.set(r.id, (r.funil) ? String(r.funil) : null);
+              if (r && r.id) {
+                __etapaFunilByIdCache.set(r.id, (r.funil) ? String(r.funil) : null);
+                __etapaNovoCRMCache.set(r.id, r.novoCRM === true);
+              }
             });
           }
         } catch (e) {
@@ -6367,13 +6371,18 @@
           // 4) Resolver nomes das etapas
           const etapaNames = await fetchEtapaNamesByIds(Array.from(allEtapaIds));
 
-          // 4.1) Filtrar etapas pelo funil da agência selecionada
+          // 4.1) Filtrar: apenas etapas com novoCRM=true e do funil da agência selecionada
           const selectedFunilId = state.selectedAgencyId ? (AGENCY_FUNIL_MAP[state.selectedAgencyId] || null) : null;
-          if (selectedFunilId) {
+          {
             const toRemove = [];
             allEtapaIds.forEach(id => {
-              const funilId = __etapaFunilByIdCache.get(id) || null;
-              if (funilId && funilId !== selectedFunilId) toRemove.push(id);
+              // Excluir etapas que não são do novo CRM
+              if (!__etapaNovoCRMCache.get(id)) { toRemove.push(id); return; }
+              // Se agência selecionada, excluir etapas de outros funis
+              if (selectedFunilId) {
+                const funilId = __etapaFunilByIdCache.get(id) || null;
+                if (funilId && funilId !== selectedFunilId) toRemove.push(id);
+              }
             });
             toRemove.forEach(id => allEtapaIds.delete(id));
           }

@@ -615,6 +615,7 @@
       const __etapaIdCache = {};
       const __etapaNameByIdCache = new Map(); // etapaId -> name|null
       const __etapaFunilByIdCache = new Map(); // etapaId -> funilId|null
+      const __etapaNovoCRMCache = new Map(); // etapaId -> boolean
 
       async function getEtapaIdByName(name) {
         if (!sbClient || !name) return null;
@@ -645,7 +646,7 @@
             for (const chunk of chunkArray(missing, 500)) {
               const { data, error } = await sbClient
                 .from('etapa')
-                .select('id, name, funil')
+                .select('id, name, funil, novoCRM')
                 .in('id', chunk);
               if (error) {
                 // best-effort: não quebra o modal se falhar
@@ -658,11 +659,13 @@
                 found.add(id);
                 __etapaNameByIdCache.set(id, (r && r.name) ? String(r.name) : null);
                 __etapaFunilByIdCache.set(id, (r && r.funil) ? String(r.funil) : null);
+                __etapaNovoCRMCache.set(id, r.novoCRM === true);
               });
               chunk.forEach((id) => {
                 if (!found.has(id)) {
                   __etapaNameByIdCache.set(id, null);
                   __etapaFunilByIdCache.set(id, null);
+                  __etapaNovoCRMCache.set(id, false);
                 }
               });
             }
@@ -7362,13 +7365,18 @@
           // 4) Resolver nomes das etapas
           const etapaNames = await fetchEtapaNamesByIds(Array.from(allEtapaIds));
 
-          // 4.1) Filtrar etapas pelo funil da agência selecionada
+          // 4.1) Filtrar: apenas etapas com novoCRM=true e do funil da agência selecionada
           const selectedFunilId = state.selectedAgencyId ? (AGENCY_FUNIL_MAP[state.selectedAgencyId] || null) : null;
-          if (selectedFunilId) {
+          {
             const toRemove = [];
             allEtapaIds.forEach(id => {
-              const funilId = __etapaFunilByIdCache.get(id) || null;
-              if (funilId && funilId !== selectedFunilId) toRemove.push(id);
+              // Excluir etapas que não são do novo CRM
+              if (!__etapaNovoCRMCache.get(id)) { toRemove.push(id); return; }
+              // Se agência selecionada, excluir etapas de outros funis
+              if (selectedFunilId) {
+                const funilId = __etapaFunilByIdCache.get(id) || null;
+                if (funilId && funilId !== selectedFunilId) toRemove.push(id);
+              }
             });
             toRemove.forEach(id => allEtapaIds.delete(id));
           }
