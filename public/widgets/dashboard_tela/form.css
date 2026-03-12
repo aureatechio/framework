@@ -1821,12 +1821,24 @@
       font-weight: 600;
       color: var(--text-muted);
     }
+    .stage-dwell-card {
+      max-height: 600px;
+    }
+    .stage-dwell-card > .section-title {
+      flex-shrink: 0;
+      margin-bottom: 0;
+    }
     .stage-dwell-table-scroll {
       overflow-x: auto;
       overflow-y: auto;
-      max-height: 420px;
-      padding: 8px 0 6px 0;
+      flex: 1 1 0;
+      min-height: 0;
+      padding: 0;
     }
+    .stage-dwell-table-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+    .stage-dwell-table-scroll::-webkit-scrollbar-track { background: transparent; }
+    .stage-dwell-table-scroll::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 999px; }
+    .stage-dwell-table-scroll::-webkit-scrollbar-corner { background: transparent; }
     .stage-dwell-table thead th {
       position: sticky;
       top: 0;
