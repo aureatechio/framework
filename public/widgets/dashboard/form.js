@@ -8205,7 +8205,7 @@
             'id', 'valor_total', 'data_compra', 'leadid', 'vendedoresponsavel',
             'vendaaprovada', 'checkout_status', 'clicksign_status', 'tipo_venda',
             'statuscompra', 'regiaocomprada', 'razao_social', 'imagemproposta_id',
-            'checkout_url', 'created_at',
+            'checkout_url', 'created_at', 'cancelado',
             'lead:leadid(nome, empresa)',
             'celebridadeRef:celebridadesReferencia!compras_celebridade_fkey(nome, fotoPrincipal)',
             'proposta:imagemProposta!compras_imagemproposta_id_fkey(id,idproposta)'
@@ -8214,11 +8214,14 @@
           let qAll = sbClient.from('compras').select(selectFields);
           qAll = applyCutoffTimestamp(qAll, 'data_compra');
           qAll = qAll.gte('data_compra', start).lte('data_compra', end);
+          qAll = qAll.eq('vendaaprovada', true);
           // Sempre excluir compras de teste
           try { qAll = qAll.not('is_test', 'is', true); } catch (e) {}
           if (state.selectedSeller) qAll = qAll.eq('vendedoresponsavel', state.selectedSeller);
           const { data: allRows } = await qAll;
-          let rows = await filterRowsByAgencyViaLeadId((allRows || []), (r) => r && r.leadid);
+          // Excluir canceladas (cancelado pode ser objeto JSON, bool ou string)
+          const isCancelled = (v) => { if (v == null || v === false || v === '') return false; if (typeof v === 'boolean') return v; if (typeof v === 'string') { const s = v.trim().toLowerCase(); return !!s && s !== 'false' && s !== 'null' && s !== '{}' && s !== '[]'; } if (typeof v === 'object') { try { return Object.keys(v).length > 0; } catch(e) { return true; } } return !!v; };
+          let rows = await filterRowsByAgencyViaLeadId((allRows || []).filter(r => !isCancelled(r.cancelado)), (r) => r && r.leadid);
 
           // Enrich with seller names
           const sellerIds = [...new Set(rows.map(r => r.vendedoresponsavel).filter(Boolean))];
@@ -8238,7 +8241,7 @@
             const isApproved = r.vendaaprovada === true;
             const isPago = String(r.checkout_status || '').toLowerCase() === 'pago';
             const isAssinado = String(r.clicksign_status || '').toLowerCase() === 'assinado';
-            const consideredInGauge = isApproved && (isPago || isAssinado);
+            const consideredInGauge = isApproved;
 
             const leadData = r.lead || {};
             const celebData = r.celebridadeRef || {};
