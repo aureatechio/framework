@@ -8243,8 +8243,8 @@
             const isAssinado = String(r.clicksign_status || '').toLowerCase() === 'assinado';
             // Considerado = aprovada + (assinada OU paga)
             const consideredInGauge = isApproved && (isPago || isAssinado);
-            // Em aprovação = aprovada mas falta assinar ou pagar
-            const isPending = isApproved && (!isPago || !isAssinado);
+            // Em aprovação = aprovada mas nem paga nem assinada (complemento de considerado)
+            const isPending = isApproved && !isPago && !isAssinado;
 
             const leadData = r.lead || {};
             const celebData = r.celebridadeRef || {};
