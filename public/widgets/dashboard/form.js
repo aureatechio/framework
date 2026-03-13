@@ -8241,7 +8241,10 @@
             const isApproved = r.vendaaprovada === true;
             const isPago = String(r.checkout_status || '').toLowerCase() === 'pago';
             const isAssinado = String(r.clicksign_status || '').toLowerCase() === 'assinado';
-            const consideredInGauge = isApproved;
+            // Considerado = aprovada + assinada + paga
+            const consideredInGauge = isApproved && isPago && isAssinado;
+            // Em aprovação = aprovada mas falta assinar ou pagar
+            const isPending = isApproved && (!isPago || !isAssinado);
 
             const leadData = r.lead || {};
             const celebData = r.celebridadeRef || {};
@@ -8265,6 +8268,7 @@
               checkoutStatus: r.checkout_status || null,
               clicksignStatus: r.clicksign_status || null,
               considered: consideredInGauge,
+              pending: isPending,
               propostaId: propostaId,
               checkoutUrl: r.checkout_url || null,
             });
@@ -8275,7 +8279,7 @@
 
           // Classify into buckets
           const approved = allItems.filter(i => i.considered);
-          const pending = allItems.filter(i => !i.considered);
+          const pending = allItems.filter(i => i.pending);
           const faltaAssinar = allItems.filter(i => i.vendaAprovada && !i.clicksignAssinado);
           const faltaPagar = allItems.filter(i => i.vendaAprovada && !i.checkoutPago);
 
