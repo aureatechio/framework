@@ -49,7 +49,7 @@
 
   async function ensureDeps() {
     // Mantemos as mesmas URLs do dashboard original
-    await loadScriptOnce("https://unpkg.com/lucide@latest");
+    await loadScriptOnce("https://unpkg.com/lucide@0.460.0");
     await loadScriptOnce("https://cdn.jsdelivr.net/npm/apexcharts");
     await loadScriptOnce("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2");
   }
