@@ -8241,8 +8241,8 @@
             const isApproved = r.vendaaprovada === true;
             const isPago = String(r.checkout_status || '').toLowerCase() === 'pago';
             const isAssinado = String(r.clicksign_status || '').toLowerCase() === 'assinado';
-            // Considerado = aprovada + assinada + paga
-            const consideredInGauge = isApproved && isPago && isAssinado;
+            // Considerado = aprovada + (assinada OU paga)
+            const consideredInGauge = isApproved && (isPago || isAssinado);
             // Em aprovação = aprovada mas falta assinar ou pagar
             const isPending = isApproved && (!isPago || !isAssinado);
 
