@@ -6543,7 +6543,7 @@
 
           const isClickable = k.id === KPI_IDS.QTD_VENDAS || k.id === KPI_IDS.FATURAMENTO;
           const clickAttr = isClickable ? `onclick="window.openGaugePurchasesModal && window.openGaugePurchasesModal()" style="cursor:pointer;"` : '';
-          const clickHint = isClickable ? `<div style="position:absolute; top:8px; right:8px; opacity:0.3; font-size:10px;"><i data-lucide="external-link" size="12"></i></div>` : '';
+          const clickHint = '';
 
           return `
           <div class="kpi-card" ${clickAttr}>
