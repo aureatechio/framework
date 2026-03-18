@@ -1973,7 +1973,10 @@
       };
 
       const applyNotImportedLeadFilter = (q) => {
-        try { return q.not('csv_import', 'is', true); } catch (e) { return q; }
+        try {
+          // Exclui leads importados, MAS permite os que têm tags de import Meta
+          return q.or('csv_import.is.null,csv_import.neq.true,tag_lead.eq.import leads meta,tag_lead.eq.Meta Leads Fev/2026');
+        } catch (e) { return q; }
       };
 
       // --- AGENCY FILTER (leads.agencia) ---
