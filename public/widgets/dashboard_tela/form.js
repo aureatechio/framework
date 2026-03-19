@@ -1894,7 +1894,10 @@
       // Filtro: excluir leads importados via CSV (csv_import=true).
       // IS NOT TRUE => inclui NULL e FALSE, exclui apenas TRUE.
       const applyNotImportedLeadFilter = (q) => {
-        try { return q.not('csv_import', 'is', true); } catch (e) { return q; }
+        try {
+          // Exclui leads importados, MAS permite os que têm tags de import Meta
+          return q.or('csv_import.is.null,csv_import.neq.true,tag_lead.eq.import leads meta,tag_lead.eq.Meta Leads Fev/2026');
+        } catch (e) { return q; }
       };
 
       const applyApprovedPurchaseFilter = (q) => {
@@ -6056,6 +6059,7 @@
             .from('leads')
             .select('lead_id', { count: 'exact', head: true })
             .eq('canalentrada', canal);
+          q = applyAgencyFilterToLeadQuery(q);
           q = applyNotImportedLeadFilter(q);
           q = applyCutoffTimestamp(q, 'created_at').gte('created_at', start).lte('created_at', end);
           if (state.selectedSeller) q = q.eq('vendedorResponsavel', state.selectedSeller);
