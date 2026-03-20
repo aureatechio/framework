@@ -3027,9 +3027,7 @@
       // DATE HELPERS (Mesma lógicamês anteiror, mantida para compatibilidade)
       function getDateRange(filter) {
         const now = new Date();
-        const start = new Date(now);
-        const end = new Date(now);
-        start.setHours(0,0,0,0); end.setHours(23,59,59,999);
+        const y = now.getFullYear(), m = now.getMonth(), d = now.getDate();
 
         if (filter === 'custom') {
           const r = state.customRange;
@@ -3038,23 +3036,24 @@
           if (sIso && eIso) return { start: sIso, end: eIso };
         }
 
+        // Construir datas diretamente em UTC para evitar offset de fuso
+        let startUtc = new Date(Date.UTC(y, m, d, 0, 0, 0, 0));
+        let endUtc   = new Date(Date.UTC(y, m, d, 23, 59, 59, 999));
+
         if (filter === 'week') {
-          const day = start.getDay(); 
-          const diff = start.getDate() - day + (day === 0 ? -6 : 1); 
-          start.setDate(diff);
+          const day = startUtc.getUTCDay();
+          const diff = startUtc.getUTCDate() - day + (day === 0 ? -6 : 1);
+          startUtc.setUTCDate(diff);
         } else if (filter === 'month') {
-          start.setDate(1);
-          // end = último dia do mês 23:59:59.999
-          end.setMonth(end.getMonth() + 1, 0);
-          end.setHours(23,59,59,999);
+          startUtc = new Date(Date.UTC(y, m, 1, 0, 0, 0, 0));
+          endUtc   = new Date(Date.UTC(y, m + 1, 0, 23, 59, 59, 999));
         } else if (filter === 'semester') {
           // Últimos 6 meses (inclui o mês atual), alinhado no primeiro dia do mês para melhor leitura
-          start.setDate(1);
-          start.setMonth(start.getMonth() - 5);
+          startUtc = new Date(Date.UTC(y, m - 5, 1, 0, 0, 0, 0));
         } else if (filter === 'year') {
-          start.setMonth(0, 1);
+          startUtc = new Date(Date.UTC(y, 0, 1, 0, 0, 0, 0));
         }
-        return { start: start.toISOString(), end: end.toISOString() };
+        return { start: startUtc.toISOString(), end: endUtc.toISOString() };
       }
 
       // Range do MÊS INTEIRO (para o gráfico de evolução mensal):
