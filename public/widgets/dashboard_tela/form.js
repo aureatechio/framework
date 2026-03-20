@@ -3717,7 +3717,6 @@
         let queryCaptados = sbClient
           .from('leads')
           .select('lead_id', { count: 'exact', head: true });
-        queryCaptados = applyNotImportedLeadFilter(queryCaptados);
         queryCaptados = applyCutoffTimestamp(queryCaptados, 'data_oportunidade')
           .gte('data_oportunidade', start)
           .lte('data_oportunidade', end);
@@ -3732,7 +3731,6 @@
         let queryCaptadosPrev = sbClient
           .from('leads')
           .select('lead_id', { count: 'exact', head: true });
-        queryCaptadosPrev = applyNotImportedLeadFilter(queryCaptadosPrev);
         queryCaptadosPrev = applyCutoffTimestamp(queryCaptadosPrev, 'data_oportunidade')
           .gte('data_oportunidade', prevRange.start)
           .lte('data_oportunidade', prevRange.end);
@@ -5814,7 +5812,6 @@
         
         // 1. Leads Captados
         let queryCaptados = sbClient.from('leads').select('lead_id', { count: 'exact', head: true });
-        queryCaptados = applyNotImportedLeadFilter(queryCaptados);
         queryCaptados = applyCutoffTimestamp(queryCaptados, 'data_oportunidade').gte('data_oportunidade', start).lte('data_oportunidade', end);
         if (state.selectedSeller) queryCaptados = queryCaptados.eq('vendedorResponsavel', state.selectedSeller);
         const { count: countCaptados } = await queryCaptados;
