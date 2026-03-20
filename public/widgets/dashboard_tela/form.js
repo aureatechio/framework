@@ -3713,14 +3713,14 @@
         } catch (e) {}
 
         // --- Conversão global (no período): leads fechados / leads captados ---
-        // leads captados = leads.created_at no range (respeita seller e cutoff)
+        // leads captados = leads.data_oportunidade no range (respeita seller e cutoff)
         let queryCaptados = sbClient
           .from('leads')
           .select('lead_id', { count: 'exact', head: true });
         queryCaptados = applyNotImportedLeadFilter(queryCaptados);
-        queryCaptados = applyCutoffTimestamp(queryCaptados, 'created_at')
-          .gte('created_at', start)
-          .lte('created_at', end);
+        queryCaptados = applyCutoffTimestamp(queryCaptados, 'data_oportunidade')
+          .gte('data_oportunidade', start)
+          .lte('data_oportunidade', end);
         if (state.selectedSeller) queryCaptados = queryCaptados.eq('vendedorResponsavel', state.selectedSeller);
         queryCaptados = applyAgencyFilterToLeadQuery(queryCaptados);
         const { count: countCaptados } = await queryCaptados;
@@ -3733,9 +3733,9 @@
           .from('leads')
           .select('lead_id', { count: 'exact', head: true });
         queryCaptadosPrev = applyNotImportedLeadFilter(queryCaptadosPrev);
-        queryCaptadosPrev = applyCutoffTimestamp(queryCaptadosPrev, 'created_at')
-          .gte('created_at', prevRange.start)
-          .lte('created_at', prevRange.end);
+        queryCaptadosPrev = applyCutoffTimestamp(queryCaptadosPrev, 'data_oportunidade')
+          .gte('data_oportunidade', prevRange.start)
+          .lte('data_oportunidade', prevRange.end);
         if (state.selectedSeller) queryCaptadosPrev = queryCaptadosPrev.eq('vendedorResponsavel', state.selectedSeller);
         queryCaptadosPrev = applyAgencyFilterToLeadQuery(queryCaptadosPrev);
         const { count: countCaptadosPrev } = await queryCaptadosPrev;
@@ -5815,7 +5815,7 @@
         // 1. Leads Captados
         let queryCaptados = sbClient.from('leads').select('lead_id', { count: 'exact', head: true });
         queryCaptados = applyNotImportedLeadFilter(queryCaptados);
-        queryCaptados = applyCutoffTimestamp(queryCaptados, 'created_at').gte('created_at', start).lte('created_at', end);
+        queryCaptados = applyCutoffTimestamp(queryCaptados, 'data_oportunidade').gte('data_oportunidade', start).lte('data_oportunidade', end);
         if (state.selectedSeller) queryCaptados = queryCaptados.eq('vendedorResponsavel', state.selectedSeller);
         const { count: countCaptados } = await queryCaptados;
 
