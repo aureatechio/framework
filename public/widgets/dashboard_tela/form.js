@@ -3046,7 +3046,7 @@
           startUtc.setUTCDate(diff);
         } else if (filter === 'month') {
           startUtc = new Date(Date.UTC(y, m, 1, 0, 0, 0, 0));
-          endUtc   = new Date(Date.UTC(y, m + 1, 0, 23, 59, 59, 999));
+          endUtc   = new Date(Date.UTC(y, m + 1, 1, 0, 0, 0, 0)); // primeiro dia do mês seguinte (end exclusive)
         } else if (filter === 'semester') {
           // Últimos 6 meses (inclui o mês atual), alinhado no primeiro dia do mês para melhor leitura
           startUtc = new Date(Date.UTC(y, m - 5, 1, 0, 0, 0, 0));
@@ -3718,10 +3718,11 @@
         // leads captados = leads.data_oportunidade no range (respeita seller e cutoff)
         let queryCaptados = sbClient
           .from('leads')
-          .select('lead_id', { count: 'exact', head: true });
+          .select('lead_id', { count: 'exact', head: true })
+          .eq('novo_crm', true);
         queryCaptados = applyCutoffTimestamp(queryCaptados, 'data_oportunidade')
           .gte('data_oportunidade', start)
-          .lte('data_oportunidade', end);
+          .lt('data_oportunidade', end);
         if (state.selectedSeller) queryCaptados = queryCaptados.eq('vendedorResponsavel', state.selectedSeller);
         queryCaptados = applyAgencyFilterToLeadQuery(queryCaptados);
         const { count: countCaptados } = await queryCaptados;
@@ -3732,10 +3733,11 @@
         // --- Conversão global período anterior ---
         let queryCaptadosPrev = sbClient
           .from('leads')
-          .select('lead_id', { count: 'exact', head: true });
+          .select('lead_id', { count: 'exact', head: true })
+          .eq('novo_crm', true);
         queryCaptadosPrev = applyCutoffTimestamp(queryCaptadosPrev, 'data_oportunidade')
           .gte('data_oportunidade', prevRange.start)
-          .lte('data_oportunidade', prevRange.end);
+          .lt('data_oportunidade', prevRange.end);
         if (state.selectedSeller) queryCaptadosPrev = queryCaptadosPrev.eq('vendedorResponsavel', state.selectedSeller);
         queryCaptadosPrev = applyAgencyFilterToLeadQuery(queryCaptadosPrev);
         const { count: countCaptadosPrev } = await queryCaptadosPrev;
@@ -5813,8 +5815,8 @@
         }
         
         // 1. Leads Captados
-        let queryCaptados = sbClient.from('leads').select('lead_id', { count: 'exact', head: true });
-        queryCaptados = applyCutoffTimestamp(queryCaptados, 'data_oportunidade').gte('data_oportunidade', start).lte('data_oportunidade', end);
+        let queryCaptados = sbClient.from('leads').select('lead_id', { count: 'exact', head: true }).eq('novo_crm', true);
+        queryCaptados = applyCutoffTimestamp(queryCaptados, 'data_oportunidade').gte('data_oportunidade', start).lt('data_oportunidade', end);
         if (state.selectedSeller) queryCaptados = queryCaptados.eq('vendedorResponsavel', state.selectedSeller);
         const { count: countCaptados } = await queryCaptados;
 
