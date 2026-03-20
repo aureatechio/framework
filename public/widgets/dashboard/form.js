@@ -3139,6 +3139,9 @@
           start.setDate(diff);
         } else if (filter === 'month') {
           start.setDate(1);
+          // end = último dia do mês 23:59:59.999
+          end.setMonth(end.getMonth() + 1, 0);
+          end.setHours(23,59,59,999);
         } else if (filter === 'semester') {
           // Últimos 6 meses (inclui o mês atual), alinhado no primeiro dia do mês para melhor leitura
           start.setDate(1);
