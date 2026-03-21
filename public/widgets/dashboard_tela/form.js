@@ -155,7 +155,7 @@
        * Busca tags de `timeline_campanhas` (Supabase), lista campanhas Meta via API,
        * faz name-matching e separa IDs por canal (heurística pelo nome).
        * Fallback: se timeline vazia ou Meta falha, usa hardcoded (getMetaCampaignIdsByAgency).
-       * @param {string} [agencyId] - UUID da agência (usado apenas como cache key; não filtra campanhas Meta)
+       * @param {string} [agencyId] - UUID da agência (filtra timeline_campanhas.id_produto)
        * @returns {Promise<{ landing: string[], whatsapp: string[] }>}
        */
       async function fetchTimelineFilteredCampaignIds(agencyId) {
@@ -169,12 +169,16 @@
           if (!sbClient) throw new Error('sbClient not ready');
 
           // 1+2. Buscar tags da timeline E campanhas Meta em paralelo
-          const [timelineResult, metaCampaigns] = await Promise.all([
-            sbClient
+          let timelineQuery = sbClient
               .from('timeline_campanhas')
               .select('id_campanha')
               .not('id_campanha', 'is', null)
-              .eq('buscar_metricas_meta', true),
+              .eq('buscar_metricas_meta', true);
+          // Filtrar por agência (id_produto) quando selecionada
+          if (agencyId) timelineQuery = timelineQuery.eq('id_produto', agencyId);
+
+          const [timelineResult, metaCampaigns] = await Promise.all([
+            timelineQuery,
             fetchAllMetaCampaigns()
           ]);
 
