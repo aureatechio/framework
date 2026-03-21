@@ -2359,10 +2359,12 @@
         const leadIds = Array.from(new Set((rows || []).map(r => r && r.leadId).filter(Boolean)));
         const leadInfoById = {};
         for (const chunk of chunkArray(leadIds, 500)) {
-          const { data: leadsChunk } = await sbClient
+          let qLeadInfo = sbClient
             .from('leads')
             .select('lead_id, nome, empresa')
             .in('lead_id', chunk);
+          qLeadInfo = applyAgencyFilterToLeadQuery(qLeadInfo);
+          const { data: leadsChunk } = await qLeadInfo;
           (leadsChunk || []).forEach(l => {
             if (!l || !l.lead_id) return;
             leadInfoById[l.lead_id] = { nome: l.nome || null, empresa: l.empresa || null };
@@ -5751,6 +5753,7 @@
             let q = sbClient
               .from('leads')
               .select('lead_id, segundaMensagem, mensagensEnviadas, vendedorResponsavel');
+            q = applyAgencyFilterToLeadQuery(q);
             q = applyNotImportedLeadFilter(q);
             q = applyCutoffTimestamp(q, 'created_at').gte('created_at', start).lte('created_at', end);
             q = q.eq('novo_crm', true).eq('canalentrada', CANAL_LP);
@@ -5820,6 +5823,7 @@
         
         // 1. Leads Captados
         let queryCaptados = sbClient.from('leads').select('lead_id', { count: 'exact', head: true }).eq('novo_crm', true);
+        queryCaptados = applyAgencyFilterToLeadQuery(queryCaptados);
         queryCaptados = applyCutoffTimestamp(queryCaptados, 'data_oportunidade').gte('data_oportunidade', start).lt('data_oportunidade', end);
         if (state.selectedSeller) queryCaptados = queryCaptados.eq('vendedorResponsavel', state.selectedSeller);
         const { count: countCaptados } = await queryCaptados;
@@ -5829,6 +5833,7 @@
           .from('leads')
           .select('lead_id', { count: 'exact', head: true })
           .not('vendedorResponsavel', 'is', null);
+        queryQualif = applyAgencyFilterToLeadQuery(queryQualif);
         queryQualif = applyNotImportedLeadFilter(queryQualif);
         queryQualif = applyCutoffTimestamp(queryQualif, 'created_at')
           .gte('created_at', start)
@@ -5847,7 +5852,8 @@
         if (state.selectedSeller) {
             qProps = qProps.or(`id_vendedor.eq.${state.selectedSeller},id_vendedor.is.null`);
           }
-          const { data: props } = await qProps;
+          const { data: propsRaw } = await qProps;
+          const props = await filterRowsByAgencyViaLeadId((propsRaw || []), (p) => p && p.id_lead);
 
           if (!state.selectedSeller) {
             countPropostas = new Set((props || []).map(p => p && p.id_lead).filter(Boolean)).size;
@@ -5934,6 +5940,7 @@
         let qTotal = sbClient
           .from('leads')
           .select('lead_id', { count: 'exact', head: true });
+        qTotal = applyAgencyFilterToLeadQuery(qTotal);
         qTotal = applyNotImportedLeadFilter(qTotal);
         qTotal = applyCutoffTimestamp(qTotal, 'created_at').gte('created_at', start).lte('created_at', end);
         if (state.selectedSeller) qTotal = qTotal.eq('vendedorResponsavel', state.selectedSeller);
@@ -5945,6 +5952,7 @@
           .from('leads')
           .select('lead_id', { count: 'exact', head: true })
           .not('vendedorResponsavel', 'is', null);
+        qWithSeller = applyAgencyFilterToLeadQuery(qWithSeller);
         qWithSeller = applyNotImportedLeadFilter(qWithSeller);
         qWithSeller = applyCutoffTimestamp(qWithSeller, 'created_at').gte('created_at', start).lte('created_at', end);
         if (state.selectedSeller) qWithSeller = qWithSeller.eq('vendedorResponsavel', state.selectedSeller);
@@ -5958,6 +5966,7 @@
               .from('leads')
               .select('lead_id, created_at, vendedorResponsavel')
               .in('lead_id', chunk);
+            q = applyAgencyFilterToLeadQuery(q);
             q = applyNotImportedLeadFilter(q);
             q = applyCutoffTimestamp(q, 'created_at').gte('created_at', start).lte('created_at', end);
             if (state.selectedSeller) q = q.eq('vendedorResponsavel', state.selectedSeller);
@@ -5974,7 +5983,8 @@
           .not('leadId', 'is', null);
         qMeet = applyCutoffDateYmd(qMeet, 'data').gte('data', startYmd).lte('data', endYmd);
         if (state.selectedSeller) qMeet = qMeet.eq('vendedor', state.selectedSeller);
-        const { data: meetingsRows } = await qMeet;
+        const { data: meetingsRowsRaw } = await qMeet;
+        const meetingsRows = await filterRowsByAgencyViaLeadId((meetingsRowsRaw || []), (r) => r && r.leadId);
         // Só conta reuniões com score preenchido OU tipo Ligação
         const meetingsValid = (meetingsRows || []).filter(isValidMeeting);
         const meetLeadIds = [...new Set(meetingsValid.map(r => r && r.leadId).filter(Boolean))];
@@ -5991,7 +6001,8 @@
           // reduz volume: propostas do vendedor OU sem id_vendedor (fallback por lead)
           qProps = qProps.or(`id_vendedor.eq.${state.selectedSeller},id_vendedor.is.null`);
         }
-        const { data: propsRows } = await qProps;
+        const { data: propsRowsRaw } = await qProps;
+        const propsRows = await filterRowsByAgencyViaLeadId((propsRowsRaw || []), (p) => p && p.id_lead);
 
         const propMap = {};
         (propsRows || []).forEach(p => {
@@ -6380,6 +6391,7 @@
           const leadToSeller = {};
           for (const chunk of chunkArray(leadIds, 500)) {
             let q = sbClient.from('leads').select('lead_id, vendedorResponsavel').in('lead_id', chunk);
+            q = applyAgencyFilterToLeadQuery(q);
             if (state.selectedSeller) q = q.eq('vendedorResponsavel', state.selectedSeller);
             const { data } = await q;
             (data || []).forEach(l => {
