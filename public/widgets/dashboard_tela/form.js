@@ -4142,10 +4142,11 @@
         // - meetings-week  => Agendadas (futuras) no período
         // - meetings-month => Realizadas (passadas) no período
         try {
+          const labelMap = { today: 'Hoje', week: 'Semana', month: 'Mês', semester: 'Semestre', year: 'Ano', custom: 'Personalizado' };
           const a = document.getElementById('meetings-label-a');
           const b = document.getElementById('meetings-label-b');
           const c = document.getElementById('meetings-label-c');
-          if (a) a.textContent = getDateFilterLabelPtBr(state.dateFilter);
+          if (a) a.textContent = labelMap[state.dateFilter] || 'Período';
           if (b) b.textContent = 'Agendadas';
           if (c) c.textContent = 'Realizadas';
         } catch (e) {}
