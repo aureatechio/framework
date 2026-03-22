@@ -3834,7 +3834,7 @@
             if (!startYmd || !endYmd) return 0;
             let q = sbClient
               .from('agendamento')
-              .select('leadId, vendedor, score_final, tipo_agendamento')
+              .select('leadId, vendedor, score_final, tipo_agendamento, data, hora')
               .not('leadId', 'is', null);
             q = q.gte('data', startYmd).lte('data', endYmd);
             if (state.selectedSeller) q = q.eq('vendedor', state.selectedSeller);
@@ -3842,8 +3842,14 @@
             const rows = await filterRowsByAgencyViaLeadId((data || []), (r) => r && r.leadId);
             // Excluir reuniões de diretores + internos
             let filteredRows = (rows || []).filter(r => !directorIds.includes(r.vendedor));
-            // Só conta reuniões com score IA preenchido OU tipo Ligação
-            filteredRows = filteredRows.filter(isValidMeeting);
+            // Futuras: contam todas; passadas: só com score IA ou Ligação
+            const nowTs = Date.now();
+            const todayStr = toYmdLocal(new Date());
+            filteredRows = filteredRows.filter(r => {
+              const dt = parseMeetingDateTimeYmdHm(r.data, r.hora);
+              const isFuture = dt ? (dt.getTime() > nowTs) : (String(r.data || '') > (todayStr || ''));
+              return isFuture || isValidMeeting(r);
+            });
             return filteredRows.length;
           } catch (e) {
             return 0;
