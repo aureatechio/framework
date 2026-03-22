@@ -4165,24 +4165,28 @@
           let rows = await filterRowsByAgencyViaLeadId((data || []), (r) => r && r.leadId);
           // Filtrar: excluir reuniões de diretores + internos
           rows = (rows || []).filter(r => !directorIds.includes(r.vendedor));
-          // Só conta reuniões com score IA preenchido OU tipo Ligação
-          rows = rows.filter(isValidMeeting);
           const todayYmd = todayRange.startYmd;
 
           const cmpYmd = (a, b) => String(a || '').localeCompare(String(b || ''), 'en');
           (rows || []).forEach((r) => {
             if (!r) return;
-            countTotal += 1;
             const dt = parseMeetingDateTimeYmdHm(r.data, r.hora);
+            let isFuture = false;
             if (dt && !Number.isNaN(dt.getTime())) {
-              if (dt.getTime() > now.getTime()) countFuture += 1;
-              else countPast += 1;
-              return;
+              isFuture = dt.getTime() > now.getTime();
+            } else {
+              const d = r.data ? String(r.data) : '';
+              isFuture = !!(d && cmpYmd(d, todayYmd) > 0);
             }
-            // Fallback sem hora: compara apenas a data (YMD)
-            const d = r.data ? String(r.data) : '';
-            if (d && cmpYmd(d, todayYmd) > 0) countFuture += 1;
-            else countPast += 1;
+            // Futuras: contam todas (sem score porque não aconteceram)
+            // Passadas: só com score IA preenchido OU tipo Ligação
+            if (isFuture) {
+              countFuture += 1;
+              countTotal += 1;
+            } else if (isValidMeeting(r)) {
+              countPast += 1;
+              countTotal += 1;
+            }
           });
         } catch (e) {}
 
@@ -4196,8 +4200,7 @@
             let rowsAgency = await filterRowsByAgencyViaLeadId((dataNow || []), (r) => r && r.leadId);
             // Filtrar: excluir reuniões de diretores + internos
             rowsAgency = (rowsAgency || []).filter(r => !directorIds.includes(r.vendedor));
-            // Só conta reuniões com score IA preenchido OU tipo Ligação
-            rowsAgency = rowsAgency.filter(isValidMeeting);
+            // "Acontecendo agora" são reuniões em andamento — não exigir score
             const currentHour = now.getHours();
             countNow = rowsAgency.filter(r => {
                 if(!r.hora) return false;
@@ -4221,8 +4224,7 @@
           const { data: createdRows } = await queryCreated;
           let rowsCreated = await filterRowsByAgencyViaLeadId((createdRows || []), (r) => r && r.leadId);
           rowsCreated = (rowsCreated || []).filter(r => !directorIds.includes(r.vendedor));
-          // Só conta reuniões com score IA preenchido OU tipo Ligação
-          rowsCreated = rowsCreated.filter(isValidMeeting);
+          // "Criadas hoje" conta todas (incluem futuras sem score)
           countCreatedToday = rowsCreated.length;
         } catch (e) {}
 
