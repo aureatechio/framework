@@ -2485,7 +2485,7 @@
 
         const trySelect = async (selectStr) => {
           let q = sbClient.from('agendamento').select(selectStr);
-          q = applyCutoffDateYmd(q, 'data').gte('data', startYmd).lte('data', endYmd);
+          q = q.gte('data', startYmd).lte('data', endYmd);
           q = applyMeetingNotCanceledFilter(q);
           if (state.selectedSeller) q = q.eq('vendedor', state.selectedSeller);
           const { data, error } = await q;
@@ -3971,7 +3971,7 @@
               .from('agendamento')
               .select('leadId, vendedor, score_final, tipo_agendamento')
               .not('leadId', 'is', null);
-            q = applyCutoffDateYmd(q, 'data').gte('data', startYmd).lte('data', endYmd);
+            q = q.gte('data', startYmd).lte('data', endYmd);
             if (state.selectedSeller) q = q.eq('vendedor', state.selectedSeller);
             const { data } = await q;
             const rows = await filterRowsByAgencyViaLeadId((data || []), (r) => r && r.leadId);
@@ -4276,7 +4276,7 @@
             .select('data, hora, leadId, vendedor, score_final, tipo_agendamento')
             .not('leadId', 'is', null);
           if (state.selectedSeller) query = query.eq('vendedor', state.selectedSeller);
-          query = applyCutoffDateYmd(query, 'data').gte('data', periodRange.startYmd).lte('data', periodRange.endYmd);
+          query = query.gte('data', periodRange.startYmd).lte('data', periodRange.endYmd);
 
           const { data } = await query;
           let rows = await filterRowsByAgencyViaLeadId((data || []), (r) => r && r.leadId);
@@ -4308,7 +4308,7 @@
         let countNow = 0;
         // "Acontecendo agora": reuniões com status agendado na hora atual
         let queryNow = sbClient.from('agendamento').select('hora, data, leadId, vendedor, score_final, tipo_agendamento').eq('statusReuniao', 'agendado');
-        queryNow = applyCutoffDateYmd(queryNow, 'data').eq('data', todayRange.startYmd);
+        queryNow = queryNow.eq('data', todayRange.startYmd);
         if (state.selectedSeller) queryNow = queryNow.eq('vendedor', state.selectedSeller);
         const { data: dataNow } = await queryNow;
         if (dataNow) {
@@ -4752,7 +4752,7 @@
         // 2. Fetch Meetings & Scores
         let queryMeetings = sbClient.from('agendamento').select('vendedor, score_final, tipo_agendamento, leadId, statusReuniao').not('leadId', 'is', null);
         // Para week/month: incluir reuniões futuras até o fim do período
-        queryMeetings = applyCutoffDateYmd(queryMeetings, 'data').gte('data', meetRange.startYmd).lte('data', meetRange.endYmd);
+        queryMeetings = queryMeetings.gte('data', meetRange.startYmd).lte('data', meetRange.endYmd);
         queryMeetings = applyMeetingNotCanceledFilter(queryMeetings);
         if (state.selectedSeller) queryMeetings = queryMeetings.eq('vendedor', state.selectedSeller);
         const { data: meetingsRaw } = await queryMeetings;
@@ -5050,7 +5050,7 @@
             .from('agendamento')
             .select('vendedor, leadId, score_final, tipo_agendamento')
             .not('leadId', 'is', null);
-          meetingsQuery = applyCutoffDateYmd(meetingsQuery, 'data')
+          meetingsQuery = meetingsQuery
             .gte('data', meetRange.startYmd)
             .lte('data', meetRange.endYmd);
           const { data: meetingsRaw } = await meetingsQuery;
@@ -5334,7 +5334,7 @@
           try {
             const meetRange = getMeetingsDateRange(state.dateFilter);
             let qMeet = sbClient.from('agendamento').select('vendedor, leadId, score_final, tipo_agendamento').not('leadId', 'is', null);
-            qMeet = applyCutoffDateYmd(qMeet, 'data').gte('data', meetRange.startYmd).lte('data', meetRange.endYmd);
+            qMeet = qMeet.gte('data', meetRange.startYmd).lte('data', meetRange.endYmd);
             const { data: meetRaw } = await qMeet;
             const meets = await filterRowsByAgencyViaLeadId((meetRaw || []), (m) => m && m.leadId);
             meets.forEach(m => {
@@ -5689,7 +5689,7 @@
           // E) Reuniões mês (para no-show + conversão) — sem filtro de cancelamento
           let qE = sbClient.from('agendamento').select('id, data, vendedor, statusReuniao, score_final, tipo_agendamento');
           const monthStartYmd = `${now.getFullYear()}-${__pad2(now.getMonth()+1)}-01`;
-          qE = applyCutoffDateYmd(qE, 'data').gte('data', monthStartYmd).lte('data', todayYmd);
+          qE = qE.gte('data', monthStartYmd).lte('data', todayYmd);
           if (state.selectedSeller) qE = qE.eq('vendedor', state.selectedSeller);
 
           const [rA, rB, rC, rD, rE] = await Promise.allSettled([qA, qB, qC, qD, qE]);
@@ -6921,7 +6921,7 @@
 
         // 4. Reuniões
         let queryReunioes = sbClient.from('agendamento').select('leadId, vendedor, score_final, tipo_agendamento').not('leadId', 'is', null);
-        queryReunioes = applyCutoffDateYmd(queryReunioes, 'data').gte('data', meetingsRange.startYmd).lte('data', meetingsRange.endYmd);
+        queryReunioes = queryReunioes.gte('data', meetingsRange.startYmd).lte('data', meetingsRange.endYmd);
         queryReunioes = applyMeetingNotCanceledFilter(queryReunioes);
         if (state.selectedSeller) queryReunioes = queryReunioes.eq('vendedor', state.selectedSeller);
         const { data: reunioesRows } = await queryReunioes;
@@ -7019,7 +7019,7 @@
           .from('agendamento')
           .select('leadId, score_final, tipo_agendamento')
           .not('leadId', 'is', null);
-        qMeet = applyCutoffDateYmd(qMeet, 'data').gte('data', startYmd).lte('data', endYmd);
+        qMeet = qMeet.gte('data', startYmd).lte('data', endYmd);
         if (state.selectedSeller) qMeet = qMeet.eq('vendedor', state.selectedSeller);
         const { data: meetingsRows } = await qMeet;
         // Só conta reuniões com score preenchido OU tipo Ligação
@@ -7597,7 +7597,7 @@
             .from('agendamento')
             .select('leadId, vendedor, data, hora, score_final, tipo_agendamento')
             .not('leadId', 'is', null);
-          qMeet = applyCutoffDateYmd(qMeet, 'data').gte('data', startYmd).lte('data', endYmd);
+          qMeet = qMeet.gte('data', startYmd).lte('data', endYmd);
           qMeet = applyMeetingNotCanceledFilter(qMeet);
           if (state.selectedSeller) qMeet = qMeet.eq('vendedor', state.selectedSeller);
 

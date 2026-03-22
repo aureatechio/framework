@@ -2307,7 +2307,7 @@
 
         const trySelect = async (selectStr) => {
           let q = sbClient.from('agendamento').select(selectStr);
-          q = applyCutoffDateYmd(q, 'data').gte('data', startYmd).lte('data', endYmd);
+          q = q.gte('data', startYmd).lte('data', endYmd);
           q = applyMeetingNotCanceledFilter(q);
           if (state.selectedSeller) q = q.eq('vendedor', state.selectedSeller);
           const { data, error } = await q;
@@ -3836,7 +3836,7 @@
               .from('agendamento')
               .select('leadId, vendedor, score_final, tipo_agendamento')
               .not('leadId', 'is', null);
-            q = applyCutoffDateYmd(q, 'data').gte('data', startYmd).lte('data', endYmd);
+            q = q.gte('data', startYmd).lte('data', endYmd);
             if (state.selectedSeller) q = q.eq('vendedor', state.selectedSeller);
             const { data } = await q;
             const rows = await filterRowsByAgencyViaLeadId((data || []), (r) => r && r.leadId);
@@ -4159,7 +4159,7 @@
             .select('data, hora, leadId, vendedor, score_final, tipo_agendamento')
             .not('leadId', 'is', null);
           if (state.selectedSeller) query = query.eq('vendedor', state.selectedSeller);
-          query = applyCutoffDateYmd(query, 'data').gte('data', periodRange.startYmd).lte('data', periodRange.endYmd);
+          query = query.gte('data', periodRange.startYmd).lte('data', periodRange.endYmd);
 
           const { data } = await query;
           let rows = await filterRowsByAgencyViaLeadId((data || []), (r) => r && r.leadId);
@@ -4189,7 +4189,7 @@
         let countNow = 0;
         // "Acontecendo agora": reuniões com status agendado na hora atual
         let queryNow = sbClient.from('agendamento').select('hora, data, leadId, vendedor, score_final, tipo_agendamento').eq('statusReuniao', 'agendado').not('leadId', 'is', null);
-        queryNow = applyCutoffDateYmd(queryNow, 'data').eq('data', todayRange.startYmd);
+        queryNow = queryNow.eq('data', todayRange.startYmd);
         if (state.selectedSeller) queryNow = queryNow.eq('vendedor', state.selectedSeller);
         const { data: dataNow } = await queryNow;
         if (dataNow) {
@@ -4637,7 +4637,7 @@
         // 2. Fetch Meetings & Scores
         let queryMeetings = sbClient.from('agendamento').select('vendedor, score_final, tipo_agendamento, leadId');
         // Para week/month: incluir reuniões futuras até o fim do período
-        queryMeetings = applyCutoffDateYmd(queryMeetings, 'data').gte('data', meetRange.startYmd).lte('data', meetRange.endYmd);
+        queryMeetings = queryMeetings.gte('data', meetRange.startYmd).lte('data', meetRange.endYmd);
         if (state.selectedSeller) queryMeetings = queryMeetings.eq('vendedor', state.selectedSeller);
         const { data: meetings } = await queryMeetings;
         const meetingsFiltered = await filterRowsByAgencyViaLeadId((meetings || []), (m) => m && m.leadId);
@@ -4890,7 +4890,7 @@
             .from('agendamento')
             .select('vendedor, leadId, score_final, tipo_agendamento')
             .not('leadId', 'is', null);
-          meetingsQuery = applyCutoffDateYmd(meetingsQuery, 'data')
+          meetingsQuery = meetingsQuery
             .gte('data', meetRange.startYmd)
             .lte('data', meetRange.endYmd);
           const { data: meetingsRaw } = await meetingsQuery;
@@ -5889,7 +5889,7 @@
           directorIds = (excluded || []).map(d => d.id).filter(Boolean);
         } catch (e) {}
         let queryReunioes = sbClient.from('agendamento').select('leadId, vendedor, score_final, tipo_agendamento').not('leadId', 'is', null);
-        queryReunioes = applyCutoffDateYmd(queryReunioes, 'data').gte('data', meetingsRange.startYmd).lte('data', meetingsRange.endYmd);
+        queryReunioes = queryReunioes.gte('data', meetingsRange.startYmd).lte('data', meetingsRange.endYmd);
         if (state.selectedSeller) queryReunioes = queryReunioes.eq('vendedor', state.selectedSeller);
         const { data: reunioesRows } = await queryReunioes;
         const reunioesFiltered = await filterRowsByAgencyViaLeadId((reunioesRows || []), (r) => r && r.leadId);
@@ -5981,7 +5981,7 @@
           .from('agendamento')
           .select('leadId, score_final, tipo_agendamento')
           .not('leadId', 'is', null);
-        qMeet = applyCutoffDateYmd(qMeet, 'data').gte('data', startYmd).lte('data', endYmd);
+        qMeet = qMeet.gte('data', startYmd).lte('data', endYmd);
         if (state.selectedSeller) qMeet = qMeet.eq('vendedor', state.selectedSeller);
         const { data: meetingsRowsRaw } = await qMeet;
         const meetingsRows = await filterRowsByAgencyViaLeadId((meetingsRowsRaw || []), (r) => r && r.leadId);
@@ -6629,7 +6629,7 @@
             .from('agendamento')
             .select('leadId, vendedor, data, hora, score_final, tipo_agendamento')
             .not('leadId', 'is', null);
-          qMeet = applyCutoffDateYmd(qMeet, 'data').gte('data', startYmd).lte('data', endYmd);
+          qMeet = qMeet.gte('data', startYmd).lte('data', endYmd);
           if (state.selectedSeller) qMeet = qMeet.eq('vendedor', state.selectedSeller);
 
           const { data: meetingsRows, error: meetErr } = await qMeet;
