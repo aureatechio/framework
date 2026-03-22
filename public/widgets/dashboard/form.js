@@ -3195,30 +3195,28 @@
       // - Isso garante que reuniões agendadas para o futuro apareçam corretamente.
       function getMeetingsDateRange(filter) {
         const pad2 = (n) => String(n).padStart(2, '0');
-        const toYmd = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+        // Usar getters UTC para evitar offset BRT (getDateRange retorna datas UTC)
+        const toYmd = (d) => `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())}`;
 
         const base = getDateRange(filter);
         const start = new Date(base.start);
         let end = new Date(base.end);
 
         if (filter === 'week') {
-          // fim da semana (domingo 23:59)
-          end = new Date(start);
-          end.setDate(end.getDate() + 6);
-          end.setHours(23, 59, 59, 999);
+          // fim da semana (domingo 23:59 UTC)
+          end = new Date(start.getTime());
+          end.setUTCDate(end.getUTCDate() + 6);
+          end.setUTCHours(23, 59, 59, 999);
         } else if (filter === 'month') {
-          // fim do mês (último dia 23:59)
-          end = new Date(start.getFullYear(), start.getMonth() + 1, 0);
-          end.setHours(23, 59, 59, 999);
+          // fim do mês (último dia 23:59 UTC)
+          end = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1, 0, 23, 59, 59, 999));
         } else if (filter === 'semester') {
-          // fim do semestre: último dia do mês atual (6 meses a partir do start)
+          // fim do semestre: último dia do mês atual
           const now = new Date();
-          end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-          end.setHours(23, 59, 59, 999);
+          end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 23, 59, 59, 999));
         } else if (filter === 'year') {
-          // fim do ano (31/12 23:59)
-          end = new Date(start.getFullYear(), 11, 31);
-          end.setHours(23, 59, 59, 999);
+          // fim do ano (31/12 23:59 UTC)
+          end = new Date(Date.UTC(start.getUTCFullYear(), 11, 31, 23, 59, 59, 999));
         }
 
         return {

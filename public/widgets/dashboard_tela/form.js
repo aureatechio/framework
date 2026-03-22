@@ -3079,21 +3079,21 @@
       // - Para outros filtros: mantém comportamento do getDateRange (até hoje).
       function getMeetingsDateRange(filter) {
         const pad2 = (n) => String(n).padStart(2, '0');
-        const toYmd = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+        // Usar getters UTC para evitar offset BRT (getDateRange retorna datas UTC)
+        const toYmd = (d) => `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())}`;
 
         const base = getDateRange(filter);
         const start = new Date(base.start);
         let end = new Date(base.end);
 
         if (filter === 'week') {
-          // fim da semana (domingo 23:59)
-          end = new Date(start);
-          end.setDate(end.getDate() + 6);
-          end.setHours(23, 59, 59, 999);
+          // fim da semana (domingo 23:59 UTC)
+          end = new Date(start.getTime());
+          end.setUTCDate(end.getUTCDate() + 6);
+          end.setUTCHours(23, 59, 59, 999);
         } else if (filter === 'month') {
-          // fim do mês (último dia 23:59)
-          end = new Date(start.getFullYear(), start.getMonth() + 1, 0);
-          end.setHours(23, 59, 59, 999);
+          // fim do mês (último dia 23:59 UTC)
+          end = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1, 0, 23, 59, 59, 999));
         }
 
         return {
