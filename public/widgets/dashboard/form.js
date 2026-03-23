@@ -6838,9 +6838,9 @@
             .not('empresa', 'eq', '');
           queryOportunidades = applyAgencyFilterToLeadQuery(queryOportunidades);
           queryOportunidades = applyNotImportedLeadFilter(queryOportunidades);
-          queryOportunidades = applyCutoffTimestamp(queryOportunidades, 'created_at')
-            .gte('created_at', start)
-            .lte('created_at', end);
+          queryOportunidades = applyCutoffTimestamp(queryOportunidades, 'data_oportunidade')
+            .gte('data_oportunidade', start)
+            .lte('data_oportunidade', end);
           if (state.selectedSeller) queryOportunidades = queryOportunidades.eq('vendedorResponsavel', state.selectedSeller);
           const { count } = await queryOportunidades;
           countOportunidades = count || 0;
@@ -6853,9 +6853,9 @@
           .eq('passou_prioridade', true);
         queryPrioridade = applyAgencyFilterToLeadQuery(queryPrioridade);
         queryPrioridade = applyNotImportedLeadFilter(queryPrioridade);
-        queryPrioridade = applyCutoffTimestamp(queryPrioridade, 'created_at')
-          .gte('created_at', start)
-          .lte('created_at', end);
+        queryPrioridade = applyCutoffTimestamp(queryPrioridade, 'data_oportunidade')
+          .gte('data_oportunidade', start)
+          .lte('data_oportunidade', end);
         if (state.selectedSeller) queryPrioridade = queryPrioridade.eq('vendedorResponsavel', state.selectedSeller);
         const { count: countPrioridade } = await queryPrioridade;
 

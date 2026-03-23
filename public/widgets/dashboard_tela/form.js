@@ -5844,9 +5844,9 @@
           .not('vendedorResponsavel', 'is', null);
         queryQualif = applyAgencyFilterToLeadQuery(queryQualif);
         queryQualif = applyNotImportedLeadFilter(queryQualif);
-        queryQualif = applyCutoffTimestamp(queryQualif, 'created_at')
-          .gte('created_at', start)
-          .lte('created_at', end);
+        queryQualif = applyCutoffTimestamp(queryQualif, 'data_oportunidade')
+          .gte('data_oportunidade', start)
+          .lte('data_oportunidade', end);
         if (state.selectedSeller) queryQualif = queryQualif.eq('vendedorResponsavel', state.selectedSeller);
         const { count: countQualificados } = await queryQualif;
 
