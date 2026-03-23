@@ -6834,8 +6834,7 @@
           let queryOportunidades = sbClient
             .from('leads')
             .select('lead_id', { count: 'exact', head: true })
-            .not('empresa', 'is', null)
-            .not('empresa', 'eq', '');
+            .eq('possui_cnpj', true);
           queryOportunidades = applyAgencyFilterToLeadQuery(queryOportunidades);
           queryOportunidades = applyNotImportedLeadFilter(queryOportunidades);
           queryOportunidades = applyCutoffTimestamp(queryOportunidades, 'data_oportunidade')

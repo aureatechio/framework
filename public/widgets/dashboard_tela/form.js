@@ -5837,11 +5837,11 @@
         if (state.selectedSeller) queryCaptados = queryCaptados.eq('vendedorResponsavel', state.selectedSeller);
         const { count: countCaptados } = await queryCaptados;
 
-        // 2. Leads Qualificados = leads com vendedorResponsavel (no período do filtro)
+        // 2. Oportunidades = leads com possui_cnpj = true (no período do filtro)
         let queryQualif = sbClient
           .from('leads')
           .select('lead_id', { count: 'exact', head: true })
-          .not('vendedorResponsavel', 'is', null);
+          .eq('possui_cnpj', true);
         queryQualif = applyAgencyFilterToLeadQuery(queryQualif);
         queryQualif = applyNotImportedLeadFilter(queryQualif);
         queryQualif = applyCutoffTimestamp(queryQualif, 'data_oportunidade')
@@ -5920,7 +5920,7 @@
 
         const funnelData = [
             { l:"Leads Captados", v: countCaptados || 0, color:"#3b82f6" },
-            { l:"Leads Qualificados", v: countQualificados || 0, color:"#60a5fa" },
+            { l:"Oportunidades", v: countQualificados || 0, color:"#60a5fa" },
             { l:"Propostas", v: countPropostas || 0, color:"#22c55e" },
             { l:"Reuniões", v: countReunioes || 0, color:"#f59e0b" },
             { l:"Vendas", v: countVendas || 0, color:"#16a34a" }
