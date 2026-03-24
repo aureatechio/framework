@@ -6159,8 +6159,7 @@
           return count || 0;
         };
 
-        const [leadsOutbound, leadsLP, leadsWPP] = await Promise.all([
-          countLeadsByCanal(CANAL_MANUAL),
+        const [leadsLP, leadsWPP] = await Promise.all([
           countLeadsByCanal(CANAL_LP),
           countLeadsByCanal(CANAL_WPP)
         ]);
@@ -6178,13 +6177,12 @@
         const { data: purchRows } = await qPurch;
         const rows = purchRows || [];
 
-        let salesOutbound = 0, salesLP = 0, salesWPP = 0;
-        let revOutbound = 0, revLP = 0, revWPP = 0;
+        let salesLP = 0, salesWPP = 0;
+        let revLP = 0, revWPP = 0;
 
         rows.forEach(r => {
           const canal = r && r.lead ? r.lead.canalentrada : null;
           const v = parseCurrency(r && r.valor_total);
-          if (isManual(canal)) { salesOutbound++; revOutbound += v; return; }
           if (isLanding(canal)) { salesLP++; revLP += v; return; }
           if (isWhats(canal)) { salesWPP++; revWPP += v; return; }
         });
@@ -6282,11 +6280,9 @@
 
         const roiLP = calcROI(revLP, state.channelInvestments.landing);
         const roiWPP = calcROI(revWPP, state.channelInvestments.whatsapp);
-        const roiOutbound = calcROI(revOutbound, state.channelInvestments.outbound);
 
         const convLP = leadsLP > 0 ? ((salesLP / leadsLP) * 100).toFixed(1) : '0.0';
         const convWPP = leadsWPP > 0 ? ((salesWPP / leadsWPP) * 100).toFixed(1) : '0.0';
-        const convOutbound = leadsOutbound > 0 ? ((salesOutbound / leadsOutbound) * 100).toFixed(1) : '0.0';
 
         state.channelData = [
           {
@@ -6306,14 +6302,6 @@
             clicks: (typeof clicksWPP === 'number' ? clicksWPP : null),
             conv: convWPP,
             i: "message-circle", c: "success", active: true, tone: "#22c55e"
-          },
-          {
-            id: 'outbound', n: "Outbound", l: leadsOutbound,
-            rev: revOutbound,
-            roi: roiOutbound,
-            gasto: (Number.isFinite(state.channelInvestments.outbound) ? state.channelInvestments.outbound : null),
-            conv: convOutbound,
-            i: "phone", c: "danger", active: true, tone: "#f97316"
           },
           {
             id: 'social', n: "Social", l: 0,
