@@ -2952,7 +2952,7 @@
       background: var(--bg-subtle, #f1f5f9);
       color: var(--text-muted, #64748b);
       font-size: 10px; font-weight: 600; cursor: help;
-      position: relative; flex-shrink: 0;
+      flex-shrink: 0;
       transition: background 0.15s ease, color 0.15s ease;
       line-height: 1;
     }
@@ -2960,39 +2960,26 @@
     #dashboard-acelerai-v2.dark-mode .kpi-info-icon { background: rgba(255,255,255,0.08); color: var(--text-muted); }
     #dashboard-acelerai-v2.dark-mode .kpi-info-icon:hover { background: var(--col-primary); color: #fff; }
 
-    [data-tooltip] { position: relative; }
-    [data-tooltip]::after {
-      content: attr(data-tooltip);
-      position: absolute; bottom: calc(100% + 8px); left: 50%;
-      transform: translateX(-50%); z-index: 9999;
+    /* Tooltip flutuante (position:fixed via JS — não é cortado por overflow:hidden) */
+    .dash-tooltip {
+      position: fixed; z-index: 99999; pointer-events: none;
       background: #1e293b; color: #f8fafc;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
       font-size: 11px; font-weight: 400; line-height: 1.45;
       padding: 8px 12px; border-radius: 8px;
       white-space: normal; width: max-content; max-width: 260px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      pointer-events: none; opacity: 0;
-      transition: opacity 0.15s ease;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+      opacity: 0; transition: opacity 0.15s ease;
     }
-    [data-tooltip]:hover::after { opacity: 1; }
-    /* Seta do tooltip */
-    [data-tooltip]::before {
-      content: ''; position: absolute; bottom: calc(100% + 2px); left: 50%;
-      transform: translateX(-50%); z-index: 9999;
-      border: 5px solid transparent; border-top-color: #1e293b;
-      pointer-events: none; opacity: 0;
-      transition: opacity 0.15s ease;
+    .dash-tooltip.visible { opacity: 1; }
+    .dash-tooltip::after {
+      content: ''; position: absolute; left: 50%; transform: translateX(-50%);
+      border: 5px solid transparent;
     }
-    [data-tooltip]:hover::before { opacity: 1; }
-    /* Dark mode tooltip */
-    #dashboard-acelerai-v2.dark-mode [data-tooltip]::after { background: #334155; color: #f1f5f9; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
-    #dashboard-acelerai-v2.dark-mode [data-tooltip]::before { border-top-color: #334155; }
-    /* Tooltip para baixo (quando muito perto do topo) */
-    [data-tooltip-pos="bottom"]::after { bottom: auto; top: calc(100% + 8px); }
-    [data-tooltip-pos="bottom"]::before { bottom: auto; top: calc(100% + 2px); border-top-color: transparent; border-bottom-color: #1e293b; }
-    #dashboard-acelerai-v2.dark-mode [data-tooltip-pos="bottom"]::before { border-top-color: transparent; border-bottom-color: #334155; }
-    /* Funnel tooltip: posição relativa ao cell */
-    .funnel-data-cell { position: relative; }
-    .funnel-data-cell [data-tooltip]::after { max-width: 220px; }
-    /* Meeting card tooltip */
-    .meeting-card { position: relative; }
+    .dash-tooltip.arrow-bottom::after { top: 100%; border-top-color: #1e293b; }
+    .dash-tooltip.arrow-top::after { bottom: 100%; border-bottom-color: #1e293b; }
+    /* Dark mode */
+    #dashboard-acelerai-v2.dark-mode .dash-tooltip { background: #334155; color: #f1f5f9; box-shadow: 0 4px 12px rgba(0,0,0,0.35); }
+    #dashboard-acelerai-v2.dark-mode .dash-tooltip.arrow-bottom::after { border-top-color: #334155; }
+    #dashboard-acelerai-v2.dark-mode .dash-tooltip.arrow-top::after { border-bottom-color: #334155; }
 

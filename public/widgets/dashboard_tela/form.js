@@ -5348,6 +5348,51 @@
         }
       }
 
+      // --- TOOLTIP FLUTUANTE (position:fixed, escapa de overflow:hidden) ---
+      const __tooltipEl = (() => {
+        let el = document.querySelector('.dash-tooltip');
+        if (!el) { el = document.createElement('div'); el.className = 'dash-tooltip'; document.body.appendChild(el); }
+        return el;
+      })();
+      let __tooltipTimer = null;
+      function __showTooltip(anchor) {
+        const text = anchor && anchor.getAttribute ? anchor.getAttribute('data-tooltip') : '';
+        if (!text || !__tooltipEl) return;
+        __tooltipEl.textContent = text;
+        __tooltipEl.className = 'dash-tooltip';
+        __tooltipEl.style.left = '-9999px';
+        __tooltipEl.style.top = '-9999px';
+        __tooltipEl.classList.add('visible');
+        const rect = anchor.getBoundingClientRect();
+        const tt = __tooltipEl.getBoundingClientRect();
+        const gap = 8;
+        let top = rect.top - tt.height - gap;
+        let arrowClass = 'arrow-bottom';
+        if (top < 4) { top = rect.bottom + gap; arrowClass = 'arrow-top'; }
+        let left = rect.left + rect.width / 2 - tt.width / 2;
+        if (left < 4) left = 4;
+        if (left + tt.width > window.innerWidth - 4) left = window.innerWidth - tt.width - 4;
+        __tooltipEl.style.top = top + 'px';
+        __tooltipEl.style.left = left + 'px';
+        __tooltipEl.classList.add(arrowClass);
+      }
+      function __hideTooltip() { if (__tooltipEl) { __tooltipEl.className = 'dash-tooltip'; } }
+      try {
+        const dashRoot = document.getElementById('dashboard-acelerai-v2') || document.body;
+        dashRoot.addEventListener('mouseenter', (e) => {
+          const t = e.target && e.target.closest ? e.target.closest('[data-tooltip]') : null;
+          if (!t) return;
+          clearTimeout(__tooltipTimer);
+          __tooltipTimer = setTimeout(() => __showTooltip(t), 60);
+        }, true);
+        dashRoot.addEventListener('mouseleave', (e) => {
+          const t = e.target && e.target.closest ? e.target.closest('[data-tooltip]') : null;
+          if (!t) return;
+          clearTimeout(__tooltipTimer);
+          __hideTooltip();
+        }, true);
+      } catch (e) {}
+
       // Tooltips explicativos para cada KPI (linguagem simples para público leigo)
       const KPI_TOOLTIPS = {
         [KPI_IDS.FATURAMENTO]: 'Soma do valor de todas as vendas aprovadas no período selecionado.',
