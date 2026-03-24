@@ -6,17 +6,30 @@
 
 ---
 
-## Visão Geral
+## Resumo dos 6 Cards
 
-O dashboard exibe reuniões em 5 blocos:
+| Card | Cor | ID | Filtros específicos | O que conta |
+|------|-----|----|---------------------|-------------|
+| **Acontecendo agora** | Vermelho | `meetings-now` | `statusReuniao = 'agendado'` + `data = hoje` + `hora (HH) = hora atual` | Reuniões em andamento neste momento |
+| **Mês** (label dinâmico) | Azul | `meetings-today` | `data` no período + (`isValidMeeting` OR futura) | Futuras + Realizadas válidas (score ou ligação) |
+| **Agendadas** | Cinza | `meetings-week` | `data/hora > agora` | Todas as futuras, sem exigir score |
+| **Realizadas** | Verde | `meetings-month` | `data/hora <= agora` + `isValidMeeting()` | Passadas COM score preenchido ou ligação |
+| **Total s/ score** | Laranja | `meetings-all-past` | `data/hora <= agora` | Todas as passadas, SEM filtro de score |
+| **Criadas hoje** | Roxo | `meetings-created-today` | `created_at` entre 00:00 e 23:59 de hoje | Registradas no CRM hoje, qualquer data |
 
-| Bloco | ID | O que mostra |
-|-------|----|-------------|
-| Acontecendo agora | `meetings-now` | Reuniões na hora atual com status "agendado" |
-| Total do período | `meetings-today` | Futuras + Realizadas válidas |
-| Agendadas (futuras) | `meetings-week` | Ainda não ocorreram |
-| Realizadas | `meetings-month` | Já ocorreram e são válidas |
-| Criadas hoje | `meetings-created-today` | Registradas no CRM hoje |
+---
+
+## Filtros Comuns (aplicados a TODOS os cards)
+
+| Filtro | Descrição | Onde |
+|--------|-----------|------|
+| `leadId IS NOT NULL` | Só reuniões vinculadas a um lead | Query Supabase |
+| Período | `data >= início` e `data <= fim` do período do header | Query Supabase |
+| Vendedor | Se filtro ativo, `vendedor = UUID selecionado` | Query Supabase |
+| Exclui diretores | `vendedores.diretorVendas = true` ou `usuarioInterno = true` | JavaScript (pós-query) |
+| Agência | Se filtro ativo, cruza `leadId → leads.agencia` | JavaScript (pós-query) |
+
+**Nota:** Não filtramos `statusReuniao` na query principal. Todas as reuniões do período são trazidas e classificadas no JS.
 
 ---
 
@@ -27,47 +40,35 @@ O dashboard exibe reuniões em 5 blocos:
 
 ---
 
-## Filtros Aplicados
+## Classificação: Futura vs Passada
 
-### 1. Query ao Supabase
+Para cada reunião, o dashboard combina `data + hora` e compara com o momento atual:
 
+- **Futura:** `data/hora > agora` → conta sem exigir score
+- **Passada:** `data/hora <= agora` → precisa passar em `isValidMeeting()` para contar como "Realizada"
+
+Se `hora` não está preenchida, usa `00:00` como fallback.
+
+### Timezone
+
+O campo `hora` no banco é `timetz` e vem com sufixo `+00` (ex: `16:00:00+00`), mas o valor armazenado **já é horário local (BRT)**. A função `parseMeetingDateTimeYmdHm` remove o offset antes de criar o `Date`, para interpretar corretamente como horário local.
+
+```javascript
+// Exemplo: "16:00:00+00" → remove "+00" → "16:00:00" → interpreta como 16h BRT
+const raw = String(hm || '00:00').trim() || '00:00';
+const time = raw.replace(/[+-]\d{2}(:\d{2})?$/, '');
+const dt = new Date(`${data}T${time}`);
 ```
-FROM agendamento
-WHERE leadId IS NOT NULL
-  AND data >= [início do período]
-  AND data <= [fim do período]
-  AND vendedor = [vendedor selecionado]   -- se houver filtro de vendedor
-```
-
-**Nota:** Não filtramos `statusReuniao` na query. Todas as reuniões do período são trazidas.
-
-### 2. Filtros no JavaScript (pós-query)
-
-| Filtro | Descrição |
-|--------|-----------|
-| Agência | Se o filtro de agência está ativo, faz lookup `leads.agencia` via `leadId` e remove quem não pertence à agência |
-| Diretores | Remove reuniões de vendedores com `diretorVendas=true` ou `usuarioInterno=true` |
-
-### 3. Classificação: Futura vs Passada
-
-Para cada reunião, o dashboard verifica se `data + hora > agora`:
-
-- **Futura:** data/hora posterior ao momento atual
-- **Passada:** data/hora igual ou anterior ao momento atual
-
-Se não há `hora` preenchida, compara apenas a `data` com o dia de hoje.
-
-**Importante — Timezone:** O campo `hora` no banco é `timetz` e vem com sufixo `+00` (ex: `16:00:00+00`), mas o valor armazenado **já é horário local (BRT)**. O `parseMeetingDateTimeYmdHm` remove o offset antes de criar o `Date`, para interpretar corretamente como horário local.
 
 ---
 
 ## Regra de Validação: `isValidMeeting()`
 
-Define se uma reunião **passada** conta como válida:
+Define se uma reunião **passada** conta como "Realizada":
 
 ```javascript
 function isValidMeeting(row) {
-    // Ligação realizada → sempre conta
+    // Ligação → sempre conta
     if (row.tipo_agendamento === 'a23a700b-673e-4e7f-afed-8f0eb56c1455') return true;
     // Score IA preenchido → conta
     if (row.score_final !== null && row.score_final !== undefined && row.score_final !== '') return true;
@@ -76,71 +77,87 @@ function isValidMeeting(row) {
 }
 ```
 
-### Resumo:
-
-| Condição | Conta? |
-|----------|--------|
-| Reunião com score IA preenchido | Sim |
-| Ligação realizada (tipo_agendamento = LIGACAO_ID) | Sim |
-| Reunião sem score e não é ligação | Não |
-| Reunião cancelada com score preenchido | **Sim** (não filtramos status) |
-| Reunião futura (qualquer status) | Sim (não exige score) |
+| Condição | Conta como "Realizada"? | Conta como "Total s/ score"? |
+|----------|------------------------|------------------------------|
+| Score IA preenchido | Sim | Sim |
+| Ligação (tipo_agendamento = LIGACAO_ID) | Sim | Sim |
+| Sem score e não é ligação | **Não** | **Sim** |
+| Cancelada com score preenchido | Sim (não filtra status) | Sim |
+| Futura (qualquer status) | N/A (é futura) | N/A (é futura) |
 
 ---
 
-## Contagem por Bloco
+## Detalhamento por Card
 
-### Acontecendo Agora (`meetings-now`)
+### 1. Acontecendo Agora (vermelho)
+
+Query separada:
 ```
+FROM agendamento
 WHERE statusReuniao = 'agendado'
   AND data = hoje
   AND hora (parte HH) = hora atual
-  AND vendedor não é diretor
-  AND agência (se filtro ativo)
+  AND leadId IS NOT NULL
 ```
-Não exige score (reunião em andamento).
+Não exige score (reunião ainda em andamento).
 
-### Total do Período (`meetings-today`)
+### 2. Mês / Total do período (azul)
+
 ```
 countTotal = countFuture + countPast
 ```
+Soma das futuras (todas) + passadas válidas (com score ou ligação).
+O label muda dinamicamente conforme o filtro do header (Hoje, Semana, Mês, etc).
 
-### Agendadas / Futuras (`meetings-week`)
+### 3. Agendadas / Futuras (cinza)
+
 ```
 Reuniões com data/hora > agora
-Conta TODAS (sem exigir score — ainda não aconteceram)
 ```
+Conta TODAS as futuras, sem exigir score (ainda não aconteceram).
 
-### Realizadas (`meetings-month`)
+### 4. Realizadas (verde)
+
 ```
 Reuniões com data/hora <= agora
-Somente as que passam em isValidMeeting():
-  - score_final preenchido OU
-  - tipo_agendamento = Ligação
+  E (score_final preenchido OU tipo_agendamento = Ligação)
 ```
+Apenas passadas que passam em `isValidMeeting()`.
 
-### Criadas Hoje (`meetings-created-today`)
+### 5. Total s/ score (laranja)
+
 ```
-WHERE created_at entre 00:00 e 23:59 de hoje
+Reuniões com data/hora <= agora
+```
+TODAS as passadas, sem nenhum filtro de score ou status.
+A diferença entre este card e "Realizadas" mostra quantas reuniões estão **sem score preenchido**.
+
+### 6. Criadas Hoje (roxo)
+
+Query separada:
+```
+FROM agendamento
+WHERE created_at >= hoje 00:00
+  AND created_at <= hoje 23:59
   AND leadId IS NOT NULL
-  AND vendedor não é diretor
-  AND agência (se filtro ativo)
 ```
-Conta todas as criadas hoje, independente da data da reunião.
+Conta todas registradas hoje no CRM, independente da data da reunião.
 
 ---
 
-## Divergências Conhecidas vs Queries SQL Externas
+## Divergências vs Sistemas Externos (lirica_aurea / Queries SQL)
 
-| Aspecto | Dashboard | Query SQL típica |
-|---------|-----------|-----------------|
-| Filtro de status | **Não filtra** (qualquer status com score conta) | Geralmente filtra `statusReuniao IN ('realizada','Realizada')` |
+| Aspecto | Dashboard | lirica_aurea / SQL externo |
+|---------|-----------|---------------------------|
+| Filtro de status | **Não filtra** (qualquer status com score conta) | Exige `statusReuniao = 'realizada'` |
 | Canceladas | Não exclui explicitamente | Exclui `NOT IN ('cancelado','Cancelada')` |
+| Score | Exige `score_final` preenchido (exceto ligações) | Não usa `score_final` |
+| Ligações | Conta separado via `tipo_agendamento = LIGACAO_ID` | Não diferencia tipo |
 | Diretores | Exclui | Geralmente não exclui |
 | Agência | Filtra via `leads.agencia` | Geralmente não filtra |
 | Futuras | Conta todas | Geralmente não conta |
 
-**Principal divergência:** O dashboard conta qualquer reunião passada que tenha score preenchido, independente do `statusReuniao`. Queries SQL externas costumam exigir `statusReuniao = 'realizada'`.
+**Principal divergência:** O dashboard conta qualquer reunião passada com score preenchido, independente do `statusReuniao`. Sistemas externos costumam exigir `statusReuniao = 'realizada'`.
 
 ---
 
@@ -148,4 +165,4 @@ Conta todas as criadas hoje, independente da data da reunião.
 
 | Constante | Valor | Descrição |
 |-----------|-------|-----------|
-| `LIGACAO_TIPO_ID` | `a23a700b-673e-4e7f-afed-8f0eb56c1455` | UUID do tipo "Ligação" na tabela `agendamento.tipo_agendamento` |
+| `LIGACAO_TIPO_ID` | `a23a700b-673e-4e7f-afed-8f0eb56c1455` | UUID do tipo "Ligação" em `agendamento.tipo_agendamento` |
