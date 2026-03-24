@@ -2148,8 +2148,11 @@
       function parseMeetingDateTimeYmdHm(ymd, hm) {
         const d = String(ymd || '').trim();
         if (!d) return null;
-        const time = String(hm || '00:00').trim() || '00:00';
-        const isoLocal = `${d}T${time}:00`;
+        // hora no BD vem como "16:00:00+00" mas já é horário local (BRT).
+        // Remover offset (+00, +00:00, -03, etc) para interpretar como local.
+        const raw = String(hm || '00:00').trim() || '00:00';
+        const time = raw.replace(/[+-]\d{2}(:\d{2})?$/, '');
+        const isoLocal = `${d}T${time}`;
         const dt = new Date(isoLocal);
         return Number.isNaN(dt.getTime()) ? null : dt;
       }
