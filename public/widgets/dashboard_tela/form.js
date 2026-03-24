@@ -5376,21 +5376,25 @@
         __tooltipEl.style.left = left + 'px';
         __tooltipEl.classList.add(arrowClass);
       }
-      function __hideTooltip() { if (__tooltipEl) { __tooltipEl.className = 'dash-tooltip'; } }
+      let __tooltipAnchor = null;
+      function __hideTooltip() { if (__tooltipEl) { __tooltipEl.className = 'dash-tooltip'; } __tooltipAnchor = null; }
       try {
         const dashRoot = document.getElementById('dashboard-acelerai-v2') || document.body;
-        dashRoot.addEventListener('mouseenter', (e) => {
+        dashRoot.addEventListener('mouseover', (e) => {
           const t = e.target && e.target.closest ? e.target.closest('[data-tooltip]') : null;
-          if (!t) return;
+          if (!t || t === __tooltipAnchor) return;
           clearTimeout(__tooltipTimer);
+          __tooltipAnchor = t;
           __tooltipTimer = setTimeout(() => __showTooltip(t), 60);
-        }, true);
-        dashRoot.addEventListener('mouseleave', (e) => {
+        });
+        dashRoot.addEventListener('mouseout', (e) => {
           const t = e.target && e.target.closest ? e.target.closest('[data-tooltip]') : null;
           if (!t) return;
+          const related = e.relatedTarget;
+          if (related && t.contains(related)) return;
           clearTimeout(__tooltipTimer);
           __hideTooltip();
-        }, true);
+        });
       } catch (e) {}
 
       // Tooltips explicativos para cada KPI (linguagem simples para público leigo)
