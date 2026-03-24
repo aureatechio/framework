@@ -2945,42 +2945,40 @@
       #dashboard-acelerai-v2 .tb-sellers-table td { padding: 8px 12px; }
     }
 
-    /* ===== INFO TOOLTIPS ===== */
+    /* ===== INFO POPOVER (clique) ===== */
     .kpi-info-icon {
       display: inline-flex; align-items: center; justify-content: center;
       width: 16px; height: 16px; border-radius: 50%;
       background: var(--bg-subtle, #f1f5f9);
       color: var(--text-muted, #64748b);
-      font-size: 10px; font-weight: 600; cursor: help;
-      flex-shrink: 0;
+      font-size: 10px; font-weight: 600; cursor: pointer;
+      flex-shrink: 0; vertical-align: middle;
       transition: background 0.15s ease, color 0.15s ease;
-      line-height: 1;
+      line-height: 1; user-select: none;
     }
     .kpi-info-icon:hover { background: var(--col-primary, #3b82f6); color: #fff; }
     #dashboard-acelerai-v2.dark-mode .kpi-info-icon { background: rgba(255,255,255,0.08); color: var(--text-muted); }
     #dashboard-acelerai-v2.dark-mode .kpi-info-icon:hover { background: var(--col-primary); color: #fff; }
 
-    /* Tooltip flutuante (position:fixed via JS — não é cortado por overflow:hidden) */
-    .dash-tooltip {
-      position: fixed; z-index: 99999; pointer-events: none;
+    /* Backdrop invisível para fechar ao clicar fora */
+    .info-popover-backdrop {
+      position: fixed; inset: 0; z-index: 99998; background: transparent;
+    }
+    /* Card do popover */
+    .info-popover {
+      position: fixed; z-index: 99999;
       background: #ffffff; color: #475569;
       border: 1px solid #e2e8f0;
       font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      font-size: 11.5px; font-weight: 400; line-height: 1.55;
-      padding: 10px 14px; border-radius: 10px;
-      white-space: pre-line; width: max-content; max-width: 280px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.10);
-      opacity: 0; transition: opacity 0.15s ease;
+      font-size: 12px; font-weight: 400; line-height: 1.6;
+      padding: 14px 16px; border-radius: 12px;
+      white-space: pre-line; width: max-content; max-width: 300px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+      animation: infoPopIn 0.15s ease;
     }
-    .dash-tooltip.visible { opacity: 1; }
-    .dash-tooltip::after {
-      content: ''; position: absolute; left: 50%; transform: translateX(-50%);
-      border: 5px solid transparent;
+    @keyframes infoPopIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+    #dashboard-acelerai-v2.dark-mode .info-popover {
+      background: #1e293b; color: #cbd5e1; border-color: #334155;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
     }
-    .dash-tooltip.arrow-bottom::after { top: 100%; border-top-color: #ffffff; }
-    .dash-tooltip.arrow-top::after { bottom: 100%; border-bottom-color: #ffffff; }
-    /* Dark mode */
-    #dashboard-acelerai-v2.dark-mode .dash-tooltip { background: #1e293b; color: #94a3b8; border-color: #334155; box-shadow: 0 4px 16px rgba(0,0,0,0.35); }
-    #dashboard-acelerai-v2.dark-mode .dash-tooltip.arrow-bottom::after { border-top-color: #1e293b; }
-    #dashboard-acelerai-v2.dark-mode .dash-tooltip.arrow-top::after { border-bottom-color: #1e293b; }
 

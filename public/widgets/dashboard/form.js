@@ -6496,82 +6496,68 @@
         }
       }
 
-      // --- TOOLTIP FLUTUANTE (position:fixed, escapa de overflow:hidden) ---
-      // Garante que o elemento existe no DOM (Bubble pode removê-lo em refreshes)
-      function __ensureTooltipEl() {
-        let el = document.getElementById('dash-tooltip-singleton');
-        if (!el || !el.parentNode) {
-          el = document.createElement('div');
-          el.id = 'dash-tooltip-singleton';
-          el.className = 'dash-tooltip';
-          document.body.appendChild(el);
-        }
-        return el;
+      // --- INFO POPOVER (clique no botão "i") ---
+      function __closeInfoPopover() {
+        const old = document.getElementById('info-popover-box');
+        const oldBg = document.getElementById('info-popover-bg');
+        if (old) old.remove();
+        if (oldBg) oldBg.remove();
       }
-      let __tooltipTimer = null;
-      let __tooltipAnchor = null;
-      function __showTooltip(anchor) {
-        const text = anchor && anchor.getAttribute ? anchor.getAttribute('data-tooltip') : '';
+      function __openInfoPopover(anchor) {
+        __closeInfoPopover();
+        const text = anchor && anchor.getAttribute ? anchor.getAttribute('data-info') : '';
         if (!text) return;
-        const el = __ensureTooltipEl();
-        el.textContent = text;
-        el.className = 'dash-tooltip';
-        el.style.left = '-9999px';
-        el.style.top = '-9999px';
-        el.classList.add('visible');
-        // Medir e posicionar
+        // Backdrop (fecha ao clicar fora)
+        const bg = document.createElement('div');
+        bg.id = 'info-popover-bg';
+        bg.className = 'info-popover-backdrop';
+        bg.addEventListener('click', __closeInfoPopover);
+        document.body.appendChild(bg);
+        // Card
+        const box = document.createElement('div');
+        box.id = 'info-popover-box';
+        box.className = 'info-popover';
+        box.textContent = text;
+        box.style.left = '-9999px';
+        box.style.top = '-9999px';
+        document.body.appendChild(box);
+        // Posicionar
         const rect = anchor.getBoundingClientRect();
-        const tt = el.getBoundingClientRect();
+        const tt = box.getBoundingClientRect();
         const gap = 8;
-        let top = rect.top - tt.height - gap;
-        let arrowClass = 'arrow-bottom';
-        if (top < 4) { top = rect.bottom + gap; arrowClass = 'arrow-top'; }
+        let top = rect.bottom + gap;
+        if (top + tt.height > window.innerHeight - 8) top = rect.top - tt.height - gap;
         let left = rect.left + rect.width / 2 - tt.width / 2;
-        if (left < 4) left = 4;
-        if (left + tt.width > window.innerWidth - 4) left = window.innerWidth - tt.width - 4;
-        el.style.top = top + 'px';
-        el.style.left = left + 'px';
-        el.classList.add(arrowClass);
+        if (left < 8) left = 8;
+        if (left + tt.width > window.innerWidth - 8) left = window.innerWidth - tt.width - 8;
+        box.style.top = top + 'px';
+        box.style.left = left + 'px';
       }
-      function __hideTooltip() {
-        try { const el = document.getElementById('dash-tooltip-singleton'); if (el) el.className = 'dash-tooltip'; } catch (e) {}
-        __tooltipAnchor = null;
-      }
-      // Delegação global via mouseover/mouseout (borbulham, diferente de mouseenter/mouseleave)
+      // Delegação global: clique em qualquer .kpi-info-icon
       try {
         const dashRoot = document.getElementById('dashboard-acelerai-v2') || document.body;
-        dashRoot.addEventListener('mouseover', (e) => {
-          const t = e.target && e.target.closest ? e.target.closest('[data-tooltip]') : null;
-          if (!t || t === __tooltipAnchor) return;
-          clearTimeout(__tooltipTimer);
-          __tooltipAnchor = t;
-          __tooltipTimer = setTimeout(() => __showTooltip(t), 60);
-        });
-        dashRoot.addEventListener('mouseout', (e) => {
-          const t = e.target && e.target.closest ? e.target.closest('[data-tooltip]') : null;
-          if (!t) return;
-          const related = e.relatedTarget;
-          if (related && t.contains(related)) return;
-          clearTimeout(__tooltipTimer);
-          __hideTooltip();
+        dashRoot.addEventListener('click', (e) => {
+          const btn = e.target && e.target.closest ? e.target.closest('.kpi-info-icon') : null;
+          if (!btn) return;
+          e.stopPropagation();
+          __openInfoPopover(btn);
         });
       } catch (e) {}
 
-      // Tooltips explicativos para cada KPI (linguagem simples para público leigo)
-      // \n = quebra de linha (CSS white-space: pre-line)
+      // Textos explicativos para cada KPI (linguagem simples, padrão "Critérios:")
       const KPI_TOOLTIPS = {
-        [KPI_IDS.FATURAMENTO]: 'Soma de todas as vendas aprovadas no período.\n\nCritérios para contar:\n• Venda marcada como aprovada\n• Contrato assinado (ClickSign)\n• Checkout pago',
-        [KPI_IDS.CONVERSAO]: 'De cada 100 leads captados, quantos viraram venda?\n\nFórmula:\nVendas ÷ Leads Captados × 100',
-        [KPI_IDS.CONV_OPORTUNIDADES]: 'Das vendas realizadas, quantas vieram de leads qualificados (prioridade)?\n\nFórmula:\nVendas de leads prioridade ÷ Total de vendas × 100',
-        [KPI_IDS.OPORTUNIDADES]: 'Leads que passaram pela qualificação e foram marcados como prioridade.\n\nExclui leads importados.',
-        [KPI_IDS.PROPOSTAS]: 'Quantidade de propostas comerciais enviadas no período.\n\nConta 1 proposta por lead (sem duplicar).',
-        [KPI_IDS.REUNIOES]: 'Reuniões válidas no período.\n\nO que conta:\n• Reuniões agendadas com score IA preenchido\n• Ligações realizadas\n\nNão conta:\n• Reuniões canceladas\n• Reuniões sem score e sem ligação',
-        [KPI_IDS.CAPTADOS]: 'Novos leads que entraram no CRM durante o período selecionado.\n\nConsidera apenas leads do novo CRM.',
-        [KPI_IDS.QTD_VENDAS]: 'Número de vendas aprovadas no período.\n\nCritérios:\n• Venda aprovada\n• Contrato assinado\n• Checkout pago',
-        [KPI_IDS.TICKET]: 'Valor médio de cada venda.\n\nFórmula:\nFaturamento total ÷ Quantidade de vendas',
-        [KPI_IDS.INVEST]: 'Total gasto em anúncios (Meta Ads) no período.\n\nVem direto da API do Meta, filtrado pelas campanhas ativas.',
-        [KPI_IDS.CAC]: 'Custo para adquirir cada cliente.\n\nFórmula:\nInvestimento em Mkt ÷ Qtd de Vendas\n\n↓ Quanto menor, melhor.',
-        [KPI_IDS.ROAS]: 'Retorno sobre o investimento em anúncios.\n\nFórmula:\nFaturamento ÷ Investimento em Mkt\n\n↑ Quanto maior, melhor.',
+        [KPI_IDS.FATURAMENTO]: 'Soma de todas as vendas aprovadas no período.\n\nCritérios:\n• Venda marcada como aprovada\n• Contrato assinado (ClickSign)\n• Checkout pago',
+        [KPI_IDS.CONVERSAO]: 'De cada 100 leads captados, quantos viraram venda?\n\nCritérios:\n• Fórmula: Vendas ÷ Leads Captados × 100\n• Considera apenas vendas aprovadas',
+        [KPI_IDS.CONV_OPORTUNIDADES]: 'Das vendas realizadas, quantas vieram de leads qualificados?\n\nCritérios:\n• Fórmula: Vendas de leads prioridade ÷ Total de vendas × 100\n• Lead precisa ter passou_prioridade = true',
+        [KPI_IDS.OPORTUNIDADES]: 'Leads marcados como prioridade no período.\n\nCritérios:\n• Lead passou pela qualificação\n• Marcado como prioridade\n• Exclui leads importados',
+        [KPI_IDS.PROPOSTAS]: 'Propostas comerciais enviadas no período.\n\nCritérios:\n• Conta 1 proposta por lead (sem duplicar)\n• Qualquer proposta gerada no período',
+        [KPI_IDS.REUNIOES]: 'Reuniões válidas no período.\n\nCritérios:\n• Reuniões agendadas com score IA preenchido\n• Ligações realizadas\n\nNão conta:\n• Reuniões canceladas\n• Reuniões sem score e sem ligação',
+        [KPI_IDS.CAPTADOS]: 'Novos leads que entraram no CRM no período.\n\nCritérios:\n• Apenas leads do novo CRM\n• Data de entrada dentro do período selecionado',
+        [KPI_IDS.QTD_VENDAS]: 'Número de vendas aprovadas no período.\n\nCritérios:\n• Venda marcada como aprovada\n• Contrato assinado (ClickSign)\n• Checkout pago',
+        [KPI_IDS.TICKET]: 'Valor médio de cada venda.\n\nCritérios:\n• Fórmula: Faturamento ÷ Quantidade de vendas\n• Considera apenas vendas aprovadas',
+        [KPI_IDS.INVEST]: 'Total gasto em anúncios no período.\n\nCritérios:\n• Dados direto da API do Meta Ads\n• Filtrado pelas campanhas ativas da agência',
+        [KPI_IDS.CAC]: 'Custo para adquirir cada cliente.\n\nCritérios:\n• Fórmula: Investimento Mkt ÷ Qtd de Vendas\n• ↓ Quanto menor, melhor',
+        [KPI_IDS.ROAS]: 'Retorno sobre o investimento em anúncios.\n\nCritérios:\n• Fórmula: Faturamento ÷ Investimento Mkt\n• ↑ Quanto maior, melhor',
       };
 
       function renderKPIs() {
@@ -6635,7 +6621,7 @@
           const clickAttr = isClickable ? `onclick="window.openGaugePurchasesModal && window.openGaugePurchasesModal()" style="cursor:pointer;"` : '';
           const clickHint = '';
           const tooltip = KPI_TOOLTIPS[k.id] || '';
-          const infoIcon = tooltip ? `<span class="kpi-info-icon" data-tooltip="${escapeHtmlLite(tooltip)}">i</span>` : '';
+          const infoIcon = tooltip ? `<span class="kpi-info-icon" data-info="${escapeHtmlLite(tooltip)}">i</span>` : '';
 
           return `
           <div class="kpi-card" ${clickAttr}>
@@ -6861,26 +6847,25 @@
 
         // Tooltips explicativos para cada etapa do funil
         const FUNNEL_TOOLTIPS = {
-          'Leads Captados': 'Novos leads que entraram no CRM.\n\nÉ o topo do funil — todo lead novo começa aqui.',
-          'Oportunidades': 'Leads com CNPJ válido identificados como oportunidade real de negócio.\n\n% = em relação ao total de leads captados.',
-          'Prioridade': 'Leads qualificados que foram priorizados para atendimento comercial.\n\n% = em relação ao total de leads captados.',
-          'Propostas': 'Leads que receberam uma proposta comercial.\n\nConta 1 por lead (sem duplicar).\n% = em relação ao total de leads captados.',
-          'Reuniões': 'Leads com reunião agendada (score preenchido ou ligação realizada).\n\nExclui reuniões canceladas.\n% = em relação ao total de leads captados.',
-          'Vendas': 'Leads que fecharam a compra.\n\nVenda aprovada + contrato assinado + checkout pago.\n% = em relação ao total de leads captados.',
+          'Leads Captados': 'Topo do funil — todo lead novo começa aqui.\n\nCritérios:\n• Leads que entraram no CRM no período\n• Apenas do novo CRM',
+          'Oportunidades': 'Leads identificados como oportunidade real.\n\nCritérios:\n• Possui CNPJ válido\n• % em relação ao total de leads captados',
+          'Prioridade': 'Leads priorizados para atendimento comercial.\n\nCritérios:\n• Passou pela qualificação\n• Marcado como prioridade\n• % em relação ao total de leads captados',
+          'Propostas': 'Leads que receberam proposta comercial.\n\nCritérios:\n• Conta 1 por lead (sem duplicar)\n• % em relação ao total de leads captados',
+          'Reuniões': 'Leads com reunião válida agendada.\n\nCritérios:\n• Score IA preenchido ou ligação realizada\n• Exclui reuniões canceladas\n• % em relação ao total de leads captados',
+          'Vendas': 'Leads que fecharam a compra.\n\nCritérios:\n• Venda aprovada\n• Contrato assinado\n• Checkout pago\n• % em relação ao total de leads captados',
         };
 
         // Gerar grid de dados (horizontal, abaixo do SVG)
         const dataCells = data.map((d, idx) => {
-          // Exibir sempre com 2 casas decimais conforme solicitado (.00)
           const pct = idx === 0 ? '100.00%' : `${d.gc.toFixed(2)}%`;
           const funnelTip = FUNNEL_TOOLTIPS[d.l] || '';
-          const funnelTipAttr = funnelTip ? ` data-tooltip="${escapeHtmlLite(funnelTip)}" data-tooltip-pos="bottom"` : '';
+          const funnelInfoIcon = funnelTip ? ` <span class="kpi-info-icon" data-info="${escapeHtmlLite(funnelTip)}" style="vertical-align:middle;">i</span>` : '';
           return `<div class="funnel-data-cell">
             <div class="funnel-data-value">
               ${formatNumber(d.v)}
               <span class="funnel-data-pct">${pct}</span>
             </div>
-            <div class="funnel-data-label"${funnelTipAttr}>${d.l}</div>
+            <div class="funnel-data-label">${d.l}${funnelInfoIcon}</div>
           </div>`;
         }).join('');
         
