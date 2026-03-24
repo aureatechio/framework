@@ -184,7 +184,7 @@
     <!-- Velocímetro -->
     <div class="card flex-col items-center relative" style="padding: 20px;">
       <div class="text-center mb-3 w-full">
-        <div class="section-title text-primary" style="font-size: 16px; margin-bottom: 2px;">Velocímetro <span class="kpi-info-icon" onclick="event.stopPropagation();window.__openInfoPopover(this)" data-info="Progresso do faturamento vs meta.&#10;&#10;Critérios:&#10;• Atual = soma das vendas aprovadas&#10;• Meta = definida no CRM por período&#10;• O % mostra quanto da meta já foi atingido">i</span></div>
+        <div class="section-title text-primary" style="font-size: 16px; margin-bottom: 2px;">Velocímetro <span class="kpi-info-icon" onmouseenter="window.__openInfoPopover(this)" onmouseleave="window.__closeInfoPopover()" data-info="Progresso do faturamento vs meta.&#10;&#10;Critérios:&#10;• Atual = soma das vendas aprovadas&#10;• Meta = definida no CRM por período&#10;• O % mostra quanto da meta já foi atingido">i</span></div>
         <div class="section-subtitle" id="gauge-month-label">Meta de Dezembro</div>
       </div>
 
@@ -266,7 +266,7 @@
           <span class="text-xs font-medium opacity-80" style="color:#ef4444">Acontecendo agora</span>
           <span class="count" id="meetings-now">--</span>
         </div>
-        <span class="kpi-info-icon" onclick="event.stopPropagation();window.__openInfoPopover(this)" data-info="Reuniões em andamento neste momento.&#10;&#10;Critérios:&#10;• Agendada para a hora atual&#10;• Status = agendado">i</span>
+        <span class="kpi-info-icon" onmouseenter="window.__openInfoPopover(this)" onmouseleave="window.__closeInfoPopover()" data-info="Reuniões em andamento neste momento.&#10;&#10;Critérios:&#10;• Agendada para a hora atual&#10;• Status = agendado">i</span>
       </div>
 
       <div class="meeting-card today">
@@ -275,7 +275,7 @@
           <span class="text-xs font-medium opacity-80" style="color:#3b82f6" id="meetings-label-a">Hoje</span>
           <span class="count" id="meetings-today">--</span>
         </div>
-        <span class="kpi-info-icon" onclick="event.stopPropagation();window.__openInfoPopover(this)" data-info="Total de reuniões válidas no período.&#10;&#10;Critérios:&#10;• Reuniões com score IA preenchido&#10;• Ligações realizadas&#10;&#10;Não conta canceladas nem sem score.">i</span>
+        <span class="kpi-info-icon" onmouseenter="window.__openInfoPopover(this)" onmouseleave="window.__closeInfoPopover()" data-info="Total de reuniões válidas no período.&#10;&#10;Critérios:&#10;• Reuniões com score IA preenchido&#10;• Ligações realizadas&#10;&#10;Não conta canceladas nem sem score.">i</span>
       </div>
 
       <div class="meeting-card week">
@@ -284,7 +284,7 @@
           <span class="text-xs font-medium opacity-80" style="color:var(--text-muted)" id="meetings-label-b">Esta semana</span>
           <span class="count" id="meetings-week">--</span>
         </div>
-        <span class="kpi-info-icon" onclick="event.stopPropagation();window.__openInfoPopover(this)" data-info="Reuniões futuras (ainda não ocorreram).&#10;&#10;Critérios:&#10;• Data posterior a hoje&#10;• Conta todas agendadas, independente de score">i</span>
+        <span class="kpi-info-icon" onmouseenter="window.__openInfoPopover(this)" onmouseleave="window.__closeInfoPopover()" data-info="Reuniões futuras (ainda não ocorreram).&#10;&#10;Critérios:&#10;• Data posterior a hoje&#10;• Conta todas agendadas, independente de score">i</span>
       </div>
 
       <div class="meeting-card month">
@@ -293,7 +293,7 @@
           <span class="text-xs font-medium opacity-80" style="color:#16a34a" id="meetings-label-c">Este mês</span>
           <span class="count" id="meetings-month">--</span>
         </div>
-        <span class="kpi-info-icon" onclick="event.stopPropagation();window.__openInfoPopover(this)" data-info="Reuniões que já ocorreram no período.&#10;&#10;Critérios:&#10;• Score IA preenchido, ou&#10;• Ligação realizada">i</span>
+        <span class="kpi-info-icon" onmouseenter="window.__openInfoPopover(this)" onmouseleave="window.__closeInfoPopover()" data-info="Reuniões que já ocorreram no período.&#10;&#10;Critérios:&#10;• Score IA preenchido, ou&#10;• Ligação realizada">i</span>
       </div>
 
       <div class="meeting-card created-today">
@@ -302,7 +302,7 @@
           <span class="text-xs font-medium opacity-80" style="color:#8b5cf6">Criadas hoje</span>
           <span class="count" id="meetings-created-today">--</span>
         </div>
-        <span class="kpi-info-icon" onclick="event.stopPropagation();window.__openInfoPopover(this)" data-info="Reuniões registradas no CRM hoje.&#10;&#10;Critérios:&#10;• Criadas hoje (created_at)&#10;• Independente da data da reunião em si">i</span>
+        <span class="kpi-info-icon" onmouseenter="window.__openInfoPopover(this)" onmouseleave="window.__closeInfoPopover()" data-info="Reuniões registradas no CRM hoje.&#10;&#10;Critérios:&#10;• Criadas hoje (created_at)&#10;• Independente da data da reunião em si">i</span>
       </div>
     </div>
   </section>

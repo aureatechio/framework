@@ -2960,11 +2960,7 @@
     #dashboard-acelerai-v2.dark-mode .kpi-info-icon { background: rgba(255,255,255,0.08); color: var(--text-muted); }
     #dashboard-acelerai-v2.dark-mode .kpi-info-icon:hover { background: var(--col-primary); color: #fff; }
 
-    /* Backdrop invisível para fechar ao clicar fora */
-    .info-popover-backdrop {
-      position: fixed; inset: 0; z-index: 99998; background: transparent;
-    }
-    /* Card do popover */
+    /* Card do popover (hover) */
     .info-popover {
       position: fixed; z-index: 99999;
       background: #ffffff; color: #475569;

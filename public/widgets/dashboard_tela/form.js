@@ -5351,18 +5351,12 @@
       // --- INFO POPOVER (clique no botão "i") ---
       window.__closeInfoPopover = function() {
         try { var old = document.getElementById('info-popover-box'); if (old) old.remove(); } catch(e){}
-        try { var oldBg = document.getElementById('info-popover-bg'); if (oldBg) oldBg.remove(); } catch(e){}
       };
       window.__openInfoPopover = function(el) {
         try {
           window.__closeInfoPopover();
           var text = el && el.getAttribute ? el.getAttribute('data-info') : '';
           if (!text) return;
-          var bg = document.createElement('div');
-          bg.id = 'info-popover-bg';
-          bg.className = 'info-popover-backdrop';
-          bg.onclick = window.__closeInfoPopover;
-          document.body.appendChild(bg);
           var box = document.createElement('div');
           box.id = 'info-popover-box';
           box.className = 'info-popover';
@@ -5380,7 +5374,7 @@
           if (left + tt.width > window.innerWidth - 8) left = window.innerWidth - tt.width - 8;
           box.style.top = top + 'px';
           box.style.left = left + 'px';
-        } catch(e) { console.warn('[info-popover]', e); }
+        } catch(e) {}
       };
 
       const KPI_TOOLTIPS = {
@@ -5455,7 +5449,7 @@
             </div>`;
 
           const tooltip = KPI_TOOLTIPS[k.id] || '';
-          const infoIcon = tooltip ? `<span class="kpi-info-icon" data-info="${escapeHtmlLite(tooltip)}" onclick="event.stopPropagation();window.__openInfoPopover(this)">i</span>` : '';
+          const infoIcon = tooltip ? `<span class="kpi-info-icon" data-info="${escapeHtmlLite(tooltip)}" onmouseenter="window.__openInfoPopover(this)" onmouseleave="window.__closeInfoPopover()">i</span>` : '';
 
           return `
           <div class="kpi-card">
@@ -5706,7 +5700,7 @@
         const dataCells = data.map((d, idx) => {
           const pct = idx === 0 ? '100.00%' : `${Number(d.gc || 0).toFixed(2)}%`;
           const funnelTip = FUNNEL_TOOLTIPS[d.l] || '';
-          const funnelInfoIcon = funnelTip ? ` <span class="kpi-info-icon" data-info="${escapeHtmlLite(funnelTip)}" onclick="event.stopPropagation();window.__openInfoPopover(this)" style="vertical-align:middle;">i</span>` : '';
+          const funnelInfoIcon = funnelTip ? ` <span class="kpi-info-icon" data-info="${escapeHtmlLite(funnelTip)}" onmouseenter="window.__openInfoPopover(this)" onmouseleave="window.__closeInfoPopover()" style="vertical-align:middle;">i</span>` : '';
           return `<div class="funnel-data-cell">
             <div class="funnel-data-value">
               ${formatNumber(d.v)}
