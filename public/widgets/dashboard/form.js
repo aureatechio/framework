@@ -6497,36 +6497,46 @@
       }
 
       // --- TOOLTIP FLUTUANTE (position:fixed, escapa de overflow:hidden) ---
-      const __tooltipEl = (() => {
-        let el = document.querySelector('.dash-tooltip');
-        if (!el) { el = document.createElement('div'); el.className = 'dash-tooltip'; document.body.appendChild(el); }
+      // Garante que o elemento existe no DOM (Bubble pode removê-lo em refreshes)
+      function __ensureTooltipEl() {
+        let el = document.getElementById('dash-tooltip-singleton');
+        if (!el || !el.parentNode) {
+          el = document.createElement('div');
+          el.id = 'dash-tooltip-singleton';
+          el.className = 'dash-tooltip';
+          document.body.appendChild(el);
+        }
         return el;
-      })();
+      }
       let __tooltipTimer = null;
+      let __tooltipAnchor = null;
       function __showTooltip(anchor) {
         const text = anchor && anchor.getAttribute ? anchor.getAttribute('data-tooltip') : '';
-        if (!text || !__tooltipEl) return;
-        __tooltipEl.textContent = text;
-        __tooltipEl.className = 'dash-tooltip';
-        __tooltipEl.style.left = '-9999px';
-        __tooltipEl.style.top = '-9999px';
-        __tooltipEl.classList.add('visible');
+        if (!text) return;
+        const el = __ensureTooltipEl();
+        el.textContent = text;
+        el.className = 'dash-tooltip';
+        el.style.left = '-9999px';
+        el.style.top = '-9999px';
+        el.classList.add('visible');
         // Medir e posicionar
         const rect = anchor.getBoundingClientRect();
-        const tt = __tooltipEl.getBoundingClientRect();
+        const tt = el.getBoundingClientRect();
         const gap = 8;
         let top = rect.top - tt.height - gap;
-        let arrowClass = 'arrow-bottom'; // seta aponta p/ baixo (tooltip acima)
+        let arrowClass = 'arrow-bottom';
         if (top < 4) { top = rect.bottom + gap; arrowClass = 'arrow-top'; }
         let left = rect.left + rect.width / 2 - tt.width / 2;
         if (left < 4) left = 4;
         if (left + tt.width > window.innerWidth - 4) left = window.innerWidth - tt.width - 4;
-        __tooltipEl.style.top = top + 'px';
-        __tooltipEl.style.left = left + 'px';
-        __tooltipEl.classList.add(arrowClass);
+        el.style.top = top + 'px';
+        el.style.left = left + 'px';
+        el.classList.add(arrowClass);
       }
-      let __tooltipAnchor = null;
-      function __hideTooltip() { if (__tooltipEl) { __tooltipEl.className = 'dash-tooltip'; } __tooltipAnchor = null; }
+      function __hideTooltip() {
+        try { const el = document.getElementById('dash-tooltip-singleton'); if (el) el.className = 'dash-tooltip'; } catch (e) {}
+        __tooltipAnchor = null;
+      }
       // Delegação global via mouseover/mouseout (borbulham, diferente de mouseenter/mouseleave)
       try {
         const dashRoot = document.getElementById('dashboard-acelerai-v2') || document.body;
@@ -6540,7 +6550,6 @@
         dashRoot.addEventListener('mouseout', (e) => {
           const t = e.target && e.target.closest ? e.target.closest('[data-tooltip]') : null;
           if (!t) return;
-          // Só esconde se saiu de fato do anchor (não entrou num filho)
           const related = e.relatedTarget;
           if (related && t.contains(related)) return;
           clearTimeout(__tooltipTimer);
