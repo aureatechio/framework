@@ -184,7 +184,7 @@
     <!-- Velocímetro -->
     <div class="card flex-col items-center relative" style="padding: 20px;">
       <div class="text-center mb-3 w-full">
-        <div class="section-title text-primary" style="font-size: 16px; margin-bottom: 2px;">Velocímetro <span class="kpi-info-icon" data-tooltip="Mostra o progresso do faturamento em relação à meta do período. O percentual indica quanto da meta já foi atingido." data-tooltip-pos="bottom">i</span></div>
+        <div class="section-title text-primary" style="font-size: 16px; margin-bottom: 2px;">Velocímetro <span class="kpi-info-icon" data-tooltip="Progresso do faturamento vs meta.&#10;&#10;• Atual = soma das vendas aprovadas&#10;• Meta = definida no CRM por período&#10;&#10;O % mostra quanto da meta já foi atingido." data-tooltip-pos="bottom">i</span></div>
         <div class="section-subtitle" id="gauge-month-label">Meta de Dezembro</div>
       </div>
 
@@ -260,7 +260,7 @@
     <div id="meetings-summary-card" class="card flex-col bg-white" style="background: var(--bg-card); justify-content: center;">
       <div class="section-title" style="margin-bottom:6px;">Reuniões</div>
 
-      <div class="meeting-card now" data-tooltip="Reuniões que estão acontecendo neste exato momento." data-tooltip-pos="bottom">
+      <div class="meeting-card now" data-tooltip="Reuniões em andamento neste momento.&#10;&#10;Considera reuniões agendadas para a hora atual com status 'agendado'." data-tooltip-pos="bottom">
         <div class="icon-box"><i data-lucide="video"></i></div>
         <div class="grow" style="display:flex;align-items:center;gap:6px;">
           <span class="text-xs font-medium opacity-80" style="color:#ef4444">Acontecendo agora</span>
@@ -269,7 +269,7 @@
         <div class="dot-pulse" style="background:#ef4444"></div>
       </div>
 
-      <div class="meeting-card today" data-tooltip="Reuniões agendadas para hoje (exceto canceladas)." data-tooltip-pos="bottom">
+      <div class="meeting-card today" data-tooltip="Total de reuniões válidas no período selecionado.&#10;&#10;Inclui:&#10;• Agendadas com score IA preenchido&#10;• Ligações realizadas&#10;&#10;Exclui canceladas e sem score." data-tooltip-pos="bottom">
         <div class="icon-box"><i data-lucide="calendar"></i></div>
         <div class="grow" style="display:flex;align-items:center;gap:6px;">
           <span class="text-xs font-medium opacity-80" style="color:#3b82f6" id="meetings-label-a">Hoje</span>
@@ -277,7 +277,7 @@
         </div>
       </div>
 
-      <div class="meeting-card week" data-tooltip="Reuniões agendadas para esta semana (exceto canceladas)." data-tooltip-pos="bottom">
+      <div class="meeting-card week" data-tooltip="Reuniões futuras (ainda não ocorreram).&#10;&#10;Conta todas as agendadas com data posterior a hoje, independente de score." data-tooltip-pos="bottom">
         <div class="icon-box"><i data-lucide="calendar-days"></i></div>
         <div class="grow" style="display:flex;align-items:center;gap:6px;">
           <span class="text-xs font-medium opacity-80" style="color:var(--text-muted)" id="meetings-label-b">Esta semana</span>
@@ -285,7 +285,7 @@
         </div>
       </div>
 
-      <div class="meeting-card month" data-tooltip="Total de reuniões agendadas neste mês (exceto canceladas)." data-tooltip-pos="bottom">
+      <div class="meeting-card month" data-tooltip="Reuniões que já ocorreram no período.&#10;&#10;Só conta se:&#10;• Score IA foi preenchido, ou&#10;• Foi uma ligação realizada" data-tooltip-pos="bottom">
         <div class="icon-box"><i data-lucide="calendar-range"></i></div>
         <div class="grow" style="display:flex;align-items:center;gap:6px;">
           <span class="text-xs font-medium opacity-80" style="color:#16a34a" id="meetings-label-c">Este mês</span>
@@ -293,7 +293,7 @@
         </div>
       </div>
 
-      <div class="meeting-card created-today" data-tooltip="Reuniões que foram criadas/registradas no CRM hoje." data-tooltip-pos="bottom">
+      <div class="meeting-card created-today" data-tooltip="Reuniões registradas no CRM hoje.&#10;&#10;Conta todas as criadas hoje, independente da data da reunião em si." data-tooltip-pos="bottom">
         <div class="icon-box"><i data-lucide="calendar-plus"></i></div>
         <div class="grow" style="display:flex;align-items:center;gap:6px;">
           <span class="text-xs font-medium opacity-80" style="color:#8b5cf6">Criadas hoje</span>

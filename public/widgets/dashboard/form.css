@@ -2963,12 +2963,13 @@
     /* Tooltip flutuante (position:fixed via JS — não é cortado por overflow:hidden) */
     .dash-tooltip {
       position: fixed; z-index: 99999; pointer-events: none;
-      background: #1e293b; color: #f8fafc;
+      background: #ffffff; color: #475569;
+      border: 1px solid #e2e8f0;
       font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      font-size: 11px; font-weight: 400; line-height: 1.45;
-      padding: 8px 12px; border-radius: 8px;
-      white-space: normal; width: max-content; max-width: 260px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+      font-size: 11.5px; font-weight: 400; line-height: 1.55;
+      padding: 10px 14px; border-radius: 10px;
+      white-space: pre-line; width: max-content; max-width: 280px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.10);
       opacity: 0; transition: opacity 0.15s ease;
     }
     .dash-tooltip.visible { opacity: 1; }
@@ -2976,10 +2977,10 @@
       content: ''; position: absolute; left: 50%; transform: translateX(-50%);
       border: 5px solid transparent;
     }
-    .dash-tooltip.arrow-bottom::after { top: 100%; border-top-color: #1e293b; }
-    .dash-tooltip.arrow-top::after { bottom: 100%; border-bottom-color: #1e293b; }
+    .dash-tooltip.arrow-bottom::after { top: 100%; border-top-color: #ffffff; }
+    .dash-tooltip.arrow-top::after { bottom: 100%; border-bottom-color: #ffffff; }
     /* Dark mode */
-    #dashboard-acelerai-v2.dark-mode .dash-tooltip { background: #334155; color: #f1f5f9; box-shadow: 0 4px 12px rgba(0,0,0,0.35); }
-    #dashboard-acelerai-v2.dark-mode .dash-tooltip.arrow-bottom::after { border-top-color: #334155; }
-    #dashboard-acelerai-v2.dark-mode .dash-tooltip.arrow-top::after { border-bottom-color: #334155; }
+    #dashboard-acelerai-v2.dark-mode .dash-tooltip { background: #1e293b; color: #94a3b8; border-color: #334155; box-shadow: 0 4px 16px rgba(0,0,0,0.35); }
+    #dashboard-acelerai-v2.dark-mode .dash-tooltip.arrow-bottom::after { border-top-color: #1e293b; }
+    #dashboard-acelerai-v2.dark-mode .dash-tooltip.arrow-top::after { border-bottom-color: #1e293b; }
 

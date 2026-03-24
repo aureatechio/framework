@@ -5395,18 +5395,18 @@
 
       // Tooltips explicativos para cada KPI (linguagem simples para público leigo)
       const KPI_TOOLTIPS = {
-        [KPI_IDS.FATURAMENTO]: 'Soma do valor de todas as vendas aprovadas no período selecionado.',
-        [KPI_IDS.CONVERSAO]: 'Percentual de leads captados que se tornaram vendas. Fórmula: Vendas ÷ Leads Captados.',
-        [KPI_IDS.CONV_OPORTUNIDADES]: 'Percentual de leads qualificados (prioridade) que viraram vendas. Fórmula: Vendas ÷ Leads Prioridade.',
-        [KPI_IDS.OPORTUNIDADES]: 'Leads que passaram pela qualificação e foram marcados como prioridade no período.',
-        [KPI_IDS.PROPOSTAS]: 'Quantidade de propostas comerciais geradas no período (1 por lead).',
-        [KPI_IDS.REUNIOES]: 'Total de reuniões agendadas no período, excluindo canceladas.',
-        [KPI_IDS.CAPTADOS]: 'Novos leads que entraram no CRM durante o período selecionado.',
-        [KPI_IDS.QTD_VENDAS]: 'Número de vendas aprovadas no período.',
-        [KPI_IDS.TICKET]: 'Valor médio por venda. Fórmula: Faturamento ÷ Quantidade de Vendas.',
-        [KPI_IDS.INVEST]: 'Total investido em anúncios (Meta Ads) no período.',
-        [KPI_IDS.CAC]: 'Custo de Aquisição por Cliente. Fórmula: Investimento ÷ Leads Captados. Quanto menor, melhor.',
-        [KPI_IDS.ROAS]: 'Retorno sobre o investimento em anúncios. Fórmula: Faturamento ÷ Investimento. Quanto maior, melhor.',
+        [KPI_IDS.FATURAMENTO]: 'Soma de todas as vendas aprovadas no período.\n\nCritérios para contar:\n• Venda marcada como aprovada\n• Contrato assinado (ClickSign)\n• Checkout pago',
+        [KPI_IDS.CONVERSAO]: 'De cada 100 leads captados, quantos viraram venda?\n\nFórmula:\nVendas ÷ Leads Captados × 100',
+        [KPI_IDS.CONV_OPORTUNIDADES]: 'Das vendas realizadas, quantas vieram de leads qualificados (prioridade)?\n\nFórmula:\nVendas de leads prioridade ÷ Total de vendas × 100',
+        [KPI_IDS.OPORTUNIDADES]: 'Leads que passaram pela qualificação e foram marcados como prioridade.\n\nExclui leads importados.',
+        [KPI_IDS.PROPOSTAS]: 'Quantidade de propostas comerciais enviadas no período.\n\nConta 1 proposta por lead (sem duplicar).',
+        [KPI_IDS.REUNIOES]: 'Reuniões válidas no período.\n\nO que conta:\n• Reuniões agendadas com score IA preenchido\n• Ligações realizadas\n\nNão conta:\n• Reuniões canceladas\n• Reuniões sem score e sem ligação',
+        [KPI_IDS.CAPTADOS]: 'Novos leads que entraram no CRM durante o período selecionado.\n\nConsidera apenas leads do novo CRM.',
+        [KPI_IDS.QTD_VENDAS]: 'Número de vendas aprovadas no período.\n\nCritérios:\n• Venda aprovada\n• Contrato assinado\n• Checkout pago',
+        [KPI_IDS.TICKET]: 'Valor médio de cada venda.\n\nFórmula:\nFaturamento total ÷ Quantidade de vendas',
+        [KPI_IDS.INVEST]: 'Total gasto em anúncios (Meta Ads) no período.\n\nVem direto da API do Meta, filtrado pelas campanhas ativas.',
+        [KPI_IDS.CAC]: 'Custo para adquirir cada cliente.\n\nFórmula:\nInvestimento em Mkt ÷ Qtd de Vendas\n\n↓ Quanto menor, melhor.',
+        [KPI_IDS.ROAS]: 'Retorno sobre o investimento em anúncios.\n\nFórmula:\nFaturamento ÷ Investimento em Mkt\n\n↑ Quanto maior, melhor.',
       };
 
       function renderKPIs() {
@@ -5707,12 +5707,12 @@
 
         // Tooltips explicativos para cada etapa do funil
         const FUNNEL_TOOLTIPS = {
-          'Leads Captados': 'Total de novos leads que entraram no CRM no período.',
-          'Oportunidades': 'Leads que possuem CNPJ válido e foram identificados como oportunidade real de negócio.',
-          'Prioridade': 'Leads qualificados que passaram pela triagem e foram priorizados para atendimento.',
-          'Propostas': 'Leads que receberam uma proposta comercial formal.',
-          'Reuniões': 'Leads que tiveram reunião agendada (exceto canceladas).',
-          'Vendas': 'Leads que efetivamente fecharam a compra (venda aprovada).',
+          'Leads Captados': 'Novos leads que entraram no CRM.\n\nÉ o topo do funil — todo lead novo começa aqui.',
+          'Oportunidades': 'Leads com CNPJ válido identificados como oportunidade real de negócio.\n\n% = em relação ao total de leads captados.',
+          'Prioridade': 'Leads qualificados que foram priorizados para atendimento comercial.\n\n% = em relação ao total de leads captados.',
+          'Propostas': 'Leads que receberam uma proposta comercial.\n\nConta 1 por lead (sem duplicar).\n% = em relação ao total de leads captados.',
+          'Reuniões': 'Leads com reunião agendada (score preenchido ou ligação realizada).\n\nExclui reuniões canceladas.\n% = em relação ao total de leads captados.',
+          'Vendas': 'Leads que fecharam a compra.\n\nVenda aprovada + contrato assinado + checkout pago.\n% = em relação ao total de leads captados.',
         };
 
         const dataCells = data.map((d, idx) => {
