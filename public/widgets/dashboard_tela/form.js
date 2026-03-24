@@ -5349,48 +5349,39 @@
       }
 
       // --- INFO POPOVER (clique no botão "i") ---
-      function __closeInfoPopover() {
-        const old = document.getElementById('info-popover-box');
-        const oldBg = document.getElementById('info-popover-bg');
-        if (old) old.remove();
-        if (oldBg) oldBg.remove();
-      }
-      function __openInfoPopover(anchor) {
-        __closeInfoPopover();
-        const text = anchor && anchor.getAttribute ? anchor.getAttribute('data-info') : '';
-        if (!text) return;
-        const bg = document.createElement('div');
-        bg.id = 'info-popover-bg';
-        bg.className = 'info-popover-backdrop';
-        bg.addEventListener('click', __closeInfoPopover);
-        document.body.appendChild(bg);
-        const box = document.createElement('div');
-        box.id = 'info-popover-box';
-        box.className = 'info-popover';
-        box.textContent = text;
-        box.style.left = '-9999px';
-        box.style.top = '-9999px';
-        document.body.appendChild(box);
-        const rect = anchor.getBoundingClientRect();
-        const tt = box.getBoundingClientRect();
-        const gap = 8;
-        let top = rect.bottom + gap;
-        if (top + tt.height > window.innerHeight - 8) top = rect.top - tt.height - gap;
-        let left = rect.left + rect.width / 2 - tt.width / 2;
-        if (left < 8) left = 8;
-        if (left + tt.width > window.innerWidth - 8) left = window.innerWidth - tt.width - 8;
-        box.style.top = top + 'px';
-        box.style.left = left + 'px';
-      }
-      try {
-        const dashRoot = document.getElementById('dashboard-acelerai-v2') || document.body;
-        dashRoot.addEventListener('click', (e) => {
-          const btn = e.target && e.target.closest ? e.target.closest('.kpi-info-icon') : null;
-          if (!btn) return;
-          e.stopPropagation();
-          __openInfoPopover(btn);
-        });
-      } catch (e) {}
+      window.__closeInfoPopover = function() {
+        try { var old = document.getElementById('info-popover-box'); if (old) old.remove(); } catch(e){}
+        try { var oldBg = document.getElementById('info-popover-bg'); if (oldBg) oldBg.remove(); } catch(e){}
+      };
+      window.__openInfoPopover = function(el) {
+        try {
+          window.__closeInfoPopover();
+          var text = el && el.getAttribute ? el.getAttribute('data-info') : '';
+          if (!text) return;
+          var bg = document.createElement('div');
+          bg.id = 'info-popover-bg';
+          bg.className = 'info-popover-backdrop';
+          bg.onclick = window.__closeInfoPopover;
+          document.body.appendChild(bg);
+          var box = document.createElement('div');
+          box.id = 'info-popover-box';
+          box.className = 'info-popover';
+          box.textContent = text;
+          box.style.left = '-9999px';
+          box.style.top = '-9999px';
+          document.body.appendChild(box);
+          var rect = el.getBoundingClientRect();
+          var tt = box.getBoundingClientRect();
+          var gap = 8;
+          var top = rect.bottom + gap;
+          if (top + tt.height > window.innerHeight - 8) top = rect.top - tt.height - gap;
+          var left = rect.left + rect.width / 2 - tt.width / 2;
+          if (left < 8) left = 8;
+          if (left + tt.width > window.innerWidth - 8) left = window.innerWidth - tt.width - 8;
+          box.style.top = top + 'px';
+          box.style.left = left + 'px';
+        } catch(e) { console.warn('[info-popover]', e); }
+      };
 
       const KPI_TOOLTIPS = {
         [KPI_IDS.FATURAMENTO]: 'Soma de todas as vendas aprovadas no período.\n\nCritérios:\n• Venda marcada como aprovada\n• Contrato assinado (ClickSign)\n• Checkout pago',
@@ -5464,7 +5455,7 @@
             </div>`;
 
           const tooltip = KPI_TOOLTIPS[k.id] || '';
-          const infoIcon = tooltip ? `<span class="kpi-info-icon" data-info="${escapeHtmlLite(tooltip)}">i</span>` : '';
+          const infoIcon = tooltip ? `<span class="kpi-info-icon" data-info="${escapeHtmlLite(tooltip)}" onclick="event.stopPropagation();window.__openInfoPopover(this)">i</span>` : '';
 
           return `
           <div class="kpi-card">
@@ -5715,7 +5706,7 @@
         const dataCells = data.map((d, idx) => {
           const pct = idx === 0 ? '100.00%' : `${Number(d.gc || 0).toFixed(2)}%`;
           const funnelTip = FUNNEL_TOOLTIPS[d.l] || '';
-          const funnelInfoIcon = funnelTip ? ` <span class="kpi-info-icon" data-info="${escapeHtmlLite(funnelTip)}" style="vertical-align:middle;">i</span>` : '';
+          const funnelInfoIcon = funnelTip ? ` <span class="kpi-info-icon" data-info="${escapeHtmlLite(funnelTip)}" onclick="event.stopPropagation();window.__openInfoPopover(this)" style="vertical-align:middle;">i</span>` : '';
           return `<div class="funnel-data-cell">
             <div class="funnel-data-value">
               ${formatNumber(d.v)}
