@@ -1897,10 +1897,11 @@
 
       // Filtro: excluir leads importados via CSV (csv_import=true).
       // IS NOT TRUE => inclui NULL e FALSE, exclui apenas TRUE.
+      // Permite: imports externos (is_external_imported=true) e tags Meta.
       const applyNotImportedLeadFilter = (q) => {
         try {
-          // Exclui leads importados, MAS permite os que têm tags de import Meta
-          return q.or('csv_import.is.null,csv_import.neq.true,tag_lead.eq.import leads meta,tag_lead.eq.Meta Leads Fev/2026');
+          // Exclui leads importados, MAS permite os que têm is_external_imported=true ou tags de import Meta
+          return q.or('csv_import.is.null,csv_import.neq.true,is_external_imported.eq.true,tag_lead.eq.import leads meta,tag_lead.eq.Meta Leads Fev/2026');
         } catch (e) { return q; }
       };
 
@@ -5381,10 +5382,10 @@
         [KPI_IDS.FATURAMENTO]: 'Soma de todas as vendas aprovadas no período.\n\nCritérios:\n• Venda marcada como aprovada\n• Contrato assinado (ClickSign)\n• Checkout pago',
         [KPI_IDS.CONVERSAO]: 'De cada 100 leads captados, quantos viraram venda?\n\nCritérios:\n• Fórmula: Vendas ÷ Leads Captados × 100\n• Considera apenas vendas aprovadas',
         [KPI_IDS.CONV_OPORTUNIDADES]: 'Das vendas realizadas, quantas vieram de leads qualificados?\n\nCritérios:\n• Fórmula: Vendas de leads prioridade ÷ Total de vendas × 100\n• Lead precisa ter passou_prioridade = true',
-        [KPI_IDS.OPORTUNIDADES]: 'Leads marcados como prioridade no período.\n\nCritérios:\n• Lead passou pela qualificação\n• Marcado como prioridade\n• Exclui leads importados',
+        [KPI_IDS.OPORTUNIDADES]: 'Leads marcados como prioridade no período.\n\nCritérios:\n• Lead passou pela qualificação\n• Marcado como prioridade\n• Exclui leads importados\n• Considera leads importados externamente',
         [KPI_IDS.PROPOSTAS]: 'Propostas comerciais enviadas no período.\n\nCritérios:\n• Conta 1 proposta por lead (sem duplicar)\n• Qualquer proposta gerada no período',
         [KPI_IDS.REUNIOES]: 'Reuniões válidas no período.\n\nCritérios:\n• Reuniões agendadas com score IA preenchido\n• Ligações realizadas\n\nNão conta:\n• Reuniões canceladas\n• Reuniões sem score e sem ligação',
-        [KPI_IDS.CAPTADOS]: 'Novos leads que entraram no CRM no período.\n\nCritérios:\n• Apenas leads do novo CRM\n• Data de entrada dentro do período selecionado',
+        [KPI_IDS.CAPTADOS]: 'Novos leads que entraram no CRM no período.\n\nCritérios:\n• Apenas leads do novo CRM\n• Data de entrada dentro do período selecionado\n• Considera leads importados externamente',
         [KPI_IDS.QTD_VENDAS]: 'Número de vendas aprovadas no período.\n\nCritérios:\n• Venda marcada como aprovada\n• Contrato assinado (ClickSign)\n• Checkout pago',
         [KPI_IDS.TICKET]: 'Valor médio de cada venda.\n\nCritérios:\n• Fórmula: Faturamento ÷ Quantidade de vendas\n• Considera apenas vendas aprovadas',
         [KPI_IDS.INVEST]: 'Total gasto em anúncios no período.\n\nCritérios:\n• Dados direto da API do Meta Ads\n• Filtrado pelas campanhas ativas da agência',
