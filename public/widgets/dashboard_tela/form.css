@@ -2622,4 +2622,50 @@
       -webkit-overflow-scrolling: touch;
       touch-action: pan-y;
     }
+
+    /* ===== INFO TOOLTIPS ===== */
+    .kpi-info-icon {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 16px; height: 16px; border-radius: 50%;
+      background: var(--bg-subtle, #f1f5f9);
+      color: var(--text-muted, #64748b);
+      font-size: 10px; font-weight: 600; cursor: help;
+      position: relative; flex-shrink: 0;
+      transition: background 0.15s ease, color 0.15s ease;
+      line-height: 1;
+    }
+    .kpi-info-icon:hover { background: var(--col-primary, #3b82f6); color: #fff; }
+    #dashboard-acelerai-v2.dark-mode .kpi-info-icon { background: rgba(255,255,255,0.08); color: var(--text-muted); }
+    #dashboard-acelerai-v2.dark-mode .kpi-info-icon:hover { background: var(--col-primary); color: #fff; }
+
+    [data-tooltip] { position: relative; }
+    [data-tooltip]::after {
+      content: attr(data-tooltip);
+      position: absolute; bottom: calc(100% + 8px); left: 50%;
+      transform: translateX(-50%); z-index: 9999;
+      background: #1e293b; color: #f8fafc;
+      font-size: 11px; font-weight: 400; line-height: 1.45;
+      padding: 8px 12px; border-radius: 8px;
+      white-space: normal; width: max-content; max-width: 260px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      pointer-events: none; opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+    [data-tooltip]:hover::after { opacity: 1; }
+    [data-tooltip]::before {
+      content: ''; position: absolute; bottom: calc(100% + 2px); left: 50%;
+      transform: translateX(-50%); z-index: 9999;
+      border: 5px solid transparent; border-top-color: #1e293b;
+      pointer-events: none; opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+    [data-tooltip]:hover::before { opacity: 1; }
+    #dashboard-acelerai-v2.dark-mode [data-tooltip]::after { background: #334155; color: #f1f5f9; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+    #dashboard-acelerai-v2.dark-mode [data-tooltip]::before { border-top-color: #334155; }
+    [data-tooltip-pos="bottom"]::after { bottom: auto; top: calc(100% + 8px); }
+    [data-tooltip-pos="bottom"]::before { bottom: auto; top: calc(100% + 2px); border-top-color: transparent; border-bottom-color: #1e293b; }
+    #dashboard-acelerai-v2.dark-mode [data-tooltip-pos="bottom"]::before { border-top-color: transparent; border-bottom-color: #334155; }
+    .funnel-data-cell { position: relative; }
+    .funnel-data-cell [data-tooltip]::after { max-width: 220px; }
+    .meeting-card { position: relative; }
   

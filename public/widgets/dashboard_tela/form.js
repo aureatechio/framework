@@ -5348,6 +5348,22 @@
         }
       }
 
+      // Tooltips explicativos para cada KPI (linguagem simples para público leigo)
+      const KPI_TOOLTIPS = {
+        [KPI_IDS.FATURAMENTO]: 'Soma do valor de todas as vendas aprovadas no período selecionado.',
+        [KPI_IDS.CONVERSAO]: 'Percentual de leads captados que se tornaram vendas. Fórmula: Vendas ÷ Leads Captados.',
+        [KPI_IDS.CONV_OPORTUNIDADES]: 'Percentual de leads qualificados (prioridade) que viraram vendas. Fórmula: Vendas ÷ Leads Prioridade.',
+        [KPI_IDS.OPORTUNIDADES]: 'Leads que passaram pela qualificação e foram marcados como prioridade no período.',
+        [KPI_IDS.PROPOSTAS]: 'Quantidade de propostas comerciais geradas no período (1 por lead).',
+        [KPI_IDS.REUNIOES]: 'Total de reuniões agendadas no período, excluindo canceladas.',
+        [KPI_IDS.CAPTADOS]: 'Novos leads que entraram no CRM durante o período selecionado.',
+        [KPI_IDS.QTD_VENDAS]: 'Número de vendas aprovadas no período.',
+        [KPI_IDS.TICKET]: 'Valor médio por venda. Fórmula: Faturamento ÷ Quantidade de Vendas.',
+        [KPI_IDS.INVEST]: 'Total investido em anúncios (Meta Ads) no período.',
+        [KPI_IDS.CAC]: 'Custo de Aquisição por Cliente. Fórmula: Investimento ÷ Leads Captados. Quanto menor, melhor.',
+        [KPI_IDS.ROAS]: 'Retorno sobre o investimento em anúncios. Fórmula: Faturamento ÷ Investimento. Quanto maior, melhor.',
+      };
+
       function renderKPIs() {
         const c = document.getElementById('kpi-grid');
         c.innerHTML = state.kpis.map((k) => {
@@ -5404,10 +5420,13 @@
               <div class="kpi-comp-label" title="${item.l}">${shortLabel(item.l)}</div>
             </div>`;
 
+          const tooltip = KPI_TOOLTIPS[k.id] || '';
+          const infoIcon = tooltip ? `<span class="kpi-info-icon" data-tooltip="${escapeHtmlLite(tooltip)}">i</span>` : '';
+
           return `
           <div class="kpi-card">
             <div class="kpi-header">
-              <span class="kpi-title">${k.t}</span>
+              <span class="kpi-title">${k.t} ${infoIcon}</span>
               <div class="kpi-icon-box ${k.bg}">
                 <i data-lucide="${k.i}" size="18"></i>
               </div>
@@ -5641,14 +5660,26 @@
           </svg>
         `;
 
+        // Tooltips explicativos para cada etapa do funil
+        const FUNNEL_TOOLTIPS = {
+          'Leads Captados': 'Total de novos leads que entraram no CRM no período.',
+          'Oportunidades': 'Leads que possuem CNPJ válido e foram identificados como oportunidade real de negócio.',
+          'Prioridade': 'Leads qualificados que passaram pela triagem e foram priorizados para atendimento.',
+          'Propostas': 'Leads que receberam uma proposta comercial formal.',
+          'Reuniões': 'Leads que tiveram reunião agendada (exceto canceladas).',
+          'Vendas': 'Leads que efetivamente fecharam a compra (venda aprovada).',
+        };
+
         const dataCells = data.map((d, idx) => {
           const pct = idx === 0 ? '100.00%' : `${Number(d.gc || 0).toFixed(2)}%`;
+          const funnelTip = FUNNEL_TOOLTIPS[d.l] || '';
+          const funnelTipAttr = funnelTip ? ` data-tooltip="${escapeHtmlLite(funnelTip)}" data-tooltip-pos="bottom"` : '';
           return `<div class="funnel-data-cell">
             <div class="funnel-data-value">
               ${formatNumber(d.v)}
               <span class="funnel-data-pct">${pct}</span>
             </div>
-            <div class="funnel-data-label">${escapeHtmlLite(d.l)}</div>
+            <div class="funnel-data-label"${funnelTipAttr}>${escapeHtmlLite(d.l)}</div>
           </div>`;
         }).join('');
 
