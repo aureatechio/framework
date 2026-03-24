@@ -296,6 +296,15 @@
         <span class="kpi-info-icon" onmouseenter="window.__openInfoPopover(this)" onmouseleave="window.__closeInfoPopover()" data-info="Reuniões que já ocorreram no período.&#10;&#10;Critérios:&#10;• Score IA preenchido, ou&#10;• Ligação realizada">i</span>
       </div>
 
+      <div class="meeting-card all-past">
+        <div class="icon-box"><i data-lucide="calendar-check"></i></div>
+        <div class="grow" style="display:flex;align-items:center;gap:6px;">
+          <span class="text-xs font-medium opacity-80" style="color:#f97316" id="meetings-label-d">Ocorridas</span>
+          <span class="count" id="meetings-all-past">--</span>
+        </div>
+        <span class="kpi-info-icon" onmouseenter="window.__openInfoPopover(this)" onmouseleave="window.__closeInfoPopover()" data-info="Todas as reuniões com data até hoje no período.&#10;&#10;Critérios:&#10;• Data/hora anterior ao momento atual&#10;• Sem filtro de score ou status&#10;• Inclui todas, mesmo sem score preenchido">i</span>
+      </div>
+
       <div class="meeting-card created-today">
         <div class="icon-box"><i data-lucide="calendar-plus"></i></div>
         <div class="grow" style="display:flex;align-items:center;gap:6px;">
