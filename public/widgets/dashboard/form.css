@@ -2798,6 +2798,7 @@
     /* Column container */
     #dashboard-acelerai-v2 .tb-column {
       display: flex; flex-direction: column; gap: 24px;
+      min-width: 0; overflow: hidden;
     }
 
     /* Team Header */
@@ -2871,6 +2872,7 @@
       display: flex; flex-direction: column; justify-content: space-between;
       min-height: 110px; box-shadow: var(--shadow-sm);
       transition: transform 0.15s ease, box-shadow 0.15s ease;
+      min-width: 0; overflow: hidden;
     }
     #dashboard-acelerai-v2 .tb-kpi-card:hover {
       transform: scale(1.02); box-shadow: var(--shadow-md);
@@ -2881,9 +2883,11 @@
     }
     #dashboard-acelerai-v2 .tb-kpi-value {
       font-size: 20px; font-weight: 700; color: var(--text-main);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
     #dashboard-acelerai-v2 .tb-kpi-target {
       font-size: 9px; font-weight: 600; color: var(--text-main); opacity: 0.55;
+      white-space: nowrap; flex-shrink: 0;
     }
     #dashboard-acelerai-v2 .tb-kpi-bar-bg {
       height: 3px; border-radius: 2px; background: var(--bg-subtle);
@@ -2934,6 +2938,16 @@
       width: 28px; height: 28px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
       font-size: 10px; font-weight: 700; flex-shrink: 0;
+    }
+
+    /* Team Battle KPI grids: adapt when inside 2-col layout (xl) */
+    @media (min-width: 1280px) and (max-width: 1599px) {
+      #dashboard-acelerai-v2 .tb-columns .tb-kpi-grid-4 { grid-template-columns: repeat(2, 1fr); }
+      #dashboard-acelerai-v2 .tb-columns .tb-kpi-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+      #dashboard-acelerai-v2 .tb-columns .tb-kpi-value { font-size: 17px; }
+    }
+    @media (min-width: 1600px) {
+      #dashboard-acelerai-v2 .tb-columns .tb-kpi-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
     }
 
     /* Responsive */
