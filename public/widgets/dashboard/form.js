@@ -3658,16 +3658,18 @@
           q = applyCutoffTimestamp(q, 'data_compra').gte('data_compra', chartStart).lte('data_compra', chartEnd);
           if (state.selectedSeller) q = q.eq('vendedoresponsavel', state.selectedSeller);
 
-          // Pipeline: vendaaprovada=true (sem filtro checkout/clicksign)
-          let qPipe = sbClient.from('compras').select('valor_total, data_compra, leadid, vendedoresponsavel');
+          // Pipeline: vendaaprovada=true (sem filtro checkout/clicksign), excluindo canceladas
+          let qPipe = sbClient.from('compras').select('valor_total, data_compra, leadid, vendedoresponsavel, cancelado');
           qPipe = applyPipelineFilter(qPipe);
           qPipe = applyCutoffTimestamp(qPipe, 'data_compra').gte('data_compra', chartStart).lte('data_compra', chartEnd);
           if (state.selectedSeller) qPipe = qPipe.eq('vendedoresponsavel', state.selectedSeller);
 
           const [{ data: rowsRaw }, { data: rowsPipeRaw }] = await Promise.all([q, qPipe]);
+          // Excluir canceladas do pipeline (mesma regra do pop-up de vendas)
+          const isCancelledPipe = (v) => { if (v == null || v === false || v === '') return false; if (typeof v === 'boolean') return v; if (typeof v === 'string') { const s = v.trim().toLowerCase(); return !!s && s !== 'false' && s !== 'null' && s !== '{}' && s !== '[]'; } if (typeof v === 'object') { try { return Object.keys(v).length > 0; } catch(e) { return true; } } return !!v; };
           const [rows, rowsPipe] = await Promise.all([
             filterRowsByAgencyViaLeadId((rowsRaw || []), (r) => r && r.leadid),
-            filterRowsByAgencyViaLeadId((rowsPipeRaw || []), (r) => r && r.leadid)
+            filterRowsByAgencyViaLeadId((rowsPipeRaw || []).filter(r => !isCancelledPipe(r.cancelado)), (r) => r && r.leadid)
           ]);
 
           // 2) Meta (mês = steps por ciclos; semestre/ano = linear (meta mensal × meses))
@@ -3710,6 +3712,45 @@
               pipelineRun += (Number.isFinite(pipelineTotalsByKey[k]) ? pipelineTotalsByKey[k] : 0);
               return pipelineRun;
             });
+          } catch (e) {}
+
+          // 2c) Projeção Pipeline (Run Rate) — mesma lógica da projeção Realizado
+          try {
+            if (mode === 'month' || mode === 'year') {
+              const projPipeRaw = Array.isArray(chartData.rawDates) ? chartData.rawDates : [];
+              const projPipeSeries = Array.isArray(chartData.seriesPipeline) ? chartData.seriesPipeline : [];
+              const isPipeYearly = !!chartData.isYearly || mode === 'year';
+              let pipeCurrentKey;
+              if (isPipeYearly) {
+                const now = new Date();
+                pipeCurrentKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+              } else {
+                pipeCurrentKey = formatYmdLocal(new Date());
+              }
+              let pipeCurrentIdx = projPipeRaw.indexOf(pipeCurrentKey);
+              if (pipeCurrentIdx < 0) pipeCurrentIdx = projPipeSeries.length - 1;
+              if (pipeCurrentIdx < 0) pipeCurrentIdx = 0;
+              const pipeAcumulado = projPipeSeries[pipeCurrentIdx] || 0;
+              let pipeTaxaMedia, pipeProjecaoFinal;
+              if (isPipeYearly) {
+                const mesesPassados = pipeCurrentIdx + 1;
+                pipeTaxaMedia = mesesPassados > 0 ? pipeAcumulado / mesesPassados : 0;
+                pipeProjecaoFinal = pipeTaxaMedia * 12;
+              } else {
+                const diasPassados = pipeCurrentIdx + 1;
+                const diasTotais = projPipeSeries.length;
+                pipeTaxaMedia = diasPassados > 0 ? pipeAcumulado / diasPassados : 0;
+                pipeProjecaoFinal = pipeTaxaMedia * diasTotais;
+              }
+              chartData.seriesProjecaoPipeline = projPipeSeries.map((_, i) => {
+                if (i < pipeCurrentIdx) return null;
+                if (i === pipeCurrentIdx) return pipeAcumulado;
+                const restante = projPipeSeries.length - 1 - pipeCurrentIdx;
+                if (restante <= 0) return pipeProjecaoFinal;
+                const progresso = (i - pipeCurrentIdx) / restante;
+                return pipeAcumulado + (pipeProjecaoFinal - pipeAcumulado) * progresso;
+              });
+            }
           } catch (e) {}
 
           // 3) Série "Ano passado" (alinhada ao período do gráfico)
@@ -8725,6 +8766,16 @@
           series.push({ name: "Projeção", data: seriesProjecaoLocal });
         }
 
+        // Projeção Pipeline (Run Rate) — mesma lógica
+        let seriesProjPipeLocal = chartData ? (chartData.seriesProjecaoPipeline ? [...chartData.seriesProjecaoPipeline] : null) : null;
+        const hasProjPipe = (mode === 'month' || mode === 'year') && hasPipeline && Array.isArray(seriesProjPipeLocal) && seriesProjPipeLocal.length > 0;
+        if (hasProjPipe) {
+          while (seriesProjPipeLocal.length < seriesDataLocal.length) {
+            seriesProjPipeLocal.push(seriesProjPipeLocal[seriesProjPipeLocal.length - 1] || 0);
+          }
+          series.push({ name: "Proj. Pipeline", data: seriesProjPipeLocal });
+        }
+
         // X axis em datetime (necessário para zoom/seleção)
         const axisCategories = (() => {
           const keys = Array.isArray(rawDates) ? rawDates : [];
@@ -8862,10 +8913,13 @@
             const valsProj = (showProj && Array.isArray(seriesProjecaoLocal) ? seriesProjecaoLocal : [])
               .map(v => (typeof v === 'number' ? v : parseFloat(v)))
               .filter(v => Number.isFinite(v));
+            const valsProjPipe = (showPipe && Array.isArray(seriesProjPipeLocal) ? seriesProjPipeLocal : [])
+              .map(v => (typeof v === 'number' ? v : parseFloat(v)))
+              .filter(v => Number.isFinite(v));
             const valsMeta = (showMeta && Array.isArray(seriesMetaLocal) ? seriesMetaLocal : [])
               .map(v => (typeof v === 'number' ? v : parseFloat(v)))
               .filter(v => Number.isFinite(v));
-            const vals = [...valsReal, ...valsPipeline, ...valsLastYear, ...valsMeta, ...valsProj];
+            const vals = [...valsReal, ...valsPipeline, ...valsLastYear, ...valsMeta, ...valsProj, ...valsProjPipe];
             if (vals.length > 0) {
               const minVal = Math.min(...vals);
               const maxVal = Math.max(...vals);
@@ -9192,7 +9246,7 @@
                   }
                   if (!(state && state.revenueChartSeriesVisible && state.revenueChartSeriesVisible.AnoPassado)) {
                     const names = chartContext?.w?.globals?.seriesNames || [];
-                    const lyName = names.find(n => n && n !== 'Realizado' && n !== 'Pipeline' && n !== 'Meta' && n !== 'Projeção') || null;
+                    const lyName = names.find(n => n && n !== 'Realizado' && n !== 'Pipeline' && n !== 'Meta' && n !== 'Projeção' && n !== 'Proj. Pipeline') || null;
                     if (lyName) { try { chartContext.hideSeries(lyName); } catch (e) {} }
                   }
                   if (!(state && state.revenueChartSeriesVisible && state.revenueChartSeriesVisible.Projecao)) {
@@ -9404,6 +9458,7 @@
             if (hasLastYear) baseColors.push('#ef4444'); // Ano passado
             baseColors.push('#10b981'); // Meta
             if (hasProjecao) baseColors.push('#0ea5e9'); // Projeção
+            if (hasProjPipe) baseColors.push('#d97706'); // Proj. Pipeline (amber escuro)
             return baseColors;
           })(),
           // Meta agora tem rampa curta na virada dos ciclos, então pode ser smooth sem "pico" visual
@@ -9417,6 +9472,7 @@
               if (hasLastYear) arr.push(0); // Ano passado: sólida
               arr.push(0); // Meta: sólida
               if (hasProjecao) arr.push(5); // Projeção: pontilhada
+              if (hasProjPipe) arr.push(5); // Proj. Pipeline: pontilhada
               return arr;
             })()
           },
@@ -9555,7 +9611,7 @@
               }
               if (!(state && state.revenueChartSeriesVisible && state.revenueChartSeriesVisible.AnoPassado)) {
                 const names = revenueChart?.w?.globals?.seriesNames || [];
-                const lyName = names.find(n => n && n !== 'Realizado' && n !== 'Pipeline' && n !== 'Meta' && n !== 'Projeção') || null;
+                const lyName = names.find(n => n && n !== 'Realizado' && n !== 'Pipeline' && n !== 'Meta' && n !== 'Projeção' && n !== 'Proj. Pipeline') || null;
                 if (lyName) { try { revenueChart.hideSeries(lyName); } catch (e) {} }
               }
               if (!(state && state.revenueChartSeriesVisible && state.revenueChartSeriesVisible.Projecao)) {
@@ -9597,7 +9653,7 @@
           const getLastYearSeriesName = () => {
             try {
               const names = revenueChart?.w?.globals?.seriesNames || [];
-              return names.find(n => n && n !== 'Realizado' && n !== 'Pipeline' && n !== 'Meta' && n !== 'Projeção') || null;
+              return names.find(n => n && n !== 'Realizado' && n !== 'Pipeline' && n !== 'Meta' && n !== 'Projeção' && n !== 'Proj. Pipeline') || null;
             } catch (e) {
               return null;
             }
