@@ -958,7 +958,7 @@
         revenueChartMode: 'month', // month | semester | year (calendário)
         revenueChartZoomEnabled: false,
         revenueChartShowTodayMarker: true,
-        revenueChartSeriesVisible: { Realizado: true, AnoPassado: true, Meta: true, Projecao: true },
+        revenueChartSeriesVisible: { Realizado: true, Pipeline: true, AnoPassado: true, Meta: true, Projecao: true },
         revenueChartZoom: null, // { min:number, max:number } em ms (xaxis)
         revenueChartData: null, // cache do último chartData renderizado
         marketingInvestment: null,
@@ -1969,6 +1969,17 @@
         try {
           let qq = q.eq('vendaaprovada', true)
             .or('checkout_status.eq.pago,clicksign_status.eq.Assinado');
+          if (__comprasIsTestSupported === true) {
+            qq = applyNotTestPurchaseFilter(qq);
+          }
+          return qq;
+        } catch (e) { return q; }
+      };
+
+      // Pipeline: vendaaprovada=true SEM filtro checkout_status/clicksign_status
+      const applyPipelineFilter = (q) => {
+        try {
+          let qq = q.eq('vendaaprovada', true);
           if (__comprasIsTestSupported === true) {
             qq = applyNotTestPurchaseFilter(qq);
           }
@@ -3639,15 +3650,25 @@
           const chartStart = range.start;
           const chartEnd = range.end;
 
-          // 1) Dados do período do gráfico
+          // 1) Dados do período do gráfico + Pipeline (em paralelo)
           let q = sbClient
             .from('compras')
             .select('valor_total, data_compra, leadid, vendedoresponsavel');
           q = applyApprovedPurchaseFilter(q);
           q = applyCutoffTimestamp(q, 'data_compra').gte('data_compra', chartStart).lte('data_compra', chartEnd);
           if (state.selectedSeller) q = q.eq('vendedoresponsavel', state.selectedSeller);
-          const { data: rowsRaw } = await q;
-          const rows = await filterRowsByAgencyViaLeadId((rowsRaw || []), (r) => r && r.leadid);
+
+          // Pipeline: vendaaprovada=true (sem filtro checkout/clicksign)
+          let qPipe = sbClient.from('compras').select('valor_total, data_compra, leadid, vendedoresponsavel');
+          qPipe = applyPipelineFilter(qPipe);
+          qPipe = applyCutoffTimestamp(qPipe, 'data_compra').gte('data_compra', chartStart).lte('data_compra', chartEnd);
+          if (state.selectedSeller) qPipe = qPipe.eq('vendedoresponsavel', state.selectedSeller);
+
+          const [{ data: rowsRaw }, { data: rowsPipeRaw }] = await Promise.all([q, qPipe]);
+          const [rows, rowsPipe] = await Promise.all([
+            filterRowsByAgencyViaLeadId((rowsRaw || []), (r) => r && r.leadid),
+            filterRowsByAgencyViaLeadId((rowsPipeRaw || []), (r) => r && r.leadid)
+          ]);
 
           // 2) Meta (mês = steps por ciclos; semestre/ano = linear (meta mensal × meses))
           const monthlyMeta = await getGaugeTargetRevenueFromCrm();
@@ -3664,6 +3685,32 @@
           }
 
           const chartData = processRevenueData((rows || []), chartStart, chartEnd, metaOverride);
+
+          // 2b) Pipeline cumulative series (mesmos buckets de rawDates)
+          try {
+            const pipelineTotalsByKey = {};
+            (chartData.rawDates || []).forEach(k => { pipelineTotalsByKey[k] = 0; });
+            (rowsPipe || []).forEach(r => {
+              if (!r || !r.data_compra) return;
+              try {
+                let key;
+                if (chartData.isYearly) {
+                  key = String(r.data_compra).substring(0, 7);
+                } else {
+                  const dd = new Date(r.data_compra);
+                  key = formatYmdLocal ? formatYmdLocal(dd) : String(r.data_compra).substring(0, 10);
+                }
+                if (Object.prototype.hasOwnProperty.call(pipelineTotalsByKey, key)) {
+                  pipelineTotalsByKey[key] += parseCurrency(r.valor_total);
+                }
+              } catch (e) {}
+            });
+            let pipelineRun = 0;
+            chartData.seriesPipeline = (chartData.rawDates || []).map(k => {
+              pipelineRun += (Number.isFinite(pipelineTotalsByKey[k]) ? pipelineTotalsByKey[k] : 0);
+              return pipelineRun;
+            });
+          } catch (e) {}
 
           // 3) Série "Ano passado" (alinhada ao período do gráfico)
           try {
@@ -8563,6 +8610,7 @@
         const isYearly = chartData ? chartData.isYearly : false;
 
         let seriesDataLocal = chartData ? [...(chartData.seriesData || [])] : [0, 0, 0, 0];
+        let seriesPipelineLocal = chartData ? [...(chartData.seriesPipeline || [])] : null;
         let seriesMetaLocal = chartData ? [...(chartData.seriesMeta || [])] : [0, 0, 0, 0];
         let seriesLastYearLocal = chartData ? [...(chartData.seriesLastYear || [])] : null;
         const seriesLastYearName = (chartData && chartData.seriesLastYearName) ? String(chartData.seriesLastYearName) : 'Ano passado';
@@ -8600,6 +8648,9 @@
           }
         };
         seriesDataLocal = extendRealizadoToToday(seriesDataLocal);
+        if (Array.isArray(seriesPipelineLocal)) {
+          seriesPipelineLocal = extendRealizadoToToday(seriesPipelineLocal);
+        }
 
         // Garantir mínimo de 2 pontos
         if (categories.length === 1 && seriesDataLocal.length === 1 && seriesMetaLocal.length === 1) {
@@ -8607,6 +8658,9 @@
           categories.push(''); // não poluir labels
           seriesDataLocal.push(seriesDataLocal[0]);
           seriesMetaLocal.push(seriesMetaLocal[0]);
+          if (Array.isArray(seriesPipelineLocal) && seriesPipelineLocal.length === 1) {
+            seriesPipelineLocal.push(seriesPipelineLocal[0]);
+          }
           if (Array.isArray(seriesLastYearLocal) && seriesLastYearLocal.length === 1) {
             seriesLastYearLocal.push(seriesLastYearLocal[0]);
           }
@@ -8643,6 +8697,13 @@
         const series = [
           { name: "Realizado", data: seriesDataLocal }
         ];
+        const hasPipeline = Array.isArray(seriesPipelineLocal) && seriesPipelineLocal.length > 0;
+        if (hasPipeline) {
+          while (seriesPipelineLocal.length < seriesDataLocal.length) {
+            seriesPipelineLocal.push(seriesPipelineLocal[seriesPipelineLocal.length - 1] || 0);
+          }
+          series.push({ name: "Pipeline", data: seriesPipelineLocal });
+        }
         const hasLastYear = Array.isArray(seriesLastYearLocal) && seriesLastYearLocal.length > 0;
         if (hasLastYear) {
           // pad para bater com o número de categorias (evita crash quando faltam pontos)
@@ -8729,8 +8790,8 @@
           return 'daily';
         };
 
-        const buildRevenueYAxis = (showReal, showLy, showMeta, showProj) => {
-          const r = computeRevenueYRange(showReal, showLy, showMeta, showProj);
+        const buildRevenueYAxis = (showReal, showLy, showMeta, showProj, showPipe) => {
+          const r = computeRevenueYRange(showReal, showLy, showMeta, showProj, showPipe);
           return {
             min: r.yMin,
             max: r.yMax,
@@ -8752,14 +8813,15 @@
             };
             // Pega valores no range de zoom
             const realVals = seriesDataLocal.filter((_, i) => inRange(i)).map(v => typeof v === 'number' ? v : parseFloat(v)).filter(v => Number.isFinite(v) && v > 0);
+            const pipeVals = (hasPipeline ? seriesPipelineLocal : []).filter((_, i) => inRange(i)).map(v => typeof v === 'number' ? v : parseFloat(v)).filter(v => Number.isFinite(v));
             const lyVals = (hasLastYear ? seriesLastYearLocal : []).filter((_, i) => inRange(i)).map(v => typeof v === 'number' ? v : parseFloat(v)).filter(v => Number.isFinite(v));
             const metaVals = seriesMetaLocal.filter((_, i) => inRange(i)).map(v => typeof v === 'number' ? v : parseFloat(v)).filter(v => Number.isFinite(v));
-            
+
             if (realVals.length === 0) return { yMin: undefined, yMax: undefined };
-            
+
             // Min: baseado no minimo do Realizado com margem de 10%
             const realMin = Math.min(...realVals);
-            const allMax = Math.max(...realVals, ...lyVals, ...metaVals);
+            const allMax = Math.max(...realVals, ...pipeVals, ...lyVals, ...metaVals);
             
             // yMin = 90% do minimo do Realizado (para dar espaco visual)
             const yMin = Math.max(0, realMin * 0.9);
@@ -8775,19 +8837,23 @@
         const applyRevenueYAxis = (chartContext) => {
           try {
             const showRealNow = !!(state && state.revenueChartSeriesVisible && state.revenueChartSeriesVisible.Realizado);
+            const showPipeNow = !!(state && state.revenueChartSeriesVisible && state.revenueChartSeriesVisible.Pipeline) && hasPipeline;
             const showLyNow = !!(state && state.revenueChartSeriesVisible && state.revenueChartSeriesVisible.AnoPassado) && hasLastYear;
             const showMetaNow = !!(state && state.revenueChartSeriesVisible && state.revenueChartSeriesVisible.Meta);
             const showProjNow = !!(state && state.revenueChartSeriesVisible && state.revenueChartSeriesVisible.Projecao) && hasProjecao;
-            chartContext.updateOptions({ yaxis: buildRevenueYAxis(showRealNow, showLyNow, showMetaNow, showProjNow) }, false, true);
+            chartContext.updateOptions({ yaxis: buildRevenueYAxis(showRealNow, showLyNow, showMetaNow, showProjNow, showPipeNow) }, false, true);
           } catch (e) {}
         };
 
         // Por padrão, otimiza escala olhando só Realizado; se Meta estiver visível, inclui Meta no range.
-        const computeRevenueYRange = (showReal, showLy, showMeta, showProj) => {
+        const computeRevenueYRange = (showReal, showLy, showMeta, showProj, showPipe) => {
           let yMin = undefined;
           let yMax = undefined;
           try {
             const valsReal = (showReal && Array.isArray(seriesDataLocal) ? seriesDataLocal : [])
+              .map(v => (typeof v === 'number' ? v : parseFloat(v)))
+              .filter(v => Number.isFinite(v));
+            const valsPipeline = (showPipe && Array.isArray(seriesPipelineLocal) ? seriesPipelineLocal : [])
               .map(v => (typeof v === 'number' ? v : parseFloat(v)))
               .filter(v => Number.isFinite(v));
             const valsLastYear = (showLy && Array.isArray(seriesLastYearLocal) ? seriesLastYearLocal : [])
@@ -8799,7 +8865,7 @@
             const valsMeta = (showMeta && Array.isArray(seriesMetaLocal) ? seriesMetaLocal : [])
               .map(v => (typeof v === 'number' ? v : parseFloat(v)))
               .filter(v => Number.isFinite(v));
-            const vals = [...valsReal, ...valsLastYear, ...valsMeta, ...valsProj];
+            const vals = [...valsReal, ...valsPipeline, ...valsLastYear, ...valsMeta, ...valsProj];
             if (vals.length > 0) {
               const minVal = Math.min(...vals);
               const maxVal = Math.max(...vals);
@@ -8816,10 +8882,11 @@
         };
 
         const showReal = !!(state && state.revenueChartSeriesVisible && state.revenueChartSeriesVisible.Realizado);
+        const showPipe = !!(state && state.revenueChartSeriesVisible && state.revenueChartSeriesVisible.Pipeline) && hasPipeline;
         const showLy = !!(state && state.revenueChartSeriesVisible && state.revenueChartSeriesVisible.AnoPassado) && hasLastYear;
         const showMeta = !!(state && state.revenueChartSeriesVisible && state.revenueChartSeriesVisible.Meta);
         const showProj = !!(state && state.revenueChartSeriesVisible && state.revenueChartSeriesVisible.Projecao) && hasProjecao;
-        const initialRange = computeRevenueYRange(showReal, showLy, showMeta, showProj);
+        const initialRange = computeRevenueYRange(showReal, showLy, showMeta, showProj, showPipe);
         let yMin = initialRange.yMin;
         let yMax = initialRange.yMax;
 
@@ -8905,6 +8972,7 @@
             const safeIdx = Math.max(0, Math.min((n || 1) - 1, Number(idx) || 0));
             const cat = (categories && categories[safeIdx] !== undefined) ? categories[safeIdx] : '';
             const real = seriesDataLocal && seriesDataLocal[safeIdx] !== undefined ? seriesDataLocal[safeIdx] : null;
+            const pipeVal = (hasPipeline && Array.isArray(seriesPipelineLocal)) ? seriesPipelineLocal[safeIdx] : null;
             const ly = (hasLastYear && Array.isArray(seriesLastYearLocal)) ? seriesLastYearLocal[safeIdx] : null;
             const meta = seriesMetaLocal && seriesMetaLocal[safeIdx] !== undefined ? seriesMetaLocal[safeIdx] : null;
             const lyLabel = (seriesLastYearName || 'Ano passado');
@@ -8928,6 +8996,12 @@
                   <span style="display:flex; align-items:center; gap:4px; font-size:12px;">${dot('#3b82f6')} Realizado</span>
                   <b style="font-size:12px;">${fmtMoney(lastReal)}</b>
                 </div>
+                ${hasPipeline ? `
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                  <span style="display:flex; align-items:center; gap:4px; font-size:12px;">${dot('#f59e0b')} Pipeline</span>
+                  <b style="font-size:12px;">${fmtMoney(pipeVal)}</b>
+                </div>
+                ` : ``}
                 ${hasLastYear ? `
                 <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
                   <span style="display:flex; align-items:center; gap:4px; font-size:12px;">${dot('#ef4444')} ${lyLabel}</span>
@@ -8965,7 +9039,7 @@
               const xLocal = gridX + (gridW * ratio);
 
               let v = null;
-              const candidates = [real, ly, meta]
+              const candidates = [real, pipeVal, ly, meta]
                 .map(x => (typeof x === 'number' ? x : parseFloat(String(x))))
                 .filter(x => Number.isFinite(x));
               if (candidates.length > 0) v = Math.max(...candidates);
@@ -9020,6 +9094,7 @@
 
             const points = [];
             const real = seriesDataLocal && seriesDataLocal[idx] !== undefined ? seriesDataLocal[idx] : null;
+            const pipeAnn = (hasPipeline && Array.isArray(seriesPipelineLocal)) ? seriesPipelineLocal[idx] : null;
             const ly = (hasLastYear && Array.isArray(seriesLastYearLocal)) ? seriesLastYearLocal[idx] : null;
             const meta = seriesMetaLocal && seriesMetaLocal[idx] !== undefined ? seriesMetaLocal[idx] : null;
 
@@ -9029,20 +9104,30 @@
             };
 
             const rN = toNum(real);
+            const pipeN = toNum(pipeAnn);
             const lyN = toNum(ly);
             const mN = toNum(meta);
 
-            // seriesIndex: 0 Realizado, (1 Ano passado se existe), Meta (último)
-            const metaSeriesIndex = hasLastYear ? 2 : 1;
-
+            // seriesIndex: 0 Realizado, (1 Pipeline se existe), (N Ano passado se existe), Meta (último antes Projeção)
+            let si = 0;
             if (rN !== null) {
-              points.push({ x: x, y: rN, seriesIndex: 0, marker: { size: 6, fillColor: '#3b82f6', strokeColor: '#ffffff', strokeWidth: 2, shape: 'circle' } });
+              points.push({ x: x, y: rN, seriesIndex: si, marker: { size: 6, fillColor: '#3b82f6', strokeColor: '#ffffff', strokeWidth: 2, shape: 'circle' } });
             }
-            if (hasLastYear && lyN !== null) {
-              points.push({ x: x, y: lyN, seriesIndex: 1, marker: { size: 6, fillColor: '#ef4444', strokeColor: '#ffffff', strokeWidth: 2, shape: 'circle' } });
+            si++;
+            if (hasPipeline) {
+              if (pipeN !== null) {
+                points.push({ x: x, y: pipeN, seriesIndex: si, marker: { size: 6, fillColor: '#f59e0b', strokeColor: '#ffffff', strokeWidth: 2, shape: 'circle' } });
+              }
+              si++;
+            }
+            if (hasLastYear) {
+              if (lyN !== null) {
+                points.push({ x: x, y: lyN, seriesIndex: si, marker: { size: 6, fillColor: '#ef4444', strokeColor: '#ffffff', strokeWidth: 2, shape: 'circle' } });
+              }
+              si++;
             }
             if (mN !== null) {
-              points.push({ x: x, y: mN, seriesIndex: metaSeriesIndex, marker: { size: 6, fillColor: '#10b981', strokeColor: '#ffffff', strokeWidth: 2, shape: 'circle' } });
+              points.push({ x: x, y: mN, seriesIndex: si, marker: { size: 6, fillColor: '#10b981', strokeColor: '#ffffff', strokeWidth: 2, shape: 'circle' } });
             }
             return points;
           } catch (e) {
@@ -9102,9 +9187,12 @@
                   if (!(state && state.revenueChartSeriesVisible && state.revenueChartSeriesVisible.Realizado)) {
                     try { chartContext.hideSeries('Realizado'); } catch (e) {}
                   }
+                  if (!(state && state.revenueChartSeriesVisible && state.revenueChartSeriesVisible.Pipeline)) {
+                    try { chartContext.hideSeries('Pipeline'); } catch (e) {}
+                  }
                   if (!(state && state.revenueChartSeriesVisible && state.revenueChartSeriesVisible.AnoPassado)) {
                     const names = chartContext?.w?.globals?.seriesNames || [];
-                    const lyName = names.find(n => n && n !== 'Realizado' && n !== 'Meta' && n !== 'Projeção') || null;
+                    const lyName = names.find(n => n && n !== 'Realizado' && n !== 'Pipeline' && n !== 'Meta' && n !== 'Projeção') || null;
                     if (lyName) { try { chartContext.hideSeries(lyName); } catch (e) {} }
                   }
                   if (!(state && state.revenueChartSeriesVisible && state.revenueChartSeriesVisible.Projecao)) {
@@ -9238,6 +9326,7 @@
                 // Restaurar yaxis e xaxis originais com formatters
                 try {
                   const showReal = !!(state?.revenueChartSeriesVisible?.Realizado);
+                  const showPipe = !!(state?.revenueChartSeriesVisible?.Pipeline) && hasPipeline;
                   const showLy = !!(state?.revenueChartSeriesVisible?.AnoPassado);
                   const showMeta = !!(state?.revenueChartSeriesVisible?.Meta);
                   chartContext.updateOptions({
@@ -9262,7 +9351,7 @@
                         }
                       }
                     },
-                    yaxis: buildRevenueYAxis(showReal, showLy, showMeta, showProj)
+                    yaxis: buildRevenueYAxis(showReal, showLy, showMeta, showProj, showPipe)
                   }, false, false);
                 } catch (e) {}
                 // Mostrar focusBox novamente se toggle ativo
@@ -9308,9 +9397,10 @@
             strokeWidth: 0,
             hover: { size: 6 }
           },
-          // Cores: Realizado (azul), AnoPassado (vermelho), Meta (verde), Projeção (azul claro)
+          // Cores: Realizado (azul), Pipeline (amber), AnoPassado (vermelho), Meta (verde), Projeção (azul claro)
           colors: (() => {
             const baseColors = ['#3b82f6']; // Realizado
+            if (hasPipeline) baseColors.push('#f59e0b'); // Pipeline
             if (hasLastYear) baseColors.push('#ef4444'); // Ano passado
             baseColors.push('#10b981'); // Meta
             if (hasProjecao) baseColors.push('#0ea5e9'); // Projeção
@@ -9323,6 +9413,7 @@
             width: 2,
             dashArray: (() => {
               const arr = [0]; // Realizado: sólida
+              if (hasPipeline) arr.push(0); // Pipeline: sólida
               if (hasLastYear) arr.push(0); // Ano passado: sólida
               arr.push(0); // Meta: sólida
               if (hasProjecao) arr.push(5); // Projeção: pontilhada
@@ -9460,9 +9551,12 @@
               if (!(state && state.revenueChartSeriesVisible && state.revenueChartSeriesVisible.Realizado)) {
                 try { revenueChart.hideSeries('Realizado'); } catch (e) {}
               }
+              if (!(state && state.revenueChartSeriesVisible && state.revenueChartSeriesVisible.Pipeline)) {
+                try { revenueChart.hideSeries('Pipeline'); } catch (e) {}
+              }
               if (!(state && state.revenueChartSeriesVisible && state.revenueChartSeriesVisible.AnoPassado)) {
                 const names = revenueChart?.w?.globals?.seriesNames || [];
-                const lyName = names.find(n => n && n !== 'Realizado' && n !== 'Meta' && n !== 'Projeção') || null;
+                const lyName = names.find(n => n && n !== 'Realizado' && n !== 'Pipeline' && n !== 'Meta' && n !== 'Projeção') || null;
                 if (lyName) { try { revenueChart.hideSeries(lyName); } catch (e) {} }
               }
               if (!(state && state.revenueChartSeriesVisible && state.revenueChartSeriesVisible.Projecao)) {
@@ -9504,7 +9598,7 @@
           const getLastYearSeriesName = () => {
             try {
               const names = revenueChart?.w?.globals?.seriesNames || [];
-              return names.find(n => n && n !== 'Realizado' && n !== 'Meta') || null;
+              return names.find(n => n && n !== 'Realizado' && n !== 'Pipeline' && n !== 'Meta' && n !== 'Projeção') || null;
             } catch (e) {
               return null;
             }
@@ -9525,14 +9619,17 @@
             // Séries
             try {
               const rBtn = document.getElementById('rev-toggle-realizado');
+              const pipeBtn = document.getElementById('rev-toggle-pipeline');
               const lyBtn = document.getElementById('rev-toggle-lastyear');
               const metaBtn = document.getElementById('rev-toggle-meta');
               const projBtn = document.getElementById('rev-toggle-projecao');
               const showReal = !!(state?.revenueChartSeriesVisible?.Realizado);
+              const showPipe = !!(state?.revenueChartSeriesVisible?.Pipeline);
               const showLy = !!(state?.revenueChartSeriesVisible?.AnoPassado);
               const showMeta = !!(state?.revenueChartSeriesVisible?.Meta);
               const showProj = !!(state?.revenueChartSeriesVisible?.Projecao);
               if (rBtn) { rBtn.classList.toggle('active', showReal); rBtn.classList.toggle('is-off', !showReal); }
+              if (pipeBtn) { pipeBtn.classList.toggle('active', showPipe); pipeBtn.classList.toggle('is-off', !showPipe); }
               if (lyBtn) { lyBtn.classList.toggle('active', showLy); lyBtn.classList.toggle('is-off', !showLy); }
               if (metaBtn) { metaBtn.classList.toggle('active', showMeta); metaBtn.classList.toggle('is-off', !showMeta); }
               // Projeção: visível apenas em modo mês/ano
@@ -9579,6 +9676,7 @@
               };
               const lyName = getLastYearSeriesName();
               state.revenueChartSeriesVisible.Realizado = !isHidden('Realizado');
+              state.revenueChartSeriesVisible.Pipeline = !isHidden('Pipeline');
               if (lyName) state.revenueChartSeriesVisible.AnoPassado = !isHidden(lyName);
               state.revenueChartSeriesVisible.Meta = !isHidden('Meta');
               state.revenueChartSeriesVisible.Projecao = !isHidden('Projeção');
@@ -9599,6 +9697,14 @@
             if (!revenueChart) return;
             try {
               revenueChart.toggleSeries('Realizado');
+              applySeriesVisibilityFromChart();
+              syncRevenueControls();
+            } catch (e) {}
+          });
+          bindOnce('rev-toggle-pipeline', () => {
+            if (!revenueChart) return;
+            try {
+              revenueChart.toggleSeries('Pipeline');
               applySeriesVisibilityFromChart();
               syncRevenueControls();
             } catch (e) {}
