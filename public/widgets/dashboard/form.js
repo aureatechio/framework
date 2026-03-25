@@ -6838,10 +6838,10 @@
         // Tooltips explicativos para cada etapa do funil
         const FUNNEL_TOOLTIPS = {
           'Leads Captados': 'Topo do funil — todo lead novo começa aqui.\n\nCritérios:\n• Leads que entraram no CRM no período\n• Apenas do novo CRM',
-          'Oportunidades': 'Leads identificados como oportunidade real.\n\nCritérios:\n• Possui CNPJ válido\n• % em relação ao total de leads captados',
-          'Prioridade': 'Leads priorizados para atendimento comercial.\n\nCritérios:\n• Passou pela qualificação\n• Marcado como prioridade\n• % em relação ao total de leads captados',
+          'Oportunidades': 'Leads identificados como oportunidade real.\n\nCritérios:\n• Possui CNPJ válido\n• Considera leads importados externamente\n• % em relação ao total de leads captados',
+          'Prioridade': 'Leads priorizados para atendimento comercial.\n\nCritérios:\n• Passou pela qualificação\n• Marcado como prioridade\n• Considera leads importados externamente\n• % em relação ao total de leads captados',
           'Propostas': 'Leads que receberam proposta comercial.\n\nCritérios:\n• Conta 1 por lead (sem duplicar)\n• % em relação ao total de leads captados',
-          'Reuniões': 'Leads com reunião válida agendada.\n\nCritérios:\n• Score IA preenchido ou ligação realizada\n• Exclui reuniões canceladas\n• % em relação ao total de leads captados',
+          'Reuniões': 'Reuniões agendadas no período.\n\nCritérios:\n• Apenas reuniões agendadas\n• Considera leads importados externamente\n• % em relação ao total de leads captados',
           'Vendas': 'Leads que fecharam a compra.\n\nCritérios:\n• Venda aprovada\n• Contrato assinado\n• Checkout pago\n• % em relação ao total de leads captados',
         };
 
