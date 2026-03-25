@@ -4279,6 +4279,7 @@
         let countFuture = 0;
         let countPast = 0;
         let countAllPast = 0; // TODAS as passadas (sem filtro de score)
+        let countAllPastMeetingsOnly = 0; // Passadas excluindo ligações (só meetings)
         try {
           let query = sbClient
             .from('agendamento')
@@ -4311,6 +4312,7 @@
               countTotal += 1;
             } else {
               countAllPast += 1; // conta TODAS as passadas
+              if (r.tipo_agendamento !== LIGACAO_TIPO_ID) countAllPastMeetingsOnly += 1; // só meetings (sem ligações)
               if (isValidMeeting(r)) {
                 countPast += 1;
                 countTotal += 1;
@@ -4365,6 +4367,7 @@
         setTxt('meetings-week', countFuture);
         setTxt('meetings-month', countPast);
         setTxt('meetings-all-past', countAllPast);
+        setTxt('meetings-only-past', countAllPastMeetingsOnly);
         setTxt('meetings-created-today', countCreatedToday);
       }
 
