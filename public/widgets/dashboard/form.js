@@ -4312,7 +4312,7 @@
               countTotal += 1;
             } else {
               countAllPast += 1; // conta TODAS as passadas
-              if (r.tipo_agendamento !== LIGACAO_TIPO_ID) countAllPastMeetingsOnly += 1; // só meetings (sem ligações)
+              countAllPastMeetingsOnly += 1; // todas passadas (meetings + ligações) sem filtro de score
               if (isValidMeeting(r)) {
                 countPast += 1;
                 countTotal += 1;
