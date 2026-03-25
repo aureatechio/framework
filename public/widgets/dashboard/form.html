@@ -272,10 +272,10 @@
       <div class="meeting-card today">
         <div class="icon-box"><i data-lucide="calendar"></i></div>
         <div class="grow" style="display:flex;align-items:center;gap:6px;">
-          <span class="text-xs font-medium opacity-80" style="color:#3b82f6" id="meetings-label-a">Total válidas</span>
+          <span class="text-xs font-medium opacity-80" style="color:#3b82f6" id="meetings-label-a">Mês/c score</span>
           <span class="count" id="meetings-today">--</span>
         </div>
-        <span class="kpi-info-icon" onmouseenter="window.__openInfoPopover(this)" onmouseleave="window.__closeInfoPopover()" data-info="Reuniões + ligações válidas no período.&#10;&#10;Critérios:&#10;• Passadas com score IA ou ligação&#10;• Futuras contam todas&#10;• Exclui diretores/internos">i</span>
+        <span class="kpi-info-icon" onmouseenter="window.__openInfoPopover(this)" onmouseleave="window.__closeInfoPopover()" data-info="Reuniões + ligações com score no período.&#10;&#10;Critérios:&#10;• Passadas com score IA ou ligação&#10;• Futuras contam todas&#10;• Exclui diretores/internos">i</span>
       </div>
 
       <div class="meeting-card week">
@@ -287,31 +287,22 @@
         <span class="kpi-info-icon" onmouseenter="window.__openInfoPopover(this)" onmouseleave="window.__closeInfoPopover()" data-info="Reuniões futuras agendadas.&#10;&#10;Critérios:&#10;• Data posterior a hoje&#10;• Conta todas, independente de score">i</span>
       </div>
 
-      <div class="meeting-card month">
-        <div class="icon-box"><i data-lucide="calendar-range"></i></div>
-        <div class="grow" style="display:flex;align-items:center;gap:6px;">
-          <span class="text-xs font-medium opacity-80" style="color:#16a34a" id="meetings-label-c">Realizadas</span>
-          <span class="count" id="meetings-month">--</span>
-        </div>
-        <span class="kpi-info-icon" onmouseenter="window.__openInfoPopover(this)" onmouseleave="window.__closeInfoPopover()" data-info="Reuniões realizadas (passadas com score).&#10;&#10;Critérios:&#10;• Score IA preenchido, ou&#10;• Ligação realizada">i</span>
-      </div>
-
       <div class="meeting-card all-past">
         <div class="icon-box"><i data-lucide="calendar-check"></i></div>
         <div class="grow" style="display:flex;align-items:center;gap:6px;">
-          <span class="text-xs font-medium opacity-80" style="color:#f97316" id="meetings-label-d">Total passadas</span>
+          <span class="text-xs font-medium opacity-80" style="color:#f97316" id="meetings-label-d">Mês total/s score</span>
           <span class="count" id="meetings-all-past">--</span>
         </div>
-        <span class="kpi-info-icon" onmouseenter="window.__openInfoPopover(this)" onmouseleave="window.__closeInfoPopover()" data-info="Todas as reuniões + ligações passadas.&#10;&#10;Critérios:&#10;• Data anterior a hoje&#10;• Inclui todas, com ou sem score&#10;• Inclui ligações">i</span>
+        <span class="kpi-info-icon" onmouseenter="window.__openInfoPopover(this)" onmouseleave="window.__closeInfoPopover()" data-info="Total do mês sem filtro de score.&#10;&#10;Critérios:&#10;• Todas as passadas + ligações&#10;• Com ou sem score&#10;• Data anterior a hoje">i</span>
       </div>
 
       <div class="meeting-card all-past" style="border-color:#0ea5e9 !important; background:rgba(14,165,233,0.08) !important;">
         <div class="icon-box" style="background:#e0f2fe !important; color:#0ea5e9 !important;"><i data-lucide="users"></i></div>
         <div class="grow" style="display:flex;align-items:center;gap:6px;">
-          <span class="text-xs font-medium opacity-80" style="color:#0ea5e9">Meetings s/ score</span>
+          <span class="text-xs font-medium opacity-80" style="color:#0ea5e9">Mês/s score</span>
           <span class="count" id="meetings-only-past">--</span>
         </div>
-        <span class="kpi-info-icon" onmouseenter="window.__openInfoPopover(this)" onmouseleave="window.__closeInfoPopover()" data-info="Reuniões passadas (apenas meetings).&#10;&#10;Critérios:&#10;• Data anterior a hoje&#10;• Exclui ligações&#10;• Com ou sem score preenchido">i</span>
+        <span class="kpi-info-icon" onmouseenter="window.__openInfoPopover(this)" onmouseleave="window.__closeInfoPopover()" data-info="Apenas meetings no mês (sem ligações).&#10;&#10;Critérios:&#10;• Data anterior a hoje&#10;• Exclui ligações&#10;• Com ou sem score preenchido">i</span>
       </div>
 
       <div class="meeting-card created-today">
