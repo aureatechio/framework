@@ -6841,7 +6841,7 @@
           'Oportunidades': 'Leads identificados como oportunidade real.\n\nCritérios:\n• Possui CNPJ válido\n• Considera leads importados externamente\n• % em relação ao total de leads captados',
           'Prioridade': 'Leads priorizados para atendimento comercial.\n\nCritérios:\n• Passou pela qualificação\n• Marcado como prioridade\n• Considera leads importados externamente\n• % em relação ao total de leads captados',
           'Propostas': 'Leads que receberam proposta comercial.\n\nCritérios:\n• Conta 1 por lead (sem duplicar)\n• % em relação ao total de leads captados',
-          'Reuniões': 'Reuniões agendadas no período.\n\nCritérios:\n• Apenas reuniões agendadas\n• Considera leads importados externamente\n• % em relação ao total de leads captados',
+          'Reuniões': 'Reuniões realizadas no período.\n\nCritérios:\n• Apenas reuniões realizadas\n• Considera leads importados externamente\n• % em relação ao total de leads captados',
           'Vendas': 'Leads que fecharam a compra.\n\nCritérios:\n• Venda aprovada\n• Contrato assinado\n• Checkout pago\n• % em relação ao total de leads captados',
         };
 
@@ -7169,14 +7169,16 @@
         // - Outbound: leads.canalentrada == "Manual"
         // - Landing Page: leads.canalentrada == "Landing Page"
         // - WhatsApp: leads.canalentrada == "Whatsaap" (enum no BD)
-        const CANAL_MANUAL = 'Manual';
         const CANAL_LP = 'Landing Page';
         const CANAL_WPP = 'Whatsaap';
+        const CANAL_SOCIAL = 'Social';
+        const CANAL_MANUAL = 'Manual';
 
         const norm = (s) => String(s || '').toLowerCase();
-        const isManual = (c) => norm(c) === 'manual';
         const isLanding = (c) => norm(c).includes('landing');
         const isWhats = (c) => norm(c).includes('whats');
+        const isSocial = (c) => norm(c) === 'social';
+        const isManual = (c) => norm(c) === 'manual';
 
         const countLeadsByCanal = async (canal) => {
           let q = sbClient
@@ -7191,9 +7193,11 @@
           return count || 0;
         };
 
-        const [leadsLP, leadsWPP] = await Promise.all([
+        const [leadsLP, leadsWPP, leadsSocial, leadsOutbound] = await Promise.all([
           countLeadsByCanal(CANAL_LP),
-          countLeadsByCanal(CANAL_WPP)
+          countLeadsByCanal(CANAL_WPP),
+          countLeadsByCanal(CANAL_SOCIAL),
+          countLeadsByCanal(CANAL_MANUAL)
         ]);
 
         // Receita/Vendas por canal via compras aprovadas + join em leads (FK compras.leadid -> leads.lead_id)
@@ -7209,14 +7213,16 @@
         const { data: purchRows } = await qPurch;
         const rows = await filterRowsByAgencyViaLeadId((purchRows || []), (r) => r && r.leadid);
 
-        let salesLP = 0, salesWPP = 0;
-        let revLP = 0, revWPP = 0;
+        let salesLP = 0, salesWPP = 0, salesSocial = 0, salesOutbound = 0;
+        let revLP = 0, revWPP = 0, revSocial = 0, revOutbound = 0;
 
         rows.forEach(r => {
           const canal = r && r.lead ? r.lead.canalentrada : null;
           const v = parseCurrency(r && r.valor_total);
           if (isLanding(canal)) { salesLP++; revLP += v; return; }
           if (isWhats(canal)) { salesWPP++; revWPP += v; return; }
+          if (isSocial(canal)) { salesSocial++; revSocial += v; return; }
+          if (isManual(canal)) { salesOutbound++; revOutbound += v; return; }
         });
 
         const calcROI = (rev, inv) => {
@@ -7299,6 +7305,8 @@
 
         const convLP = leadsLP > 0 ? ((salesLP / leadsLP) * 100).toFixed(1) : '0.0';
         const convWPP = leadsWPP > 0 ? ((salesWPP / leadsWPP) * 100).toFixed(1) : '0.0';
+        const convSocial = leadsSocial > 0 ? ((salesSocial / leadsSocial) * 100).toFixed(1) : '0.0';
+        const convOutbound = leadsOutbound > 0 ? ((salesOutbound / leadsOutbound) * 100).toFixed(1) : '0.0';
 
         state.channelData = [
           {
@@ -7318,11 +7326,20 @@
             i: "message-circle", c: "success", active: true, tone: "#22c55e"
           },
           {
-            id: 'social', n: "Social", l: 0,
-            rev: null,
+            id: 'outbound', n: "Outbound", l: leadsOutbound,
+            rev: revOutbound,
             roi: null,
-            gasto: null, conv: null,
-            i: "share-2", c: "purple", active: false, tone: "#8b5cf6"
+            gasto: null,
+            conv: convOutbound,
+            i: "phone", c: "danger", active: true, tone: "#f97316"
+          },
+          {
+            id: 'social', n: "Social", l: leadsSocial,
+            rev: revSocial,
+            roi: null,
+            gasto: null,
+            conv: convSocial,
+            i: "share-2", c: "purple", active: true, tone: "#8b5cf6"
           }
         ];
 
@@ -7931,10 +7948,17 @@
         }
       }
 
+      const CHANNEL_TOOLTIPS = {
+        'landing': 'Leads captados via Landing Page.\n\nMétricas:\n• Leads: total no período\n• Receita: vendas aprovadas\n• Gasto: investimento Meta Ads\n• Conv.: vendas ÷ leads\n• ROI: (receita - gasto) ÷ gasto',
+        'whatsapp': 'Leads captados via WhatsApp.\n\nMétricas:\n• Leads: total no período\n• Receita: vendas aprovadas\n• Gasto: investimento Meta Ads\n• Conv.: vendas ÷ leads\n• ROI: (receita - gasto) ÷ gasto',
+        'outbound': 'Leads captados via prospecção ativa (Manual).\n\nMétricas:\n• Leads: total no período\n• Receita: vendas aprovadas\n• Conv.: vendas ÷ leads',
+        'social': 'Leads captados via redes sociais.\n\nMétricas:\n• Leads: total no período\n• Receita: vendas aprovadas\n• Conv.: vendas ÷ leads',
+      };
+
       function renderChannels() {
         const c = document.getElementById('channel-grid');
         if(!c) return;
-        
+
         c.innerHTML = state.channelData.map(ch => {
           const tone = ch.tone || '#3b82f6';
           const tint = `${tone}1a`;
@@ -7943,6 +7967,8 @@
           const gasto = ch.gasto != null ? (ch.gasto >= 1000000 ? 'R$ ' + (ch.gasto / 1000000).toFixed(2).replace('.', ',') + 'M' : ch.gasto >= 1000 ? 'R$ ' + (ch.gasto / 1000).toFixed(2).replace('.', ',') + 'k' : 'R$ ' + ch.gasto.toFixed(2).replace('.', ',')) : '--';
           const conv = ch.conv != null ? `${ch.conv}%` : '--';
           const roiVal = ch.roi != null ? `${ch.roi > 0 ? '+' : ''}${ch.roi.toFixed(1)}%` : '--';
+          const chTip = CHANNEL_TOOLTIPS[ch.id] || '';
+          const chInfoIcon = chTip ? ` <span class="kpi-info-icon" data-info="${escapeHtmlLite(chTip)}" onmouseenter="window.__openInfoPopover(this)" onmouseleave="window.__closeInfoPopover()">i</span>` : '';
           return `
           <div class="channel-card ${isActive ? '' : 'disabled'}">
             <div class="channel-header">
@@ -7950,7 +7976,7 @@
                 <i data-lucide="${ch.i}"></i>
               </div>
               <div class="channel-meta">
-                <span class="name">${ch.n}</span>
+                <span class="name">${ch.n}${chInfoIcon}</span>
                 <span class="leads">${ch.l} leads</span>
               </div>
             </div>
