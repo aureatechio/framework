@@ -9542,7 +9542,6 @@
         if (revenueChart) {
           try {
             revenueChart.updateOptions(chartOptions, false, true);
-            revenueChart.updateSeries(series, true);
             try {
               // reaplicar visibilidade (toggles)
               if (!(state && state.revenueChartSeriesVisible && state.revenueChartSeriesVisible.Meta)) {
