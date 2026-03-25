@@ -269,51 +269,6 @@
         <span class="kpi-info-icon" onmouseenter="window.__openInfoPopover(this)" onmouseleave="window.__closeInfoPopover()" data-info="Reuniões em andamento neste momento.&#10;&#10;Critérios:&#10;• Agendada para a hora atual&#10;• Status = agendado">i</span>
       </div>
 
-      <div class="meeting-card today">
-        <div class="icon-box"><i data-lucide="calendar"></i></div>
-        <div class="grow" style="display:flex;align-items:center;gap:6px;">
-          <span class="text-xs font-medium opacity-80" style="color:#3b82f6" id="meetings-label-a">Mês/c score</span>
-          <span class="count" id="meetings-today">--</span>
-        </div>
-        <span class="kpi-info-icon" onmouseenter="window.__openInfoPopover(this)" onmouseleave="window.__closeInfoPopover()" data-info="Reuniões + ligações com score no período.&#10;&#10;Critérios:&#10;• Passadas com score IA ou ligação&#10;• Futuras contam todas&#10;• Exclui diretores/internos">i</span>
-      </div>
-
-      <div class="meeting-card week">
-        <div class="icon-box"><i data-lucide="calendar-days"></i></div>
-        <div class="grow" style="display:flex;align-items:center;gap:6px;">
-          <span class="text-xs font-medium opacity-80" style="color:var(--text-muted)" id="meetings-label-b">Agendadas</span>
-          <span class="count" id="meetings-week">--</span>
-        </div>
-        <span class="kpi-info-icon" onmouseenter="window.__openInfoPopover(this)" onmouseleave="window.__closeInfoPopover()" data-info="Reuniões futuras agendadas.&#10;&#10;Critérios:&#10;• Data posterior a hoje&#10;• Conta todas, independente de score">i</span>
-      </div>
-
-      <div class="meeting-card month">
-        <div class="icon-box"><i data-lucide="calendar-range"></i></div>
-        <div class="grow" style="display:flex;align-items:center;gap:6px;">
-          <span class="text-xs font-medium opacity-80" style="color:#16a34a" id="meetings-label-c">Realizadas/c score</span>
-          <span class="count" id="meetings-month">--</span>
-        </div>
-        <span class="kpi-info-icon" onmouseenter="window.__openInfoPopover(this)" onmouseleave="window.__closeInfoPopover()" data-info="Reuniões realizadas (passadas com score).&#10;&#10;Critérios:&#10;• Score IA preenchido, ou&#10;• Ligação realizada">i</span>
-      </div>
-
-      <div class="meeting-card all-past">
-        <div class="icon-box"><i data-lucide="calendar-check"></i></div>
-        <div class="grow" style="display:flex;align-items:center;gap:6px;">
-          <span class="text-xs font-medium opacity-80" style="color:#f97316" id="meetings-label-d">Mês total/c score</span>
-          <span class="count" id="meetings-all-past">--</span>
-        </div>
-        <span class="kpi-info-icon" onmouseenter="window.__openInfoPopover(this)" onmouseleave="window.__closeInfoPopover()" data-info="Total do mês sem filtro de score.&#10;&#10;Critérios:&#10;• Todas as passadas + ligações&#10;• Com ou sem score&#10;• Data anterior a hoje">i</span>
-      </div>
-
-      <div class="meeting-card all-past" style="border-color:#0ea5e9 !important; background:rgba(14,165,233,0.08) !important;">
-        <div class="icon-box" style="background:#e0f2fe !important; color:#0ea5e9 !important;"><i data-lucide="users"></i></div>
-        <div class="grow" style="display:flex;align-items:center;gap:6px;">
-          <span class="text-xs font-medium opacity-80" style="color:#0ea5e9">Mês/s score</span>
-          <span class="count" id="meetings-only-past">--</span>
-        </div>
-        <span class="kpi-info-icon" onmouseenter="window.__openInfoPopover(this)" onmouseleave="window.__closeInfoPopover()" data-info="Total do mês sem filtro de score.&#10;&#10;Critérios:&#10;• Data anterior a hoje&#10;• Inclui meetings + ligações&#10;• Com ou sem score preenchido">i</span>
-      </div>
-
       <div class="meeting-card created-today">
         <div class="icon-box"><i data-lucide="calendar-plus"></i></div>
         <div class="grow" style="display:flex;align-items:center;gap:6px;">
@@ -321,6 +276,51 @@
           <span class="count" id="meetings-created-today">--</span>
         </div>
         <span class="kpi-info-icon" onmouseenter="window.__openInfoPopover(this)" onmouseleave="window.__closeInfoPopover()" data-info="Reuniões registradas no CRM hoje.&#10;&#10;Critérios:&#10;• Criadas hoje (created_at)&#10;• Independente da data da reunião">i</span>
+      </div>
+
+      <div class="meeting-card today">
+        <div class="icon-box"><i data-lucide="calendar"></i></div>
+        <div class="grow" style="display:flex;align-items:center;gap:6px;">
+          <span class="text-xs font-medium opacity-80" style="color:#3b82f6" id="meetings-label-a">Total no período</span>
+          <span class="count" id="meetings-total-period">--</span>
+        </div>
+        <span class="kpi-info-icon" onmouseenter="window.__openInfoPopover(this)" onmouseleave="window.__closeInfoPopover()" data-info="Reuniões válidas no período do filtro.&#10;&#10;Critérios:&#10;• Passadas com VendaScore ou ligação&#10;• Futuras contam todas&#10;• Segue filtro: dia, semana, mês, ano">i</span>
+      </div>
+
+      <div class="meeting-card week">
+        <div class="icon-box"><i data-lucide="calendar-days"></i></div>
+        <div class="grow" style="display:flex;align-items:center;gap:6px;">
+          <span class="text-xs font-medium opacity-80" style="color:var(--text-muted)">Total agendadas</span>
+          <span class="count" id="meetings-scheduled">--</span>
+        </div>
+        <span class="kpi-info-icon" onmouseenter="window.__openInfoPopover(this)" onmouseleave="window.__closeInfoPopover()" data-info="Reuniões agendadas (hoje ou posterior).&#10;&#10;Critérios:&#10;• Data/hora posterior ao momento atual&#10;• Conta todas, independente de score">i</span>
+      </div>
+
+      <div class="meeting-card month">
+        <div class="icon-box"><i data-lucide="calendar-range"></i></div>
+        <div class="grow" style="display:flex;align-items:center;gap:6px;">
+          <span class="text-xs font-medium opacity-80" style="color:#16a34a">Total realizadas</span>
+          <span class="count" id="meetings-realized">--</span>
+        </div>
+        <span class="kpi-info-icon" onmouseenter="window.__openInfoPopover(this)" onmouseleave="window.__closeInfoPopover()" data-info="Reuniões realizadas (com score ou ligação).&#10;&#10;Critérios:&#10;• VendaScore preenchido, ou&#10;• Tipo = Ligação">i</span>
+      </div>
+
+      <div class="meeting-card all-past" style="border-color:#0ea5e9 !important; background:rgba(14,165,233,0.08) !important;">
+        <div class="icon-box" style="background:#e0f2fe !important; color:#0ea5e9 !important;"><i data-lucide="calendar-x"></i></div>
+        <div class="grow" style="display:flex;align-items:center;gap:6px;">
+          <span class="text-xs font-medium opacity-80" style="color:#0ea5e9">Total sem VendaScore</span>
+          <span class="count" id="meetings-no-score">--</span>
+        </div>
+        <span class="kpi-info-icon" onmouseenter="window.__openInfoPopover(this)" onmouseleave="window.__closeInfoPopover()" data-info="Reuniões passadas sem VendaScore.&#10;&#10;Critérios:&#10;• Score não preenchido&#10;• Exclui ligações&#10;• Apenas meetings de fato">i</span>
+      </div>
+
+      <div class="meeting-card all-past">
+        <div class="icon-box"><i data-lucide="calendar-check"></i></div>
+        <div class="grow" style="display:flex;align-items:center;gap:6px;">
+          <span class="text-xs font-medium opacity-80" style="color:#f97316">Total reuniões</span>
+          <span class="count" id="meetings-all">--</span>
+        </div>
+        <span class="kpi-info-icon" onmouseenter="window.__openInfoPopover(this)" onmouseleave="window.__closeInfoPopover()" data-info="Todas as reuniões passadas no período.&#10;&#10;Critérios:&#10;• Com e sem VendaScore&#10;• Inclui ligações&#10;• Data anterior a hoje">i</span>
       </div>
     </div>
   </section>

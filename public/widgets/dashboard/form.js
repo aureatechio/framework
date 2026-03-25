@@ -4275,11 +4275,11 @@
           if (c) c.textContent = 'Realizadas';
         } catch (e) {}
 
-        let countTotal = 0;
-        let countFuture = 0;
-        let countPast = 0;
-        let countAllPast = 0; // TODAS as passadas (sem filtro de score)
-        let countAllPastMeetingsOnly = 0; // Passadas excluindo ligações (só meetings)
+        let countTotal = 0;       // válidas: futuras + passadas c/ score/ligação
+        let countFuture = 0;      // agendadas (hoje ou posterior)
+        let countPast = 0;        // realizadas (passadas c/ score ou ligação)
+        let countAllPast = 0;     // total reuniões (todas passadas: c/ e s/ score + ligações)
+        let countNoScore = 0;     // sem VendaScore (passadas sem score, exclui ligações)
         try {
           let query = sbClient
             .from('agendamento')
@@ -4311,11 +4311,14 @@
               countFuture += 1;
               countTotal += 1;
             } else {
-              countAllPast += 1; // conta TODAS as passadas
-              countAllPastMeetingsOnly += 1; // todas passadas (meetings + ligações) sem filtro de score
+              countAllPast += 1; // todas passadas (meetings + ligações)
               if (isValidMeeting(r)) {
                 countPast += 1;
                 countTotal += 1;
+              }
+              // Sem VendaScore: não tem score E não é ligação
+              if (r.tipo_agendamento !== LIGACAO_TIPO_ID && !r.score_final && r.score_final !== 0) {
+                countNoScore += 1;
               }
             }
           });
@@ -4363,11 +4366,11 @@
 
         const setTxt = (id, val) => { const el = document.getElementById(id); if(el) el.innerText = val; };
         setTxt('meetings-now', countNow);
-        setTxt('meetings-today', countTotal);
-        setTxt('meetings-week', countFuture);
-        setTxt('meetings-month', countPast);
-        setTxt('meetings-all-past', countAllPast);
-        setTxt('meetings-only-past', countAllPastMeetingsOnly);
+        setTxt('meetings-total-period', countTotal);
+        setTxt('meetings-scheduled', countFuture);
+        setTxt('meetings-realized', countPast);
+        setTxt('meetings-no-score', countNoScore);
+        setTxt('meetings-all', countAllPast);
         setTxt('meetings-created-today', countCreatedToday);
       }
 
