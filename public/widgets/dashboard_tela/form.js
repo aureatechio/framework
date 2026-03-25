@@ -1122,7 +1122,7 @@
         revenueChartMode: 'month', // month | semester | year (calendário)
         revenueChartZoomEnabled: false,
         revenueChartShowTodayMarker: true,
-        revenueChartSeriesVisible: { Realizado: true, AnoPassado: true, Meta: true, Projecao: true },
+        revenueChartSeriesVisible: { Realizado: true, AnoPassado: true, Meta: true, Projecao: true, Pipeline: true },
         revenueChartZoom: null, // { min:number, max:number } em ms (xaxis)
         revenueChartData: null, // cache do último chartData renderizado
         marketingInvestment: null,       // null = não carregado ainda (sem placeholder fake)
@@ -1911,6 +1911,17 @@
         try {
           let qq = q.eq('vendaaprovada', true)
             .or('checkout_status.eq.pago,clicksign_status.eq.Assinado');
+          if (__comprasIsTestSupported === true) {
+            qq = applyNotTestPurchaseFilter(qq);
+          }
+          return qq;
+        } catch (e) { return q; }
+      };
+
+      // Pipeline: vendaaprovada=true SEM filtro checkout_status/clicksign_status
+      const applyPipelineFilter = (q) => {
+        try {
+          let qq = q.eq('vendaaprovada', true);
           if (__comprasIsTestSupported === true) {
             qq = applyNotTestPurchaseFilter(qq);
           }
@@ -3489,6 +3500,12 @@
           .lte('data_compra', chartRange.end);
         if (state.selectedSeller) qMonth = qMonth.eq('vendedoresponsavel', state.selectedSeller);
 
+        // Pipeline: vendaaprovada=true (sem filtro checkout/clicksign), excluindo canceladas
+        let qPipe = sbClient.from('compras').select('valor_total, data_compra, leadid, vendedoresponsavel, cancelado');
+        qPipe = applyPipelineFilter(qPipe);
+        qPipe = applyCutoffTimestamp(qPipe, 'data_compra').gte('data_compra', chartRange.start).lte('data_compra', chartRange.end);
+        if (state.selectedSeller) qPipe = qPipe.eq('vendedoresponsavel', state.selectedSeller);
+
         // Ano passado: usar UTC puro para alinhar com data_compra histórico (DATE = midnight UTC).
         // chartRange usa timezone local (BRT), que ao shift -1 ano mantém offset +3h e exclui dia 1.
         // Fix: extrair mês/dia LOCAL do chartRange e reconstruir em UTC.
@@ -3538,14 +3555,19 @@
 
         // Importante: não bloquear o primeiro render do gráfico esperando o ano passado.
         // Renderiza rápido (Realizado + Meta) e depois atualiza a série 2025 quando chegar.
+        const isCancelledPipe = (v) => { if (v == null || v === false || v === '') return false; if (typeof v === 'boolean') return v; if (typeof v === 'string') { const s = v.trim().toLowerCase(); return !!s && s !== 'false' && s !== 'null' && s !== '{}' && s !== '[]'; } if (typeof v === 'object') { try { return Object.keys(v).length > 0; } catch(e) { return true; } } return !!v; };
+
         const [
           { data: dataCurr },
           { data: dataPrev },
           { data: monthRows },
           { data: prevMonthRows },
+          { data: pipeRows },
           monthlyMeta,
           ciclos
-        ] = await Promise.all([qCurr, qPrev, qMonth, qPrevMonthMtd, pMeta, pCiclos]);
+        ] = await Promise.all([qCurr, qPrev, qMonth, qPrevMonthMtd, qPipe, pMeta, pCiclos]);
+
+        const rowsPipe = (pipeRows || []).filter(r => !isCancelledPipe(r && r.cancelado));
 
         // Agência: filtrar rows de compras via leadid (compras não tem coluna agencia)
         let dataCurrRows = dataCurr || [];
@@ -3573,6 +3595,72 @@
             : metaTotalMode; // fallback: linear
 
           const chartData = processRevenueData(chartLeads, chartRange.start, chartRange.end, metaOverride);
+
+          // Pipeline cumulative series (mesmos buckets de rawDates)
+          try {
+            const pipelineTotalsByKey = {};
+            (chartData.rawDates || []).forEach(k => { pipelineTotalsByKey[k] = 0; });
+            (rowsPipe || []).forEach(r => {
+              if (!r || !r.data_compra) return;
+              try {
+                let key;
+                if (chartData.isYearly) {
+                  key = String(r.data_compra).substring(0, 7);
+                } else {
+                  const dd = new Date(r.data_compra);
+                  key = formatYmdLocal ? formatYmdLocal(dd) : String(r.data_compra).substring(0, 10);
+                }
+                if (Object.prototype.hasOwnProperty.call(pipelineTotalsByKey, key)) {
+                  pipelineTotalsByKey[key] += parseCurrency(r.valor_total);
+                }
+              } catch (e) {}
+            });
+            let pipelineRun = 0;
+            chartData.seriesPipeline = (chartData.rawDates || []).map(k => {
+              pipelineRun += (Number.isFinite(pipelineTotalsByKey[k]) ? pipelineTotalsByKey[k] : 0);
+              return pipelineRun;
+            });
+          } catch (e) {}
+
+          // Projeção Pipeline (Run Rate)
+          try {
+            if (revenueMode === 'month' || revenueMode === 'year') {
+              const projPipeRaw = Array.isArray(chartData.rawDates) ? chartData.rawDates : [];
+              const projPipeSeries = Array.isArray(chartData.seriesPipeline) ? chartData.seriesPipeline : [];
+              const isPipeYearly = !!chartData.isYearly || revenueMode === 'year';
+              let pipeCurrentKey;
+              if (isPipeYearly) {
+                const now = new Date();
+                pipeCurrentKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+              } else {
+                pipeCurrentKey = formatYmdLocal(new Date());
+              }
+              let pipeCurrentIdx = projPipeRaw.indexOf(pipeCurrentKey);
+              if (pipeCurrentIdx < 0) pipeCurrentIdx = projPipeSeries.length - 1;
+              if (pipeCurrentIdx < 0) pipeCurrentIdx = 0;
+              const pipeAcumulado = projPipeSeries[pipeCurrentIdx] || 0;
+              let pipeTaxaMedia, pipeProjecaoFinal;
+              if (isPipeYearly) {
+                const mesesPassados = pipeCurrentIdx + 1;
+                pipeTaxaMedia = mesesPassados > 0 ? pipeAcumulado / mesesPassados : 0;
+                pipeProjecaoFinal = pipeTaxaMedia * 12;
+              } else {
+                const diasPassados = pipeCurrentIdx + 1;
+                const diasTotais = projPipeSeries.length;
+                pipeTaxaMedia = diasPassados > 0 ? pipeAcumulado / diasPassados : 0;
+                pipeProjecaoFinal = pipeTaxaMedia * diasTotais;
+              }
+              chartData.seriesProjecaoPipeline = projPipeSeries.map((_, i) => {
+                if (i < pipeCurrentIdx) return null;
+                if (i === pipeCurrentIdx) return pipeAcumulado;
+                const restante = projPipeSeries.length - 1 - pipeCurrentIdx;
+                if (restante <= 0) return pipeProjecaoFinal;
+                const progresso = (i - pipeCurrentIdx) / restante;
+                return pipeAcumulado + (pipeProjecaoFinal - pipeAcumulado) * progresso;
+              });
+            }
+          } catch (e) {}
+
           try { state.revenueChartData = chartData; } catch (e) {}
 
           // Cache: valores do card Faturamento (Mês atual até hoje + meta no dia atual)
@@ -4148,23 +4236,17 @@
         } catch (e) {}
 
         // Labels dinâmicos (alinhado ao dashboard):
-        // - meetings-today => Total no período do header
-        // - meetings-week  => Agendadas (futuras) no período
-        // - meetings-month => Realizadas (passadas) no período
         try {
           const labelMap = { today: 'Hoje', week: 'Semana', month: 'Mês', semester: 'Semestre', year: 'Ano', custom: 'Personalizado' };
           const a = document.getElementById('meetings-label-a');
-          const b = document.getElementById('meetings-label-b');
-          const c = document.getElementById('meetings-label-c');
-          if (a) a.textContent = labelMap[state.dateFilter] || 'Período';
-          if (b) b.textContent = 'Agendadas';
-          if (c) c.textContent = 'Realizadas';
+          if (a) a.textContent = `Total no período`;
         } catch (e) {}
 
-        let countTotal = 0;
-        let countFuture = 0;
-        let countPast = 0;
-        let countAllPast = 0; // TODAS as passadas (sem filtro de score)
+        let countTotal = 0;       // válidas: futuras + passadas c/ score/ligação
+        let countFuture = 0;      // agendadas (hoje ou posterior)
+        let countPast = 0;        // realizadas (passadas c/ score ou ligação)
+        let countAllPast = 0;     // total reuniões (todas passadas: c/ e s/ score + ligações)
+        let countNoScore = 0;     // sem VendaScore (passadas sem score, exclui ligações)
         try {
           let query = sbClient
             .from('agendamento')
@@ -4197,6 +4279,10 @@
               countTotal += 1;
             } else {
               countAllPast += 1; // conta TODAS as passadas
+              // Sem VendaScore: não tem score E não é ligação
+              if (r.tipo_agendamento !== LIGACAO_TIPO_ID && !r.score_final && r.score_final !== 0) {
+                countNoScore += 1;
+              }
               if (isValidMeeting(r)) {
                 countPast += 1;
                 countTotal += 1;
@@ -4245,10 +4331,11 @@
 
         const setTxt = (id, val) => { const el = document.getElementById(id); if(el) el.innerText = val; };
         setTxt('meetings-now', countNow);
-        setTxt('meetings-today', countTotal);
-        setTxt('meetings-week', countFuture);
-        setTxt('meetings-month', countPast);
-        setTxt('meetings-all-past', countAllPast);
+        setTxt('meetings-total-period', countTotal);
+        setTxt('meetings-scheduled', countFuture);
+        setTxt('meetings-realized', countPast);
+        setTxt('meetings-no-score', countNoScore);
+        setTxt('meetings-all', countAllPast);
         setTxt('meetings-created-today', countCreatedToday);
       }
 
@@ -7345,6 +7432,7 @@
         let seriesMetaLocal = chartData ? [...(chartData.seriesMeta || [])] : [0, 0, 0, 0];
         let seriesLastYearLocal = chartData ? [...(chartData.seriesLastYear || [])] : null;
         const seriesLastYearName = (chartData && chartData.seriesLastYearName) ? String(chartData.seriesLastYearName) : null;
+        let seriesPipelineLocal = chartData ? [...(chartData.seriesPipeline || [])] : null;
 
         // Realizado deve seguir até o dia atual (linha tracejada),
         // mesmo que não tenha compra no dia. Após o dia atual, corta (null).
@@ -7375,6 +7463,9 @@
           }
         };
         seriesDataLocal = extendRealizadoToToday(seriesDataLocal);
+        if (Array.isArray(seriesPipelineLocal)) {
+          seriesPipelineLocal = extendRealizadoToToday(seriesPipelineLocal);
+        }
 
         // Garantir mínimo de 2 pontos
         if (categories.length === 1 && seriesDataLocal.length === 1 && seriesMetaLocal.length === 1) {
@@ -7417,6 +7508,13 @@
         const series = [
           { name: "Realizado", data: seriesDataLocal }
         ];
+        const hasPipeline = Array.isArray(seriesPipelineLocal) && seriesPipelineLocal.length > 0;
+        if (hasPipeline) {
+          while (seriesPipelineLocal.length < seriesDataLocal.length) {
+            seriesPipelineLocal.push(seriesPipelineLocal[seriesPipelineLocal.length - 1] || 0);
+          }
+          series.push({ name: "Pipeline", data: seriesPipelineLocal });
+        }
         const hasLastYear = Array.isArray(seriesLastYearLocal) && seriesLastYearLocal.length > 0;
         if (hasLastYear) {
           while (seriesLastYearLocal.length < seriesDataLocal.length) {
@@ -7469,6 +7567,15 @@
         }
         if (hasProjecao && Array.isArray(seriesProjecaoLocal)) {
           series.push({ name: "Projeção", data: seriesProjecaoLocal });
+        }
+
+        let seriesProjPipeLocal = chartData ? (chartData.seriesProjecaoPipeline ? [...chartData.seriesProjecaoPipeline] : null) : null;
+        const hasProjPipe = (mode === 'month' || mode === 'year') && hasPipeline && Array.isArray(seriesProjPipeLocal) && seriesProjPipeLocal.length > 0;
+        if (hasProjPipe) {
+          while (seriesProjPipeLocal.length < seriesDataLocal.length) {
+            seriesProjPipeLocal.push(seriesProjPipeLocal[seriesProjPipeLocal.length - 1] || 0);
+          }
+          series.push({ name: "Proj. Pipeline", data: seriesProjPipeLocal });
         }
 
         // v129: Projeção 15d — OCULTADA (série desabilitada)
@@ -7860,18 +7967,27 @@
             strokeWidth: 0,
             hover: { size: 6 }
           },
-          colors: hasLastYear
-            ? (hasProjecao15d
-                ? (hasProjecao ? ['#3b82f6', '#ef4444', '#10b981', '#0ea5e9', '#2563eb'] : ['#3b82f6', '#ef4444', '#10b981', '#2563eb'])
-                : (hasProjecao ? ['#3b82f6', '#ef4444', '#10b981', '#0ea5e9'] : ['#3b82f6', '#ef4444', '#10b981']))
-            : (hasProjecao15d
-                ? (hasProjecao ? ['#3b82f6', '#10b981', '#0ea5e9', '#2563eb'] : ['#3b82f6', '#10b981', '#2563eb'])
-                : (hasProjecao ? ['#3b82f6', '#10b981', '#0ea5e9'] : ['#3b82f6', '#10b981'])),
+          colors: (() => {
+            const baseColors = ['#3b82f6']; // Realizado
+            if (hasPipeline) baseColors.push('#f59e0b'); // Pipeline amber
+            if (hasLastYear) baseColors.push('#ef4444'); // Ano passado
+            baseColors.push('#10b981'); // Meta
+            if (hasProjecao) baseColors.push('#0ea5e9'); // Projeção
+            if (hasProjPipe) baseColors.push('#d97706'); // Proj. Pipeline dark amber
+            if (hasProjecao15d) baseColors.push('#2563eb'); // Projeção 15d
+            return baseColors;
+          })(),
           // Meta: smooth. Projeção: tracejada. Projeção 15d: tracejada azul.
           stroke: {
-            curve: series.map(s => (s && (s.name === 'Projeção' || s.name === 'Projeção 15d')) ? 'straight' : 'smooth'),
+            curve: series.map(s => (s && (s.name === 'Projeção' || s.name === 'Projeção 15d' || s.name === 'Proj. Pipeline')) ? 'straight' : 'smooth'),
             width: series.map(() => 2),
-            dashArray: series.map(s => (s && (s.name === 'Projeção' || s.name === 'Projeção 15d')) ? 6 : 0)
+            dashArray: series.map(s => {
+              if (!s) return 0;
+              if (s.name === 'Projeção' || s.name === 'Projeção 15d') return 6;
+              if (s.name === 'Proj. Pipeline') return 5;
+              if (s.name === 'Pipeline') return 0;
+              return 0;
+            })
           },
           fill: {
             type: 'gradient',
@@ -7942,8 +8058,8 @@
         if (revenueChart) {
           try {
             // animate=false para evitar blink em série secundária (ex.: 2025)
+            // updateOptions já inclui series no chartOptions — não chamar updateSeries separado (duplica dados)
             revenueChart.updateOptions(chartOptions, false, false);
-            revenueChart.updateSeries(series, false);
             try {
               // reaplicar visibilidade via state (toggles)
               if (!(state && state.revenueChartSeriesVisible && state.revenueChartSeriesVisible.Meta)) {
@@ -7954,7 +8070,7 @@
               }
               if (!(state && state.revenueChartSeriesVisible && state.revenueChartSeriesVisible.AnoPassado)) {
                 const names = revenueChart?.w?.globals?.seriesNames || [];
-                const lyName = names.find(n => n && n !== 'Realizado' && n !== 'Meta' && n !== 'Projeção' && n !== 'Projeção 15d') || null;
+                const lyName = names.find(n => n && n !== 'Realizado' && n !== 'Meta' && n !== 'Projeção' && n !== 'Projeção 15d' && n !== 'Pipeline' && n !== 'Proj. Pipeline') || null;
                 if (lyName) { try { revenueChart.hideSeries(lyName); } catch (e) {} }
               }
               if (!(state && state.revenueChartSeriesVisible && state.revenueChartSeriesVisible.Projecao)) {
@@ -7993,7 +8109,7 @@
           try {
             const names = revenueChart?.w?.globals?.seriesNames || [];
             // procura a série que não é Realizado, Meta e Projeção
-            return names.find(n => n && n !== 'Realizado' && n !== 'Meta' && n !== 'Projeção') || null;
+            return names.find(n => n && n !== 'Realizado' && n !== 'Meta' && n !== 'Projeção' && n !== 'Pipeline' && n !== 'Proj. Pipeline') || null;
           } catch (e) {
             return null;
           }

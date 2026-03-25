@@ -1220,9 +1220,9 @@
     .meeting-card.week .icon-box { background: var(--border-color); color: #64748b; }
     .meeting-card.week .count { color: #475569; }
 
-    .meeting-card.month { background: var(--col-success-light); border-color: #dcfce7; }
-    .meeting-card.month .icon-box { background: #dcfce7; color: #16a34a; }
-    .meeting-card.month .count { color: #16a34a; }
+    .meeting-card.month { background: rgba(99,102,241,0.08); border-color: #e0e7ff; }
+    .meeting-card.month .icon-box { background: #e0e7ff; color: #6366f1; }
+    .meeting-card.month .count { color: #6366f1; }
 
     .meeting-card.all-past { background: rgba(249,115,22,0.08); border-color: #ffedd5; }
     .meeting-card.all-past .icon-box { background: #ffedd5; color: #f97316; }
@@ -1243,8 +1243,8 @@
     .dark-mode .meeting-card.week .icon-box { background: var(--border-color); color: var(--text-muted); }
     .dark-mode .meeting-card.week .count { color: var(--text-main); }
 
-    .dark-mode .meeting-card.month { background: rgba(34,197,94,0.15); border-color: rgba(34,197,94,0.3); }
-    .dark-mode .meeting-card.month .icon-box { background: rgba(34,197,94,0.2); }
+    .dark-mode .meeting-card.month { background: rgba(99,102,241,0.15); border-color: rgba(99,102,241,0.3); }
+    .dark-mode .meeting-card.month .icon-box { background: rgba(99,102,241,0.2); }
 
     .dark-mode .meeting-card.all-past { background: rgba(249,115,22,0.15); border-color: rgba(249,115,22,0.3); }
     .dark-mode .meeting-card.all-past .icon-box { background: rgba(249,115,22,0.2); }
