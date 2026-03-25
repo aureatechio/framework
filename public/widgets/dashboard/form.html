@@ -261,10 +261,10 @@
     <div id="meetings-summary-card" class="card flex-col bg-white" style="background: var(--bg-card); justify-content: center;">
       <div class="section-title" style="margin-bottom:6px;">Reuniões</div>
 
-      <div class="meeting-card now">
+      <div class="meeting-card today">
         <div class="icon-box"><i data-lucide="video"></i></div>
         <div class="grow" style="display:flex;align-items:center;gap:6px;">
-          <span class="text-xs font-medium opacity-80" style="color:#ef4444">Acontecendo agora</span>
+          <span class="text-xs font-medium opacity-80" style="color:#3b82f6">Acontecendo agora</span>
           <span class="count" id="meetings-now">--</span>
         </div>
         <span class="kpi-info-icon" onmouseenter="window.__openInfoPopover(this)" onmouseleave="window.__closeInfoPopover()" data-info="Reuniões em andamento neste momento.&#10;&#10;Critérios:&#10;• Agendada para a hora atual&#10;• Status = agendado">i</span>
@@ -306,10 +306,10 @@
         <span class="kpi-info-icon" onmouseenter="window.__openInfoPopover(this)" onmouseleave="window.__closeInfoPopover()" data-info="Reuniões realizadas (com score ou ligação).&#10;&#10;Critérios:&#10;• VendaScore preenchido, ou&#10;• Tipo = Ligação">i</span>
       </div>
 
-      <div class="meeting-card all-past" style="border-color:#0ea5e9 !important; background:rgba(14,165,233,0.08) !important;">
-        <div class="icon-box" style="background:#e0f2fe !important; color:#0ea5e9 !important;"><i data-lucide="calendar-x"></i></div>
+      <div class="meeting-card now">
+        <div class="icon-box"><i data-lucide="calendar-x"></i></div>
         <div class="grow" style="display:flex;align-items:center;gap:6px;">
-          <span class="text-xs font-medium opacity-80" style="color:#0ea5e9">Total sem VendaScore</span>
+          <span class="text-xs font-medium opacity-80" style="color:#ef4444">Total sem VendaScore</span>
           <span class="count" id="meetings-no-score">--</span>
         </div>
         <span class="kpi-info-icon" onmouseenter="window.__openInfoPopover(this)" onmouseleave="window.__closeInfoPopover()" data-info="Reuniões passadas sem VendaScore.&#10;&#10;Critérios:&#10;• Score não preenchido&#10;• Exclui ligações&#10;• Apenas meetings de fato">i</span>
