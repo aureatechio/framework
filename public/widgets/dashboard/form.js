@@ -3690,6 +3690,40 @@
           ? __shiftIsoYear(cutoff.cutoffInstantIso, -1)
           : null;
         
+        // --- RPC FAST PATH: tenta buscar KPIs via RPC, pula queries legacy se funcionar ---
+        let __rpcRevenueData = null;
+        try {
+          const meetingsRange = getMeetingsDateRange(state.dateFilter);
+          const meetingsPrevYmd = (() => {
+            const s = new Date(meetingsRange.start); const e = new Date(meetingsRange.end);
+            s.setMonth(s.getMonth() - 1); e.setMonth(e.getMonth() - 1);
+            const pad2 = (n) => String(n).padStart(2, '0');
+            const toYmd = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+            return { startYmd: toYmd(s), endYmd: toYmd(e) };
+          })();
+          const { data: rpcResult, error: rpcErr } = await sbClient.rpc('dashboard_revenue', {
+            p_start: start,
+            p_end: end,
+            p_prev_start: prevRange.start,
+            p_prev_end: prevRange.end,
+            p_ly_start: lastYearRange.start || null,
+            p_ly_end: lastYearRange.end || null,
+            p_seller_id: state.selectedSeller || null,
+            p_agency_id: state.selectedAgencyId || null,
+            p_cutoff_iso: (cutoff && cutoff.enabled && cutoff.cutoffInstantIso) ? cutoff.cutoffInstantIso : null,
+            p_cutoff_ly_iso: cutoffLastYearIso || null,
+            p_meetings_start_ymd: meetingsRange.startYmd || null,
+            p_meetings_end_ymd: meetingsRange.endYmd || null,
+            p_meetings_prev_start_ymd: meetingsPrevYmd.startYmd || null,
+            p_meetings_prev_end_ymd: meetingsPrevYmd.endYmd || null
+          });
+          if (rpcErr) throw rpcErr;
+          if (rpcResult && rpcResult.faturamento) __rpcRevenueData = rpcResult;
+        } catch (rpcE) {
+          console.warn('[Revenue] RPC falhou, usando queries legacy:', rpcE);
+          __rpcRevenueData = null;
+        }
+
         // Faturamento/Vendas: compras aprovadas (compras.valor_total) por data_compra
         // Observação importante: NÃO aplicar cutoff por `created_at` em compras, pois existem compras
         // “backdated” (data_compra no período, mas created_at antigo), o que zera/corta dias no gráfico.
@@ -3965,17 +3999,17 @@
         const { data: dataPrev } = await queryPrev;
         const dataPrevRows = await filterRowsByAgencyViaLeadId((dataPrev || []), (r) => r && r.leadid);
 
-        const currentSales = dataCurrRows ? dataCurrRows.length : 0;
-        const currentRevenue = dataCurrRows ? dataCurrRows.reduce((acc, curr) => acc + parseCurrency(curr.valor_total), 0) : 0;
-        const prevSales = dataPrevRows ? dataPrevRows.length : 0;
-        const prevRevenue = dataPrevRows ? dataPrevRows.reduce((acc, curr) => acc + parseCurrency(curr.valor_total), 0) : 0;
+        const currentSales = __rpcRevenueData ? (__rpcRevenueData.currentSales || 0) : (dataCurrRows ? dataCurrRows.length : 0);
+        const currentRevenue = __rpcRevenueData ? (Number(__rpcRevenueData.currentRevenue) || 0) : (dataCurrRows ? dataCurrRows.reduce((acc, curr) => acc + parseCurrency(curr.valor_total), 0) : 0);
+        const prevSales = __rpcRevenueData ? (__rpcRevenueData.prevSales || 0) : (dataPrevRows ? dataPrevRows.length : 0);
+        const prevRevenue = __rpcRevenueData ? (Number(__rpcRevenueData.prevRevenue) || 0) : (dataPrevRows ? dataPrevRows.reduce((acc, curr) => acc + parseCurrency(curr.valor_total), 0) : 0);
         const currentTicket = currentSales > 0 ? currentRevenue / currentSales : 0;
         const prevTicket = prevSales > 0 ? prevRevenue / prevSales : 0;
 
         // --- FATURAMENTO "ANO PASSADO" via compras (mesmo range, -1 ano) ---
-        let lastYearRevenue = 0;
-        let lastYearSales = 0;
-        let lastYearTicket = 0;
+        let lastYearRevenue = __rpcRevenueData ? (Number(__rpcRevenueData.faturamento.lastYear) || 0) : 0;
+        let lastYearSales = __rpcRevenueData ? (__rpcRevenueData.qtdVendas.lastYear || 0) : 0;
+        let lastYearTicket = lastYearSales > 0 ? lastYearRevenue / lastYearSales : 0;
         try {
           let qLastYear = sbClient
             .from('compras')
@@ -4393,6 +4427,48 @@
       }
 
       async function fetchMeetings() {
+        if (!sbClient) return;
+        try {
+          const now = new Date();
+          const todayRange = getMeetingsDateRange('today');
+          const periodRange = getMeetingsDateRange(state.dateFilter);
+          const { data, error } = await sbClient.rpc('dashboard_meetings', {
+            p_period_start_ymd: periodRange.startYmd || null,
+            p_period_end_ymd: periodRange.endYmd || null,
+            p_today_ymd: todayRange.startYmd || null,
+            p_current_hour: now.getHours(),
+            p_seller_id: state.selectedSeller || null,
+            p_agency_id: state.selectedAgencyId || null
+          });
+          if (error) throw error;
+          if (!data || typeof data.total !== 'number') throw new Error('[Meetings] RPC schema invalid');
+
+          // Labels dinâmicos
+          try {
+            const a = document.getElementById('meetings-label-a');
+            const b = document.getElementById('meetings-label-b');
+            const c = document.getElementById('meetings-label-c');
+            if (a) a.textContent = getDateFilterLabelPtBr(state.dateFilter);
+            if (b) b.textContent = 'Agendadas';
+            if (c) c.textContent = 'Realizadas';
+          } catch (e) {}
+
+          const setTxt = (id, val) => { const el = document.getElementById(id); if(el) el.innerText = val; };
+          setTxt('meetings-now', data.now);
+          setTxt('meetings-total-period', data.total);
+          setTxt('meetings-scheduled', data.future);
+          setTxt('meetings-realized', data.past);
+          setTxt('meetings-no-score', data.noScore);
+          setTxt('meetings-all', data.allPast);
+          setTxt('meetings-created-today', data.createdToday);
+          return;
+        } catch (e) {
+          console.warn('[Meetings] RPC falhou, usando legacy:', e);
+        }
+        await fetchMeetingsLegacy();
+      }
+
+      async function fetchMeetingsLegacy() {
         if (!sbClient) return;
 
         const now = new Date();
@@ -5927,6 +6003,46 @@
 
       async function fetchDailyReport() {
         if (!sbClient) return;
+        // --- RPC fast path ---
+        try {
+          const now = new Date();
+          const pad2 = (n) => String(n).padStart(2, '0');
+          const monthStartIso = `${now.getFullYear()}-${pad2(now.getMonth()+1)}-01T00:00:00Z`;
+          const monthEndIso = `${now.getFullYear()}-${pad2(now.getMonth()+1)}-${pad2(new Date(now.getFullYear(), now.getMonth()+1, 0).getDate())}T23:59:59Z`;
+          const todayStartIso = `${now.getFullYear()}-${pad2(now.getMonth()+1)}-${pad2(now.getDate())}T00:00:00Z`;
+          const todayEndIso = `${now.getFullYear()}-${pad2(now.getMonth()+1)}-${pad2(now.getDate())}T23:59:59Z`;
+          const lyYear = now.getFullYear() - 1;
+          const lyMonthStart = `${lyYear}-${pad2(now.getMonth()+1)}-01T00:00:00Z`;
+          const lyMonthEnd = `${lyYear}-${pad2(now.getMonth()+1)}-${pad2(now.getDate())}T23:59:59Z`;
+          const todayYmd = `${now.getFullYear()}-${pad2(now.getMonth()+1)}-${pad2(now.getDate())}`;
+
+          const { data: rd, error } = await sbClient.rpc('dashboard_daily', {
+            p_month_start: monthStartIso,
+            p_month_end: monthEndIso,
+            p_today_start: todayStartIso,
+            p_today_end: todayEndIso,
+            p_ly_month_start: lyMonthStart,
+            p_ly_month_end: lyMonthEnd,
+            p_seller_id: state.selectedSeller || null,
+            p_agency_id: state.selectedAgencyId || null,
+            p_cutoff_iso: (cutoff && cutoff.enabled && cutoff.cutoffInstantIso) ? cutoff.cutoffInstantIso : null,
+            p_meetings_today_ymd: todayYmd
+          });
+          if (error) throw error;
+          if (rd && typeof rd.vendasMtd === 'number') {
+            state.dailyReport = {
+              vendasDia: rd.vendasDia, vendasMtd: rd.vendasMtd,
+              fatMtd: Number(rd.fatMtd) || 0, fatMeta: state.dailyReport ? state.dailyReport.fatMeta : 0,
+              paceFat: Number(rd.paceFat) || 0, paceVendas: Number(rd.paceVendas) || 0,
+              propostasHoje: rd.propostasHoje, reunioesHoje: rd.reunioesHoje,
+              reunioesMes: rd.reunioesMes
+            };
+            renderDailyReport();
+            return;
+          }
+        } catch (e) {
+          console.warn('[DailyReport] RPC falhou, usando legacy:', e);
+        }
 
         const now = new Date();
         const todayStart = new Date(now); todayStart.setHours(0,0,0,0);
@@ -6432,8 +6548,7 @@
              { fn: fetchMeetingsTab, label: 'Agenda' },
              { fn: fetchSLAs, label: 'SLAs' },
              { fn: fetchRankingData, label: 'Ranking' },
-             { fn: fetchFunnelData, label: 'Funil' },
-             { fn: fetchConversionRates, label: 'Conversão' },
+             { fn: fetchFunnelData, label: 'Funil + Conversão' },
              { fn: fetchChannelData, label: 'Canais' },
              { fn: fetchStageDwellTimes, label: 'Tempos Etapa' },
              { fn: fetchMetasData, label: 'Metas' },
@@ -7151,6 +7266,52 @@
 
       async function fetchFunnelData() {
         if (!sbClient) return;
+        try {
+          const { start, end } = getDateRange(state.dateFilter);
+          const meetingsRange = getMeetingsDateRange(state.dateFilter);
+          const { data, error } = await sbClient.rpc('dashboard_funnel', {
+            p_start: start,
+            p_end: end,
+            p_seller_id: state.selectedSeller || null,
+            p_agency_id: state.selectedAgencyId || null,
+            p_cutoff_iso: (cutoff && cutoff.enabled && cutoff.cutoffInstantIso) ? cutoff.cutoffInstantIso : null,
+            p_cutoff_ymd: (cutoff && cutoff.enabled && cutoff.cutoffYmdLocal) ? cutoff.cutoffYmdLocal : null,
+            p_meetings_start_ymd: meetingsRange.startYmd || null,
+            p_meetings_end_ymd: meetingsRange.endYmd || null
+          });
+          if (error) throw error;
+          if (!data || !data.funnel) throw new Error('[Funnel] RPC schema invalid');
+
+          const funnelData = data.funnel;
+          const processedFunnel = funnelData.map((item, index) => {
+            const prev = index > 0 ? funnelData[index - 1].v : funnelData[0].v;
+            const total = funnelData[0].v;
+            const conversion = prev > 0 ? Number(((item.v / prev) * 100).toFixed(2)) : 0;
+            const globalConversionRaw = total > 0 ? Number(((item.v / total) * 100).toFixed(2)) : 0;
+            const globalConversion = Math.max(0, Math.min(100, globalConversionRaw));
+            return { ...item, c: index === 0 ? 100 : conversion, gc: index === 0 ? 100 : globalConversion };
+          });
+          renderFunnel(processedFunnel);
+
+          if (data.conversion) {
+            const cv = data.conversion;
+            state.conversionRates = [
+              Number(cv.taxaLead) || 0,
+              Number(cv.taxaReuniao) || 0,
+              Number(cv.taxaProposta) || 0
+            ];
+            renderConversion();
+          }
+          return;
+        } catch (e) {
+          console.warn('[Funnel] RPC falhou, usando legacy:', e);
+        }
+        await fetchFunnelDataLegacy();
+        await fetchConversionRatesLegacy();
+      }
+
+      async function fetchFunnelDataLegacy() {
+        if (!sbClient) return;
         const { start, end } = getDateRange(state.dateFilter);
         const meetingsRange = getMeetingsDateRange(state.dateFilter);
 
@@ -7316,7 +7477,7 @@
         renderFunnel(processedFunnel);
       }
 
-      async function fetchConversionRates() {
+      async function fetchConversionRatesLegacy() {
         if (!sbClient) return;
         const { start, end } = getDateRange(state.dateFilter);
         const startYmd = (start || '').split('T')[0];
