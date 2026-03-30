@@ -2619,6 +2619,7 @@
       function renderMeetingsTab() {
         const upEl = document.getElementById('meetings-upcoming');
         const pastEl = document.getElementById('meetings-past');
+        if (!upEl && !pastEl) return; // ranking replaced by iframe
         const countEl = document.getElementById('meetings-tab-count');
         const avgEl = document.getElementById('meetings-score-avg');
         const total = state.meetingsTab?.total ?? 0;
@@ -4004,6 +4005,7 @@
             .in('lead_id', chunk)
             .eq('passou_prioridade', true);
           qVP = applyNotImportedLeadFilter(qVP);
+          qVP = applyAgencyFilterToLeadQuery(qVP);
           const { count } = await qVP;
           countVendasPrioridade += (count || 0);
         }
@@ -4020,6 +4022,7 @@
             .in('lead_id', chunk)
             .eq('passou_prioridade', true);
           qVPP = applyNotImportedLeadFilter(qVPP);
+          qVPP = applyAgencyFilterToLeadQuery(qVPP);
           const { count } = await qVPP;
           countVendasPrioridadePrev += (count || 0);
         }
@@ -4829,11 +4832,12 @@
         const { start, end } = getDateRange(state.dateFilter);
         const meetRange = getMeetingsDateRange(state.dateFilter);
         
-        // 1. Fetch Sellers
+        // 1. Fetch Sellers (only active)
         const { data: sellers } = await sbClient
             .from('vendedores')
-            .select('id, nome, perfil_img')
-            .eq('usuarioInterno', false);
+            .select('id, nome, perfil_img, ativo_acelerai, ativo_mgs')
+            .eq('usuarioInterno', false)
+            .or('ativo_acelerai.eq.true,ativo_mgs.eq.true');
             
         if (!sellers) return;
         
@@ -5048,6 +5052,113 @@
         console.log('Ranking Data (ordenado por score):', state.rankingData.map(r => ({ name: r.name, score: r.avgScore })));
 
         renderRanking();
+        renderRankingPodium();
+      }
+
+      function buildRankingPayload() {
+        const totalSellers = (state.rankingData || []).length || 1;
+        const metaPerSeller = TARGET_REVENUE_MONTHLY / totalSellers;
+        return (state.rankingData || []).map(r => ({
+          nome: r.name || '',
+          faturamento: r.sales || 0,
+          vendas: r.salesCount || 0,
+          pct_meta: metaPerSeller > 0 ? Math.round((r.sales / metaPerSeller) * 100) : 0,
+          avatar_url: r.avatarUrl || ''
+        }));
+      }
+
+      /* ── Ranking Podium Inline (substituiu iframe) ── */
+      function _rkFmt(v) {
+        return 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+      }
+      function _rkInitials(name) {
+        return name.split(' ').map(function(w){ return w[0]; }).join('').slice(0,2).toUpperCase();
+      }
+      function _rkRingSVG(pct, large) {
+        var r = large ? 46 : 36;
+        var circ = 2 * Math.PI * r;
+        var capped = Math.min(pct, 120);
+        var offset = circ - (capped / 100) * circ;
+        var color = pct >= 100 ? 'green' : 'blue';
+        var size = large ? 110 : 90;
+        return '<div class="rk-progress-ring-container"' + (large ? ' style="width:110px;height:110px"' : '') + '>' +
+          '<svg class="rk-progress-ring" viewBox="0 0 ' + size + ' ' + size + '">' +
+          '<circle class="rk-progress-ring-bg" cx="' + size/2 + '" cy="' + size/2 + '" r="' + r + '"/>' +
+          '<circle class="rk-progress-ring-fill ' + color + '" cx="' + size/2 + '" cy="' + size/2 + '" r="' + r + '" stroke-dasharray="' + circ + '" stroke-dashoffset="' + offset + '"/>' +
+          '</svg>' +
+          '<span class="rk-progress-value">' + pct + '%</span>' +
+          '</div>';
+      }
+      function _rkAvatarHTML(seller, cls) {
+        var extra = cls || '';
+        if (seller.avatar_url) {
+          return '<div class="rk-avatar ' + extra + '"><img src="' + seller.avatar_url + '" alt="' + seller.nome + '"></div>';
+        }
+        return '<div class="rk-avatar ' + extra + '">' + _rkInitials(seller.nome) + '</div>';
+      }
+      function _rkMemberAvatarHTML(seller) {
+        if (seller.avatar_url) {
+          return '<div class="rk-member-avatar"><img src="' + seller.avatar_url + '" alt="' + seller.nome + '"></div>';
+        }
+        return '<div class="rk-member-avatar">' + _rkInitials(seller.nome) + '</div>';
+      }
+      function _rkPodiumCard(seller, pos) {
+        var isFirst = pos === 1;
+        return '<div class="rk-podium-card ' + (isFirst ? 'first' : '') + '">' +
+          (isFirst ? '<div class="rk-champion-badge">Campeão</div>' : '') +
+          '<div class="rk-avatar-wrapper">' +
+          _rkAvatarHTML(seller, isFirst ? 'large' : '') +
+          '<div class="rk-position-badge">' + pos + '</div>' +
+          '</div>' +
+          '<p class="rk-seller-name">' + seller.nome + '</p>' +
+          '<p class="rk-seller-revenue">' + _rkFmt(seller.faturamento) + '</p>' +
+          _rkRingSVG(seller.pct_meta, isFirst) +
+          '<span class="rk-meta-label">% Meta</span>' +
+          '<div class="rk-stats-row">' +
+          '<div class="rk-stat"><span class="rk-stat-label">Vendas</span><span class="rk-stat-value">' + seller.vendas + '</span></div>' +
+          '<div class="rk-stat"><span class="rk-stat-label">Posição</span><span class="rk-stat-value">' + pos + 'º</span></div>' +
+          '</div></div>';
+      }
+      function _rkTableRow(seller, pos) {
+        var barW = Math.min(seller.pct_meta, 100);
+        return '<tr>' +
+          '<td class="rk-pos-cell">' + String(pos).padStart(2, '0') + '</td>' +
+          '<td><div class="rk-member-cell">' + _rkMemberAvatarHTML(seller) + '<span class="rk-member-name">' + seller.nome + '</span></div></td>' +
+          '<td class="rk-money-cell">' + _rkFmt(seller.faturamento) + '</td>' +
+          '<td class="rk-vendas-cell">' + seller.vendas + '</td>' +
+          '<td><div class="rk-meta-cell"><span class="rk-meta-percent">' + seller.pct_meta + '%</span><div class="rk-meta-bar"><div class="rk-meta-bar-fill" style="width:' + barW + '%"></div></div></div></td>' +
+          '</tr>';
+      }
+
+      function renderRankingPodium() {
+        var podiumEl = document.getElementById('ranking-podium');
+        var bodyEl = document.getElementById('ranking-table-body');
+        if (!podiumEl || !bodyEl) return;
+
+        var data = buildRankingPayload();
+        var sorted = data.slice().sort(function(a, b) { return b.pct_meta - a.pct_meta; });
+
+        if (!sorted.length) {
+          podiumEl.innerHTML = '<div class="rk-empty" style="grid-column:1/-1">Nenhum dado de ranking disponível.</div>';
+          bodyEl.innerHTML = '<tr><td colspan="5" class="rk-empty">Nenhum dado disponível.</td></tr>';
+          return;
+        }
+
+        var top = sorted.slice(0, 3);
+        if (top.length === 1) {
+          podiumEl.innerHTML = _rkPodiumCard(top[0], 1);
+        } else if (top.length === 2) {
+          podiumEl.innerHTML = _rkPodiumCard(top[1], 2) + _rkPodiumCard(top[0], 1);
+        } else {
+          podiumEl.innerHTML = _rkPodiumCard(top[1], 2) + _rkPodiumCard(top[0], 1) + _rkPodiumCard(top[2], 3);
+        }
+
+        var rest = sorted.slice(3);
+        if (rest.length) {
+          bodyEl.innerHTML = rest.map(function(s, i) { return _rkTableRow(s, i + 4); }).join('');
+        } else {
+          bodyEl.innerHTML = '<tr><td colspan="5" class="rk-empty">Todos os membros estão no pódio!</td></tr>';
+        }
       }
 
       // --- METAS DE PROPOSTAS E REUNIÕES ---
@@ -6355,8 +6466,9 @@
         }
 
         // Renderiza estrutura inicial (vazia ou placeholders)
-        renderKPIs(); 
+        renderKPIs();
         renderRanking();
+        renderRankingPodium();
         renderMeetingsTab();
         renderFunnel();
         renderConversion();
@@ -6376,6 +6488,7 @@
             sel.onchange = () => {
               state.rankingSort = sel.value || 'score';
               renderRanking();
+              renderRankingPodium();
             };
           }
         } catch (e) {}
@@ -6501,7 +6614,7 @@
                   setTimeout(() => {
                     try { lucide.createIcons(); } catch (e) {}
                     try { renderKPIs(); } catch (e) {}
-                    try { renderRanking(); } catch (e) {}
+                    try { renderRanking(); renderRankingPodium(); } catch (e) {}
                     try { renderMeetingsTab(); } catch (e) {}
                     try { renderFunnel(); } catch (e) {}
                     try { renderConversion(); } catch (e) {}
@@ -6729,6 +6842,7 @@
 
       function renderRanking() {
         const c = document.getElementById('ranking-list');
+        if (!c) return; // ranking replaced by iframe
         const countEl = document.getElementById('ranking-count');
 
         // Garantir que o dropdown de ordenação está sempre ligado ao state
@@ -6742,6 +6856,7 @@
               sel.onchange = () => {
                 state.rankingSort = sel.value || 'score';
                 renderRanking();
+                renderRankingPodium();
               };
             }
           }
@@ -8950,6 +9065,10 @@
         // - exibir uma caixinha fixa com Realizado / Ano passado / Meta no dia atual
         const ensureFocusBox = () => {
           try {
+            // Focus box disabled — replaced by custom hover tooltip
+            const oldBox = document.getElementById('revenue-focus-box-tv');
+            if (oldBox) oldBox.style.display = 'none';
+            return null;
             if (!(state && state.revenueChartShowTodayMarker)) return null;
             // Esconder quando zoom ativo (dia atual pode estar fora do range)
             if (state && state.revenueChartZoom) {
@@ -8975,8 +9094,8 @@
               box.style.fontSize = '12px';
               box.style.boxShadow = '0 8px 24px rgba(15,23,42,0.15)';
               box.style.pointerEvents = 'none';
-              box.style.minWidth = '160px';
-              box.style.maxWidth = '220px';
+              box.style.minWidth = '240px';
+              box.style.maxWidth = '300px';
               box.style.backdropFilter = 'blur(6px)';
               box.style.whiteSpace = 'normal';
               parent.appendChild(box);
@@ -9043,30 +9162,50 @@
               return null;
             })();
 
+            const prevYr = getPrevYear();
+            const currYr = getCurrentYear();
+            const borderC = isDark ? '#334155' : '#e2e8f0';
+            const headerBgC = isDark ? '#334155' : '#f8fafc';
+            const textMainC = isDark ? '#f1f5f9' : '#0f172a';
+            const textMutedC = isDark ? '#94a3b8' : '#64748b';
+            const tdS = 'padding:3px 0;font-size:11px;white-space:nowrap;';
+            const tdL = tdS + 'color:' + textMutedC + ';padding-right:8px;';
+            const tdV = tdS + 'text-align:right;font-weight:600;padding-left:10px;color:' + textMainC + ';min-width:70px;';
+
+            // Check if this point is past today
+            const focusDateKey = rawDates && rawDates[safeIdx] ? rawDates[safeIdx] : '';
+            const focusIsPast = (() => {
+              try {
+                if (!focusDateKey) return false;
+                const today = new Date(); today.setHours(0,0,0,0);
+                if (isYearly) {
+                  const fy = parseInt(String(focusDateKey).slice(0,4),10);
+                  const fm = parseInt(String(focusDateKey).slice(5,7),10);
+                  return (fy < today.getFullYear()) || (fy === today.getFullYear() && fm < (today.getMonth()+1));
+                }
+                return new Date(focusDateKey + 'T00:00:00') < today;
+              } catch(e) { return false; }
+            })();
+
+            const projVal = (hasProjecao && Array.isArray(seriesProjecaoLocal)) ? seriesProjecaoLocal[safeIdx] : null;
+            const projPipeVal = (hasProjPipe && Array.isArray(seriesProjPipeLocal)) ? seriesProjPipeLocal[safeIdx] : null;
+
+            let focusRows = '';
+            focusRows += `<tr><td style="${tdL}"><span style="display:inline-flex;align-items:center;gap:5px;">${dot('#3b82f6')}Realizado</span></td><td style="${tdV}">${fmtMoney(ly)}</td><td style="${tdV}">${fmtMoney(lastReal)}</td></tr>`;
+            if (hasPipeline) focusRows += `<tr><td style="${tdL}"><span style="display:inline-flex;align-items:center;gap:5px;">${dot('#f59e0b')}Pipeline</span></td><td style="${tdV}">--</td><td style="${tdV}">${fmtMoney(pipeVal)}</td></tr>`;
+            focusRows += `<tr><td style="${tdL}"><span style="display:inline-flex;align-items:center;gap:5px;">${dot('#10b981')}Meta</span></td><td style="${tdV}">--</td><td style="${tdV}">${fmtMoney(meta)}</td></tr>`;
+            if (!focusIsPast && hasProjecao) focusRows += `<tr><td style="${tdL}"><span style="display:inline-flex;align-items:center;gap:5px;">${dot('#0ea5e9')}Projeção</span></td><td style="${tdV}">--</td><td style="${tdV}">${fmtMoney(projVal)}</td></tr>`;
+            if (!focusIsPast && hasProjPipe) focusRows += `<tr><td style="${tdL}"><span style="display:inline-flex;align-items:center;gap:5px;">${dot('#d97706')}Proj. Pipeline</span></td><td style="${tdV}">--</td><td style="${tdV}">${fmtMoney(projPipeVal)}</td></tr>`;
+
             box.innerHTML = `
-              <div style="font-weight:700; margin-bottom:6px; font-size:13px;">${String(cat || '--')}</div>
-              <div style="display:flex; flex-direction:column; gap:2px;">
-                <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
-                  <span style="display:flex; align-items:center; gap:4px; font-size:12px;">${dot('#3b82f6')} Realizado</span>
-                  <b style="font-size:12px;">${fmtMoney(lastReal)}</b>
-                </div>
-                ${hasPipeline ? `
-                <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
-                  <span style="display:flex; align-items:center; gap:4px; font-size:12px;">${dot('#f59e0b')} Pipeline</span>
-                  <b style="font-size:12px;">${fmtMoney(pipeVal)}</b>
-                </div>
-                ` : ``}
-                ${hasLastYear ? `
-                <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
-                  <span style="display:flex; align-items:center; gap:4px; font-size:12px;">${dot('#ef4444')} ${lyLabel}</span>
-                  <b style="font-size:12px;">${fmtMoney(ly)}</b>
-                </div>
-                ` : ``}
-                <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
-                  <span style="display:flex; align-items:center; gap:4px; font-size:12px;">${dot('#10b981')} Meta</span>
-                  <b style="font-size:12px;">${fmtMoney(meta)}</b>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:6px;margin-bottom:5px;border-bottom:1px solid ${borderC};">
+                <span style="font-size:12px;font-weight:700;color:${textMainC};">${String(cat || '--')}</span>
+                <div style="display:flex;gap:12px;">
+                  <span style="font-size:10px;font-weight:700;color:${textMutedC};min-width:70px;text-align:right;">${prevYr}</span>
+                  <span style="font-size:10px;font-weight:700;color:${textMainC};min-width:70px;text-align:right;">${currYr}</span>
                 </div>
               </div>
+              <table style="width:100%;border-collapse:collapse;">${focusRows}</table>
             `;
 
             // posicionar acima do ponto (aproximação via grid do Apex)
@@ -9532,26 +9671,117 @@
             }
           },
           tooltip: {
-            theme: isDark ? 'dark' : 'light',
-            x: {
-              formatter: function (_val, opts) {
-                try {
-                  const idx = opts && typeof opts.dataPointIndex === 'number' ? opts.dataPointIndex : null;
-                  const header = formatTooltipHeaderByIndex(idx);
-                  return header || '';
-                } catch (e) {
-                  return '';
-                }
-              }
-            },
-            y: {
-              formatter: function (val) {
-                const n = (typeof val === 'number') ? val : parseFloat(String(val));
-                if (!Number.isFinite(n)) return '--';
-                if (isYearly) {
-                  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(n);
-                }
-                return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(Math.round(n));
+            shared: true,
+            intersect: false,
+            custom: function ({ series: s, seriesIndex, dataPointIndex: idx, w }) {
+              try {
+                const cfgSeries = w.config.series || [];
+                const colors = w.config.colors || [];
+                const bg = isDark ? '#1e293b' : '#ffffff';
+                const border = isDark ? '#334155' : '#e2e8f0';
+                const textMain = isDark ? '#f1f5f9' : '#0f172a';
+                const textMuted = isDark ? '#94a3b8' : '#64748b';
+                const headerBg = isDark ? '#334155' : '#f8fafc';
+
+                const prevYear = getPrevYear();
+                const currYear = getCurrentYear();
+
+                // Build name→index map
+                const nameIdx = {};
+                cfgSeries.forEach((sr, i) => { nameIdx[sr.name] = i; });
+
+                const getVal = (name) => {
+                  const i = nameIdx[name];
+                  if (i === undefined || !s[i]) return null;
+                  const v = s[i][idx];
+                  return (typeof v === 'number' && Number.isFinite(v) && v !== 0) ? v : null;
+                };
+
+                const fmtVal = (v) => {
+                  if (v === null || v === undefined) return '--';
+                  if (isYearly) return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+                  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(Math.round(v));
+                };
+
+                // Ano passado series name
+                const lyName = seriesLastYearName || String(prevYear);
+                const lyIdx = nameIdx[lyName];
+                const lyVal = (lyIdx !== undefined && s[lyIdx]) ? s[lyIdx][idx] : null;
+                const lyRealizado = (typeof lyVal === 'number' && Number.isFinite(lyVal) && lyVal !== 0) ? lyVal : null;
+
+                // Date label for header
+                const dateLabel = (() => {
+                  if (!rawDates || !rawDates[idx]) return '';
+                  const key = rawDates[idx];
+                  if (isYearly) {
+                    const m = parseInt(String(key).slice(5, 7), 10);
+                    const monthNames = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+                    return monthNames[m - 1] || '';
+                  }
+                  const d = String(key).slice(8, 10);
+                  const m = String(key).slice(5, 7);
+                  return d + '/' + m;
+                })();
+
+                // Check if hovered date is before today
+                const isDatePast = (() => {
+                  try {
+                    if (!rawDates || !rawDates[idx]) return false;
+                    const key = rawDates[idx];
+                    const today = new Date();
+                    if (isYearly) {
+                      const y = parseInt(String(key).slice(0, 4), 10);
+                      const m = parseInt(String(key).slice(5, 7), 10);
+                      return (y < today.getFullYear()) || (y === today.getFullYear() && m < (today.getMonth() + 1));
+                    }
+                    const pointDate = new Date(key + 'T00:00:00');
+                    today.setHours(0, 0, 0, 0);
+                    return pointDate < today;
+                  } catch (e) { return false; }
+                })();
+
+                // Tooltip rows: [label, color, val2025, val2026]
+                const rows = [
+                  { label: 'Realizado',      color: colors[nameIdx['Realizado']]     || '#3b82f6', v25: lyRealizado,   v26: getVal('Realizado') },
+                  { label: 'Pipeline',       color: colors[nameIdx['Pipeline']]      || '#f59e0b', v25: null,          v26: getVal('Pipeline') },
+                  { label: 'Meta',           color: colors[nameIdx['Meta']]          || '#10b981', v25: null,          v26: getVal('Meta') },
+                  { label: 'Projeção',       color: colors[nameIdx['Projeção']]      || '#0ea5e9', v25: null,          v26: getVal('Projeção'), projOnly: true },
+                  { label: 'Proj. Pipeline', color: colors[nameIdx['Proj. Pipeline']]|| '#d97706', v25: null,          v26: getVal('Proj. Pipeline'), projOnly: true },
+                ];
+
+                // Only show rows for active series; hide projections for past dates
+                const activeRows = rows.filter(r => {
+                  if (r.projOnly && isDatePast) return false;
+                  return nameIdx[r.label] !== undefined || r.label === 'Realizado';
+                });
+
+                const tdStyle = 'padding:4px 0;font-size:12px;white-space:nowrap;';
+                const tdValStyle = tdStyle + 'text-align:right;font-weight:600;padding-left:14px;color:' + textMain + ';';
+                const tdLabelStyle = tdStyle + 'color:' + textMuted + ';padding-right:10px;';
+
+                let html = '<div style="background:' + bg + ';border:1px solid ' + border + ';border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,0.12);font-family:Inter,system-ui,sans-serif;min-width:240px;overflow:hidden;">';
+                // Header row with date + year columns
+                html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:' + headerBg + ';border-bottom:1px solid ' + border + ';">';
+                html += '<span style="font-size:12px;font-weight:700;color:' + textMain + ';">' + dateLabel + '</span>';
+                html += '<div style="display:flex;gap:16px;">';
+                html += '<span style="font-size:11px;font-weight:700;color:' + textMuted + ';min-width:80px;text-align:right;">' + prevYear + '</span>';
+                html += '<span style="font-size:11px;font-weight:700;color:' + textMain + ';min-width:80px;text-align:right;">' + currYear + '</span>';
+                html += '</div></div>';
+                // Body rows
+                html += '<div style="padding:8px 14px;">';
+                html += '<table style="width:100%;border-collapse:collapse;">';
+                activeRows.forEach(r => {
+                  html += '<tr>';
+                  html += '<td style="' + tdLabelStyle + '"><span style="display:inline-flex;align-items:center;gap:6px;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + r.color + ';"></span>' + r.label + '</span></td>';
+                  html += '<td style="' + tdValStyle + 'min-width:80px;">' + fmtVal(r.v25) + '</td>';
+                  html += '<td style="' + tdValStyle + 'min-width:80px;">' + fmtVal(r.v26) + '</td>';
+                  html += '</tr>';
+                });
+                html += '</tbody></table></div></div>';
+                return html;
+              } catch (e) {
+                // Fallback: never return empty (would trigger default tooltip)
+                return '<div style="padding:8px 12px;font-size:12px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;">--</div>';
               }
             }
           },
