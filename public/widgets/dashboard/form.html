@@ -113,7 +113,7 @@
       </div>
 
       <!-- Agência (pills) -->
-      <div class="agency-segment" id="agency-selector" role="group" aria-label="Filtro de agência">
+      <div class="agency-segment agency-loading" id="agency-selector" role="group" aria-label="Filtro de agência">
         <button type="button" class="agency-segment-btn active" data-agency="" aria-pressed="true">Todos</button>
         <button type="button" class="agency-segment-btn" data-agency="a57b72c4-dc6d-45cc-a1e3-1a0e2ba6c2a9" aria-pressed="false">Educação</button>
         <button type="button" class="agency-segment-btn" data-agency="75f34688-c054-4519-a445-e350fe146870" aria-pressed="false">Aceleraí</button>
@@ -297,7 +297,7 @@
         <span class="kpi-info-icon" onmouseenter="window.__openInfoPopover(this)" onmouseleave="window.__closeInfoPopover()" data-info="Reuniões agendadas (hoje ou posterior).&#10;&#10;Critérios:&#10;• Data/hora posterior ao momento atual&#10;• Conta todas, independente de score">i</span>
       </div>
 
-      <div class="meeting-card" style="background:rgba(34,197,94,0.08); border-color:rgba(34,197,94,0.25);">
+      <div class="meeting-card" style="background:rgba(34,197,94,0.08); border-color:#dcfce7;">
         <div class="icon-box" style="background:#dcfce7; color:#16a34a;"><i data-lucide="calendar-range"></i></div>
         <div class="grow" style="display:flex;align-items:center;gap:6px;">
           <span class="text-xs font-medium opacity-80" style="color:#16a34a">Total realizadas</span>
@@ -385,65 +385,35 @@
 
   <!-- 6. RANKING & METAS -->
   <section class="grid grid-cols-1 xl-grid-cols-2 gap-6 mb-12" style="margin-top: 24px;">
-    <div class="card">
-      <div class="flex justify-between mb-4 items-center ranking-header">
-          <div class="ranking-header-left">
-            <div class="section-title">Ranking</div>
-            <div class="ranking-tabs" role="tablist" aria-label="Alternar ranking">
-              <button class="ranking-tab-btn active" id="ranking-tab-executives" type="button" role="tab" aria-selected="true" onclick="setRankingTab('executives')">Executivos</button>
-              <button class="ranking-tab-btn" id="ranking-tab-meetings" type="button" role="tab" aria-selected="false" onclick="setRankingTab('meetings')">Reuniões</button>
+    <!-- RANKING INLINE (substituiu iframe para funcionar no CDN) -->
+    <div class="card" style="padding: 0; overflow: hidden;" id="ranking-inline-wrapper">
+      <div id="crm-ranking-hub">
+        <div class="ranking-shell">
+          <div class="ranking-page-title">Ranking de Vendedores</div>
+          <div class="ranking-podium-wrapper">
+            <div class="ranking-podium" id="ranking-podium">
+              <div class="sk" style="min-height:340px"></div>
+              <div class="sk" style="min-height:400px"></div>
+              <div class="sk" style="min-height:340px"></div>
             </div>
           </div>
-
-          <!-- Controls: Executivos -->
-          <div class="flex gap-2 items-center ranking-header-actions" id="ranking-controls-executives">
-            <span class="control-btn-pill flex items-center gap-1" style="cursor:default"><i data-lucide="users" size="12"></i> <span id="ranking-count">--</span></span>
-            <span class="control-btn-pill ranking-score-pill" style="font-size:10px; cursor:default">KWAY Score</span>
-            <div class="ranking-sort-wrap">
-              <select id="ranking-sort" class="ranking-sort-select" aria-label="Ordenar ranking">
-                <option value="score">Score</option>
-                <option value="proposals">Propostas</option>
-                <option value="meetings">Reuniões</option>
-                <option value="sales">Vendas</option>
-                <option value="renewals">Renovações</option>
-                <option value="revenue">Faturamento total</option>
-                <option value="frt">FRT</option>
-                <option value="cycle">Ciclo</option>
-              </select>
-              <i data-lucide="chevron-down" size="14" class="ranking-sort-icon"></i>
-            </div>
-          </div>
-
-          <!-- Controls: Reuniões -->
-          <div class="flex gap-2 items-center ranking-header-actions" id="ranking-controls-meetings" style="display:none">
-            <span class="control-btn-pill ranking-score-pill" style="cursor:default" title="Nota média (global) das reuniões no período filtrado">
-              <span id="meetings-score-avg" aria-label="Nota média das reuniões">--</span>
-              <span class="rank-score-avg-icon" title="Nota média das reuniões" aria-hidden="true">
-                <i data-lucide="star" size="14"></i>
-              </span>
-            </span>
-          </div>
-      </div>
-
-      <!-- View: Executivos -->
-      <div id="ranking-executives-view">
-        <div id="ranking-list" style="max-height: 520px; overflow-y: auto; padding-right: 4px;"></div>
-      </div>
-
-      <!-- View: Reuniões -->
-      <div id="ranking-meetings-view" style="display:none">
-        <div class="meetings-tab-wrap">
-          <div class="meetings-tab-section">
-            <div class="meetings-tab-title">Próximas reuniões</div>
-            <div id="meetings-upcoming" class="meetings-tab-list">
-              <div class="text-xs text-muted text-center p-4">Carregando reuniões...</div>
-            </div>
-          </div>
-          <div class="meetings-tab-section">
-            <div class="meetings-tab-title">Reuniões que já ocorreram</div>
-            <div id="meetings-past" class="meetings-tab-list">
-              <div class="text-xs text-muted text-center p-4">Carregando reuniões...</div>
-            </div>
+          <div class="ranking-table-wrapper">
+            <table class="ranking-table">
+              <thead>
+                <tr>
+                  <th style="width:60px">Pos</th>
+                  <th>Membro da Equipe</th>
+                  <th>Faturamento</th>
+                  <th style="text-align:center">Vendas</th>
+                  <th style="min-width:160px">% Meta</th>
+                </tr>
+              </thead>
+              <tbody id="ranking-table-body">
+                <tr><td colspan="5"><div class="sk" style="min-height:48px;border-radius:8px"></div></td></tr>
+                <tr><td colspan="5"><div class="sk" style="min-height:48px;border-radius:8px"></div></td></tr>
+                <tr><td colspan="5"><div class="sk" style="min-height:48px;border-radius:8px"></div></td></tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>

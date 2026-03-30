@@ -6659,6 +6659,12 @@
         // Revelar dashboard (dados prontos ou timeout)
         revealDashboardContent();
 
+        // Liberar seletor de agência após init (evita race condition de state.selectedAgencyId mudar durante o fetch inicial)
+        try {
+          const agRoot = document.getElementById('agency-selector');
+          if (agRoot) agRoot.classList.remove('agency-loading');
+        } catch (e) {}
+
         // Renderiza os charts APÓS exibir (evita width/height 0 no primeiro paint)
         setTimeout(() => {
           try {
