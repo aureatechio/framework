@@ -4968,6 +4968,48 @@
         if (!sbClient) return;
         const { start, end } = getDateRange(state.dateFilter);
         const meetRange = getMeetingsDateRange(state.dateFilter);
+
+        // --- RPC fast path ---
+        try {
+          const startYmd = (start || '').split('T')[0];
+          const endYmd = (end || '').split('T')[0];
+          const { data: rpcRanking, error } = await sbClient.rpc('dashboard_ranking', {
+            p_start: start,
+            p_end: end,
+            p_start_ymd: startYmd || null,
+            p_end_ymd: endYmd || null,
+            p_agency_id: state.selectedAgencyId || null,
+            p_cutoff_iso: (cutoff && cutoff.enabled && cutoff.cutoffInstantIso) ? cutoff.cutoffInstantIso : null
+          });
+          if (error) throw error;
+          if (Array.isArray(rpcRanking)) {
+            state.rankingData = rpcRanking
+              .filter(s => !state.selectedSeller || s.id === state.selectedSeller)
+              .map(s => ({
+                id: s.id,
+                name: s.name,
+                avatarUrl: s.avatarUrl,
+                proposals: s.proposals || 0,
+                meetings: s.meetings || 0,
+                sales: s.sales || 0,
+                salesCount: s.salesCount || 0,
+                renewals: s.renewals || 0,
+                avgScore: s.avgScore > 0 ? Number(s.avgScore).toFixed(1) : '-',
+                avgCycle: s.avgCycle > 0 ? Number(s.avgCycle).toFixed(1) : '-',
+                avgFRT: '-'
+              }))
+              .sort((a, b) => {
+                const scoreA = a.avgScore !== '-' ? parseFloat(a.avgScore) : 0;
+                const scoreB = b.avgScore !== '-' ? parseFloat(b.avgScore) : 0;
+                return scoreB - scoreA;
+              });
+            renderRanking();
+            renderRankingPodium();
+            return;
+          }
+        } catch (e) {
+          console.warn('[Ranking] RPC falhou, usando legacy:', e);
+        }
         
         // 1. Fetch Sellers (only active)
         const { data: sellers } = await sbClient
@@ -5307,6 +5349,48 @@
         if (!sbClient) return;
         const { start, end, startYmd, endYmd } = getDateRange(state.dateFilter);
         const meetRange = getMeetingsDateRange(state.dateFilter);
+
+        // --- RPC fast path ---
+        try {
+          const now = new Date();
+          const mesRef = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
+          const { data: rpcMetas, error } = await sbClient.rpc('dashboard_metas', {
+            p_start: start,
+            p_end: end,
+            p_start_ymd: (meetRange.startYmd || startYmd) || null,
+            p_end_ymd: (meetRange.endYmd || endYmd) || null,
+            p_mes_ref: mesRef,
+            p_agency_id: state.selectedAgencyId || null,
+            p_cutoff_iso: (cutoff && cutoff.enabled && cutoff.cutoffInstantIso) ? cutoff.cutoffInstantIso : null
+          });
+          if (error) throw error;
+          if (rpcMetas && rpcMetas.sellers) {
+            const sellers = rpcMetas.sellers.map(s => {
+              const pp = s.proposalTarget > 0 ? Math.min(100, Math.round((s.proposals / s.proposalTarget) * 100)) : 0;
+              const rp = s.meetingTarget > 0 ? Math.min(100, Math.round((s.meetings / s.meetingTarget) * 100)) : 0;
+              return {
+                id: s.id, name: s.name, avatarUrl: null, role: 'Vendedor',
+                propostas: s.proposals, reunioes: s.meetings,
+                metaPropostas: s.proposalTarget, metaReunioes: s.meetingTarget,
+                propostasPct: pp, reunioesPct: rp, avgPct: (pp + rp) / 2
+              };
+            }).sort((a, b) => b.avgPct - a.avgPct);
+            const gl = rpcMetas.global;
+            const gpp = gl.proposalTarget > 0 ? Math.min(100, Math.round((gl.proposals / gl.proposalTarget) * 100)) : 0;
+            const grp = gl.meetingTarget > 0 ? Math.min(100, Math.round((gl.meetings / gl.meetingTarget) * 100)) : 0;
+            state.metasData = {
+              global: {
+                propostas: { current: gl.proposals, target: gl.proposalTarget, pct: gpp },
+                reunioes: { current: gl.meetings, target: gl.meetingTarget, pct: grp }
+              },
+              sellers: sellers
+            };
+            renderMetasSection();
+            return;
+          }
+        } catch (e) {
+          console.warn('[Metas] RPC falhou, usando legacy:', e);
+        }
 
         try {
           // 1. Fetch all sellers
@@ -7602,6 +7686,37 @@
       async function fetchChannelData() {
         if (!sbClient) return;
         const { start, end } = getDateRange(state.dateFilter);
+
+        // --- RPC fast path (leads/vendas por canal, sem spend Meta) ---
+        try {
+          const { data: rpcCh, error } = await sbClient.rpc('dashboard_channels', {
+            p_start: start,
+            p_end: end,
+            p_seller_id: state.selectedSeller || null,
+            p_agency_id: state.selectedAgencyId || null,
+            p_cutoff_iso: (cutoff && cutoff.enabled && cutoff.cutoffInstantIso) ? cutoff.cutoffInstantIso : null
+          });
+          if (error) throw error;
+          if (Array.isArray(rpcCh)) {
+            const byChannel = {};
+            rpcCh.forEach(c => { byChannel[c.channel] = c; });
+            const g = (ch) => byChannel[ch] || { leads: 0, sales: 0, revenue: 0 };
+            const fmt = (v) => v > 0 ? `R$ ${(v/1000).toFixed(0)}k` : '--';
+            const conv = (s, l) => l > 0 ? `${((s / l) * 100).toFixed(1)}%` : '--';
+
+            state.channelData = [
+              { id: 'landing', n: "Landing Page", l: g('landing').leads, rev: fmt(g('landing').revenue), roi: null, gasto: null, conv: conv(g('landing').sales, g('landing').leads), i: "globe", c: "primary", active: true, tone: "#3b82f6" },
+              { id: 'whatsapp', n: "WhatsApp", l: g('whatsapp').leads, rev: fmt(g('whatsapp').revenue), roi: null, gasto: null, conv: conv(g('whatsapp').sales, g('whatsapp').leads), i: "message-circle", c: "success", active: true, tone: "#22c55e" },
+              { id: 'outbound', n: "Outbound", l: g('outbound').leads, rev: fmt(g('outbound').revenue), roi: null, gasto: null, conv: conv(g('outbound').sales, g('outbound').leads), i: "phone", c: "danger", active: true, tone: "#f97316" },
+              { id: 'social', n: "Social", l: g('social').leads, rev: fmt(g('social').revenue), roi: null, gasto: null, conv: conv(g('social').sales, g('social').leads), i: "share-2", c: "purple", active: true, tone: "#8b5cf6" }
+            ];
+            renderChannels();
+            // Meta spend (ROI/gasto) continua no legacy abaixo em paralelo se necessário
+            return;
+          }
+        } catch (e) {
+          console.warn('[Channels] RPC falhou, usando legacy:', e);
+        }
         // Performance por Canal:
         // - Outbound: leads.canalentrada == "Manual"
         // - Landing Page: leads.canalentrada == "Landing Page"
