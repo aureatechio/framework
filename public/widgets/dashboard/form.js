@@ -2884,7 +2884,7 @@
         } catch (e) {}
 
         showDashboardLoading();
-        debouncedFetch(`filter:${filter}`, 300).finally(() => hideDashboardLoading());
+        debouncedFetch('dateFilter', 300).finally(() => hideDashboardLoading());
       };
 
       window.setAgencyFilter = (agencyId) => {
@@ -2916,7 +2916,7 @@
         } catch (e) {}
         showDashboardLoading();
 
-        debouncedFetch(`agency:${id || 'all'}`, 300).finally(() => {
+        fetchDataWithStamp(`agency:${id || 'all'}`).finally(() => {
           try {
             const root = document.getElementById('agency-selector');
             if (root) root.classList.remove('agency-loading');
