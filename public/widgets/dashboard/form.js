@@ -10489,7 +10489,14 @@
   window.CDN_WIDGET_REGISTRY[WIDGET_KEY].init = async function init(root, params) {
     // idempotência por container
     try {
-      if (root && root.getAttribute && root.getAttribute("data-wish-board-inited") === "1") return;
+      if (root && root.getAttribute && root.getAttribute("data-wish-board-inited") === "1") {
+        // Re-init parcial: desbloquear seletor de agência (pode estar travado se HTML foi re-renderizado)
+        try {
+          const agRoot = document.getElementById('agency-selector');
+          if (agRoot) agRoot.classList.remove('agency-loading');
+        } catch (e) {}
+        return;
+      }
       if (root && root.setAttribute) root.setAttribute("data-wish-board-inited", "1");
     } catch (e) {}
 
