@@ -1860,34 +1860,40 @@
       let __fetchInFlight = null;
       let __fetchQueuedReason = null;
       async function fetchDataWithStamp(reason) {
-        try {
+        if (__fetchInFlight) {
+          __fetchQueuedReason = reason || __fetchQueuedReason || 'queued';
+          // Espera o fetch atual terminar E depois o enfileirado executar
+          try { await __fetchInFlight; } catch (e) {}
+          // Após o init terminar, o finally processou a fila.
+          // Se um novo __fetchInFlight foi criado (o da fila), espera ele também.
           if (__fetchInFlight) {
-            __fetchQueuedReason = reason || __fetchQueuedReason || 'queued';
-            return __fetchInFlight;
+            try { await __fetchInFlight; } catch (e) {}
           }
+          return;
+        }
 
-          __fetchInFlight = (async () => {
-            // Timeout de segurança: se fetchData demorar mais de 30s, aborta
-            const fetchPromise = fetchData();
-            const timeoutPromise = new Promise((_, reject) =>
-              setTimeout(() => reject(new Error('[Dashboard] fetchData timeout (30s)')), 30000)
-            );
-            try {
-              await Promise.race([fetchPromise, timeoutPromise]);
-            } catch (timeoutErr) {
-              console.error(timeoutErr.message || timeoutErr);
-            }
-            setLastUpdated(reason || 'manual');
-          })();
+        __fetchInFlight = (async () => {
+          const fetchPromise = fetchData();
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('[Dashboard] fetchData timeout (30s)')), 30000)
+          );
+          try {
+            await Promise.race([fetchPromise, timeoutPromise]);
+          } catch (timeoutErr) {
+            console.error(timeoutErr.message || timeoutErr);
+          }
+          setLastUpdated(reason || 'manual');
+        })();
 
-          return await __fetchInFlight;
+        try {
+          await __fetchInFlight;
         } finally {
           __fetchInFlight = null;
           if (__fetchQueuedReason) {
             const r = __fetchQueuedReason;
             __fetchQueuedReason = null;
-            // Reexecuta uma vez com o último motivo (sem empilhar recursão infinita)
-            try { fetchDataWithStamp(r); } catch (e) {}
+            // Executa a fetch enfileirada (NÃO fire-and-forget — quem está esperando receberá via await acima)
+            try { await fetchDataWithStamp(r); } catch (e) {}
           }
         }
       }
@@ -6908,11 +6914,20 @@
         // Revelar dashboard (dados prontos ou timeout)
         revealDashboardContent();
 
-        // Liberar seletor de agência após init (evita race condition de state.selectedAgencyId mudar durante o fetch inicial)
-        try {
-          const agRoot = document.getElementById('agency-selector');
-          if (agRoot) agRoot.classList.remove('agency-loading');
-        } catch (e) {}
+        // Liberar seletor de agência SOMENTE quando __fetchInFlight acabar de verdade
+        // (Promise.race pode resolver via timeout enquanto o init ainda está rodando)
+        const unlockAgencySelector = () => {
+          try {
+            const agRoot = document.getElementById('agency-selector');
+            if (agRoot) agRoot.classList.remove('agency-loading');
+          } catch (e) {}
+        };
+        if (!__fetchInFlight) {
+          unlockAgencySelector();
+        } else {
+          // Init ainda rodando — espera terminar antes de liberar
+          Promise.resolve(__fetchInFlight).finally(() => unlockAgencySelector());
+        }
 
         // Renderiza os charts APÓS exibir (evita width/height 0 no primeiro paint)
         setTimeout(() => {
