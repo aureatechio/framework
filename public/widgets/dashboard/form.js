@@ -2862,7 +2862,18 @@
           if (el) el.innerHTML = "";
         } catch (e) {}
 
-        fetchDataWithStamp(`agency:${id || 'all'}`);
+        // Loading no seletor enquanto dados carregam
+        try {
+          const root = document.getElementById('agency-selector');
+          if (root) root.classList.add('agency-loading');
+        } catch (e) {}
+
+        fetchDataWithStamp(`agency:${id || 'all'}`).finally(() => {
+          try {
+            const root = document.getElementById('agency-selector');
+            if (root) root.classList.remove('agency-loading');
+          } catch (e) {}
+        });
       };
 
       function syncAgencySelectorUI(selectedId) {

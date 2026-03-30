@@ -347,6 +347,30 @@
       background: rgba(96, 165, 250, 0.18);
       color: #60a5fa;
     }
+    #dashboard-acelerai-v2 .agency-segment.agency-loading {
+      opacity: 0.55;
+      pointer-events: none;
+    }
+    #dashboard-acelerai-v2 .agency-segment.agency-loading::after {
+      content: '';
+      display: inline-block;
+      flex-shrink: 0;
+      width: 12px;
+      height: 12px;
+      border: 2px solid rgba(59, 130, 246, 0.25);
+      border-top-color: #3b82f6;
+      border-radius: 50%;
+      animation: agency-spin 0.65s linear infinite;
+      margin-left: 4px;
+      margin-right: 4px;
+    }
+    #dashboard-acelerai-v2.dark-mode .agency-segment.agency-loading::after {
+      border-color: rgba(96, 165, 250, 0.25);
+      border-top-color: #60a5fa;
+    }
+    @keyframes agency-spin {
+      to { transform: rotate(360deg); }
+    }
     .custom-select {
         appearance: none;
         background: var(--bg-card);
@@ -828,7 +852,20 @@
       height: 320px;
       max-height: 320px;
       min-height: 320px;
-      overflow: hidden; /* impede SVG/tooling do Apex de expandir o card */
+      overflow: visible;
+      position: relative;
+    }
+    /* Force revenue tooltip to top of chart */
+    #dashboard-acelerai-v2 .revenue-card .apexcharts-tooltip {
+      top: 0 !important;
+      overflow: visible !important;
+    }
+    /* Hide default ApexCharts tooltip content (series list), keep only custom */
+    #dashboard-acelerai-v2 .revenue-card .apexcharts-tooltip-series-group {
+      display: none !important;
+    }
+    #dashboard-acelerai-v2 .revenue-card .apexcharts-tooltip-title {
+      display: none !important;
     }
 
     /* Reuniões dentro do card Ranking: conter e rolar internamente (não expandir card) */
@@ -2999,4 +3036,388 @@
       background: #1e293b; color: #cbd5e1; border-color: #334155;
       box-shadow: 0 8px 24px rgba(0,0,0,0.4);
     }
+
+    /* ══════════════════════════════════════════════════════════════
+       RANKING INLINE (substituiu iframe ranking-vendas-new)
+       ══════════════════════════════════════════════════════════════ */
+    #crm-ranking-hub {
+      --rk-bg: #ffffff;
+      --rk-surface: #ffffff;
+      --rk-surface-soft: #f8fafc;
+      --rk-line: #e2e8f0;
+      --rk-text: #0f172a;
+      --rk-text-2: #475569;
+      --rk-text-3: #94a3b8;
+      --rk-blue: #2563eb;
+      --rk-blue-strong: #1d4ed8;
+      --rk-green: #10b981;
+      --rk-shadow: 0 1px 3px rgba(0,0,0,0.06);
+      --rk-radius: 12px;
+      font-family: "Public Sans", "Inter", sans-serif;
+      background: var(--rk-bg);
+      color: var(--rk-text);
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      overflow: hidden;
+    }
+    #crm-ranking-hub * { box-sizing: border-box; }
+    #crm-ranking-hub ::-webkit-scrollbar { width: 8px; height: 8px; }
+    #crm-ranking-hub ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
+    #crm-ranking-hub ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 8px; }
+
+    .ranking-shell {
+      max-width: 1120px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 24px;
+      width: 100%;
+    }
+    .ranking-page-title {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      font-weight: 600;
+      color: #0f172a;
+      letter-spacing: -0.01em;
+      margin-bottom: 12px;
+    }
+
+    /* Podium */
+    .ranking-podium-wrapper {
+      background: var(--rk-surface);
+      border: 1px solid var(--rk-line);
+      border-radius: var(--rk-radius);
+      box-shadow: var(--rk-shadow);
+      padding: 20px 16px 16px;
+      transform: scale(0.7);
+      transform-origin: top center;
+      margin-bottom: -110px;
+    }
+    .ranking-podium {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+      align-items: end;
+    }
+
+    /* Podium Card */
+    .rk-podium-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 28px 20px 24px;
+      border-radius: var(--rk-radius);
+      border: 1px solid var(--rk-line);
+      background: var(--rk-surface);
+      position: relative;
+      transition: box-shadow 0.18s ease, transform 0.18s ease;
+    }
+    .rk-podium-card:hover {
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+      transform: translateY(-2px);
+    }
+    .rk-podium-card.first {
+      padding-top: 16px;
+      border-color: rgba(16,185,129,0.2);
+      box-shadow: 0 2px 12px rgba(16,185,129,0.08);
+    }
+
+    /* Champion Badge */
+    .rk-champion-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 16px;
+      border-radius: 999px;
+      background: var(--rk-blue);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    /* Avatar */
+    .rk-avatar-wrapper {
+      position: relative;
+      margin-bottom: 14px;
+    }
+    .rk-avatar {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: #f1f5f9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--rk-blue);
+      font: 600 20px/1 "Public Sans", sans-serif;
+      overflow: hidden;
+      border: 3px solid var(--rk-surface);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .rk-avatar.large {
+      width: 96px;
+      height: 96px;
+      font-size: 26px;
+    }
+    .rk-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center 10%;
+      display: block;
+    }
+    .rk-position-badge {
+      position: absolute;
+      bottom: -4px;
+      right: -4px;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: var(--rk-blue);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid var(--rk-surface);
+    }
+
+    /* Name & Revenue */
+    .rk-seller-name {
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--rk-text);
+      margin: 0 0 4px;
+      text-align: center;
+    }
+    .rk-seller-revenue {
+      font: 600 17px/1 "Public Sans", sans-serif;
+      color: var(--rk-blue);
+      margin: 0 0 18px;
+    }
+
+    /* Circular Progress */
+    .rk-progress-ring-container {
+      position: relative;
+      width: 90px;
+      height: 90px;
+      margin-bottom: 6px;
+    }
+    .rk-podium-card.first .rk-progress-ring-container {
+      width: 110px;
+      height: 110px;
+    }
+    .rk-progress-ring {
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+    .rk-progress-ring-bg {
+      fill: none;
+      stroke: #e2e8f0;
+      stroke-width: 6;
+    }
+    .rk-progress-ring-fill {
+      fill: none;
+      stroke-width: 6;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.8s ease;
+    }
+    .rk-progress-ring-fill.green { stroke: var(--rk-green); }
+    .rk-progress-ring-fill.blue { stroke: var(--rk-blue); }
+    .rk-progress-value {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font: 700 18px/1 "Public Sans", sans-serif;
+      color: var(--rk-text);
+    }
+    .rk-podium-card.first .rk-progress-value {
+      font-size: 22px;
+    }
+    .rk-meta-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--rk-text-3);
+      margin-bottom: 16px;
+    }
+
+    /* Stats Row */
+    .rk-stats-row {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      padding-top: 14px;
+      border-top: 1px solid var(--rk-line);
+    }
+    .rk-stat {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      align-items: center;
+    }
+    .rk-stat:first-child { align-items: flex-start; }
+    .rk-stat:last-child { align-items: flex-end; }
+    .rk-stat-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--rk-text-3);
+    }
+    .rk-stat-value {
+      font: 700 18px/1 "Public Sans", sans-serif;
+      color: var(--rk-text);
+    }
+
+    /* Table */
+    .ranking-table-wrapper {
+      background: var(--rk-surface);
+      border: 1px solid var(--rk-line);
+      border-radius: var(--rk-radius);
+      box-shadow: var(--rk-shadow);
+      max-height: 350px;
+      overflow-y: auto;
+    }
+    .ranking-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .ranking-table th {
+      padding: 16px 24px;
+      text-align: left;
+      background: var(--rk-surface-soft);
+      border-bottom: 1px solid var(--rk-line);
+      color: var(--rk-text-3);
+      font: 700 11px/1 "Public Sans", sans-serif;
+      letter-spacing: 0.1em;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      text-transform: uppercase;
+    }
+    .ranking-table td {
+      padding: 16px 24px;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 14px;
+      vertical-align: middle;
+    }
+    .ranking-table tr:last-child td { border-bottom: none; }
+    .ranking-table tbody tr { transition: background 0.15s ease; }
+    .ranking-table tbody tr:hover { background: var(--rk-surface-soft); }
+
+    .rk-member-cell {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .rk-member-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #f1f5f9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--rk-text-3);
+      font: 600 12px/1 "Public Sans", sans-serif;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .rk-member-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .rk-member-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--rk-text);
+    }
+    .rk-pos-cell {
+      font: 500 14px/1 "Public Sans", sans-serif;
+      color: var(--rk-text-2);
+    }
+    .rk-money-cell {
+      font: 600 14px/1 "Public Sans", sans-serif;
+      color: var(--rk-text);
+    }
+    .rk-vendas-cell {
+      font: 500 14px/1 "Public Sans", sans-serif;
+      color: var(--rk-text);
+      text-align: center;
+    }
+    .rk-meta-cell {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 140px;
+    }
+    .rk-meta-percent {
+      font: 600 13px/1 "Public Sans", sans-serif;
+      color: var(--rk-blue);
+      min-width: 36px;
+    }
+    .rk-meta-bar {
+      flex: 1;
+      height: 6px;
+      background: #e2e8f0;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .rk-meta-bar-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: var(--rk-blue);
+      transition: width 0.6s ease;
+    }
+
+    .rk-empty {
+      padding: 40px;
+      text-align: center;
+      color: var(--rk-text-2);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .ranking-podium {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+      .rk-podium-card { order: 1; }
+      .rk-podium-card.first { order: 0; }
+      .ranking-shell { padding: 20px 16px; }
+      .ranking-table th, .ranking-table td { padding: 12px 16px; }
+    }
+
+    /* Dark mode */
+    #dashboard-acelerai-v2.dark-mode #crm-ranking-hub {
+      --rk-bg: #0f172a;
+      --rk-surface: #1e293b;
+      --rk-surface-soft: #1e293b;
+      --rk-line: #334155;
+      --rk-text: #f1f5f9;
+      --rk-text-2: #94a3b8;
+      --rk-text-3: #64748b;
+    }
+    #dashboard-acelerai-v2.dark-mode .ranking-page-title { color: #f1f5f9; }
+    #dashboard-acelerai-v2.dark-mode .ranking-table td { border-bottom-color: #334155; }
+    #dashboard-acelerai-v2.dark-mode .rk-avatar { background: #334155; }
+    #dashboard-acelerai-v2.dark-mode .rk-member-avatar { background: #334155; }
+    #dashboard-acelerai-v2.dark-mode .rk-progress-ring-bg { stroke: #334155; }
+    #dashboard-acelerai-v2.dark-mode .rk-meta-bar { background: #334155; }
 
