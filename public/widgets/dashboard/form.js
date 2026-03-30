@@ -1867,7 +1867,16 @@
           }
 
           __fetchInFlight = (async () => {
-            await fetchData();
+            // Timeout de segurança: se fetchData demorar mais de 30s, aborta
+            const fetchPromise = fetchData();
+            const timeoutPromise = new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('[Dashboard] fetchData timeout (30s)')), 30000)
+            );
+            try {
+              await Promise.race([fetchPromise, timeoutPromise]);
+            } catch (timeoutErr) {
+              console.error(timeoutErr.message || timeoutErr);
+            }
             setLastUpdated(reason || 'manual');
           })();
 
@@ -1881,6 +1890,19 @@
             try { fetchDataWithStamp(r); } catch (e) {}
           }
         }
+      }
+
+      // --- Debounce helper (evita múltiplos fetchs ao clicar filtros rapidamente) ---
+      const __debounceTimers = {};
+      function debouncedFetch(reason, delayMs) {
+        delayMs = delayMs || 300;
+        return new Promise((resolve) => {
+          if (__debounceTimers[reason]) clearTimeout(__debounceTimers[reason]);
+          __debounceTimers[reason] = setTimeout(() => {
+            __debounceTimers[reason] = null;
+            fetchDataWithStamp(reason).then(resolve).catch(resolve);
+          }, delayMs);
+        });
       }
 
       // --- Dashboard loading overlay ---
@@ -2016,6 +2038,7 @@
       // --- AGENCY FILTER (leads.agencia) ---
       // Importante: várias métricas partem de tabelas que só têm leadId, sem FK. Para essas, fazemos lookup em `leads`.
       const __leadAgencyCache = new Map(); // lead_id -> agencia(uuid|null)
+      const __LEAD_AGENCY_CACHE_MAX = 5000; // Limite para evitar memory leak em sessões longas
 
       function __toLeadId(v) {
         try { return extractUuid(v); } catch (e) { return null; }
@@ -2033,6 +2056,11 @@
           if (__leadAgencyCache.has(id)) out.set(id, __leadAgencyCache.get(id));
           else missing.push(id);
         });
+
+        // Limpar cache se excedeu limite (evita memory leak)
+        if (__leadAgencyCache.size > __LEAD_AGENCY_CACHE_MAX) {
+          __leadAgencyCache.clear();
+        }
 
         const CHUNK = 500;
         for (let i = 0; i < missing.length; i += CHUNK) {
@@ -2856,7 +2884,7 @@
         } catch (e) {}
 
         showDashboardLoading();
-        fetchDataWithStamp(`filter:${filter}`).finally(() => hideDashboardLoading());
+        debouncedFetch(`filter:${filter}`, 300).finally(() => hideDashboardLoading());
       };
 
       window.setAgencyFilter = (agencyId) => {
@@ -2888,7 +2916,7 @@
         } catch (e) {}
         showDashboardLoading();
 
-        fetchDataWithStamp(`agency:${id || 'all'}`).finally(() => {
+        debouncedFetch(`agency:${id || 'all'}`, 300).finally(() => {
           try {
             const root = document.getElementById('agency-selector');
             if (root) root.classList.remove('agency-loading');
