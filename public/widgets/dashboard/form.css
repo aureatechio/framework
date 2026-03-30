@@ -371,6 +371,41 @@
     @keyframes agency-spin {
       to { transform: rotate(360deg); }
     }
+
+    /* Full-page loading overlay (filtros) */
+    #dashboard-acelerai-v2 .dashboard-loading-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 50;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: rgba(248, 250, 252, 0.72);
+      backdrop-filter: blur(2px);
+      transition: opacity 0.25s ease;
+    }
+    #dashboard-acelerai-v2.dark-mode .dashboard-loading-overlay {
+      background: rgba(15, 23, 42, 0.72);
+    }
+    #dashboard-acelerai-v2 .dashboard-loading-spinner {
+      width: 28px;
+      height: 28px;
+      border: 3px solid rgba(59, 130, 246, 0.2);
+      border-top-color: #3b82f6;
+      border-radius: 50%;
+      animation: agency-spin 0.65s linear infinite;
+    }
+    #dashboard-acelerai-v2.dark-mode .dashboard-loading-spinner {
+      border-color: rgba(96, 165, 250, 0.2);
+      border-top-color: #60a5fa;
+    }
+    #dashboard-acelerai-v2 .dashboard-loading-text {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
     .custom-select {
         appearance: none;
         background: var(--bg-card);
@@ -2190,6 +2225,7 @@
     #dashboard-acelerai-v2 {
       height: auto;
       padding: 24px 20px;
+      position: relative;
     }
 
     /* --- FILTRO PERSONALIZADO (popover) --- */

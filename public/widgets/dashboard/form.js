@@ -1735,7 +1735,8 @@
               select.addEventListener('change', (e) => {
                 const val = (e.target && e.target.value) ? String(e.target.value) : '';
                 state.selectedSeller = val || null;
-                fetchDataWithStamp('seller');
+                showDashboardLoading();
+                fetchDataWithStamp('seller').finally(() => hideDashboardLoading());
               });
             }
           }
@@ -1807,7 +1808,8 @@
                   state.selectedSeller = access.sellerId;
                   select.value = access.sellerId;
                 }
-                fetchDataWithStamp('seller');
+                showDashboardLoading();
+                fetchDataWithStamp('seller').finally(() => hideDashboardLoading());
               });
             }
           }
@@ -1879,6 +1881,22 @@
             try { fetchDataWithStamp(r); } catch (e) {}
           }
         }
+      }
+
+      // --- Dashboard loading overlay ---
+      function showDashboardLoading() {
+        try {
+          const ov = document.getElementById('dashboard-loading-overlay');
+          if (ov) { ov.style.display = 'flex'; ov.style.opacity = '1'; }
+        } catch (e) {}
+      }
+      function hideDashboardLoading() {
+        try {
+          const ov = document.getElementById('dashboard-loading-overlay');
+          if (!ov) return;
+          ov.style.opacity = '0';
+          setTimeout(() => { ov.style.display = 'none'; }, 250);
+        } catch (e) {}
       }
 
       // EXPOSED FUNCTIONS
@@ -2837,7 +2855,8 @@
           if (el) el.innerHTML = "";
         } catch (e) {}
 
-        fetchDataWithStamp(`filter:${filter}`);
+        showDashboardLoading();
+        fetchDataWithStamp(`filter:${filter}`).finally(() => hideDashboardLoading());
       };
 
       window.setAgencyFilter = (agencyId) => {
@@ -2862,17 +2881,19 @@
           if (el) el.innerHTML = "";
         } catch (e) {}
 
-        // Loading no seletor enquanto dados carregam
+        // Loading no seletor + overlay full-page
         try {
           const root = document.getElementById('agency-selector');
           if (root) root.classList.add('agency-loading');
         } catch (e) {}
+        showDashboardLoading();
 
         fetchDataWithStamp(`agency:${id || 'all'}`).finally(() => {
           try {
             const root = document.getElementById('agency-selector');
             if (root) root.classList.remove('agency-loading');
           } catch (e) {}
+          hideDashboardLoading();
         });
       };
 
@@ -3150,7 +3171,8 @@
             // Se não for líder, ignorar mudanças (select fica hidden/disabled).
             if (access && access.ready && !access.isLeader) return;
             state.selectedSeller = e.target.value || null;
-            fetchDataWithStamp('seller');
+            showDashboardLoading();
+            fetchDataWithStamp('seller').finally(() => hideDashboardLoading());
         });
       }
 
