@@ -63,6 +63,11 @@
       let sbClient = null;
       let __initReadyResolve = null;
       const __initReady = new Promise(r => { __initReadyResolve = r; });
+      const __t0 = performance.now();
+      const __log = (tag, ...args) => {
+        const elapsed = ((performance.now() - __t0) / 1000).toFixed(2);
+        console.log(`%c[WB +${elapsed}s] ${tag}`, 'color:#3b82f6;font-weight:bold', ...args);
+      };
       let realtimeChannel = null;
       let realtimeCleanupRegistered = false;
       let conversionChart = null;
@@ -1862,8 +1867,10 @@
       let __fetchInFlight = null;
       let __fetchQueuedReason = null;
       async function fetchDataWithStamp(reason) {
+        __log('fetchDataWithStamp', `reason=${reason}`, `inFlight=${!!__fetchInFlight}`, `queued=${__fetchQueuedReason}`, `sbClient=${!!sbClient}`);
         if (__fetchInFlight) {
           __fetchQueuedReason = reason || __fetchQueuedReason || 'queued';
+          __log('fetchDataWithStamp', `⏳ Coalesced → queued=${__fetchQueuedReason}`);
           // Espera o fetch atual terminar E depois o enfileirado executar
           try { await __fetchInFlight; } catch (e) {}
           // Após o init terminar, o finally processou a fila.
@@ -1871,9 +1878,12 @@
           if (__fetchInFlight) {
             try { await __fetchInFlight; } catch (e) {}
           }
+          __log('fetchDataWithStamp', `✅ Coalesced return (reason=${reason})`);
           return;
         }
 
+        __log('fetchDataWithStamp', `🚀 Executando fetchData() para reason=${reason}`, `state.dateFilter=${state.dateFilter}`, `state.selectedAgencyId=${state.selectedAgencyId}`);
+        const fetchStart = performance.now();
         __fetchInFlight = (async () => {
           const fetchPromise = fetchData();
           const timeoutPromise = new Promise((_, reject) =>
@@ -1882,6 +1892,7 @@
           try {
             await Promise.race([fetchPromise, timeoutPromise]);
           } catch (timeoutErr) {
+            __log('fetchDataWithStamp', `❌ TIMEOUT ou erro: ${timeoutErr.message || timeoutErr}`);
             console.error(timeoutErr.message || timeoutErr);
           }
           setLastUpdated(reason || 'manual');
@@ -1890,10 +1901,13 @@
         try {
           await __fetchInFlight;
         } finally {
+          const elapsed = ((performance.now() - fetchStart) / 1000).toFixed(2);
+          __log('fetchDataWithStamp', `🏁 Completo em ${elapsed}s (reason=${reason})`);
           __fetchInFlight = null;
           if (__fetchQueuedReason) {
             const r = __fetchQueuedReason;
             __fetchQueuedReason = null;
+            __log('fetchDataWithStamp', `🔄 Processando fila: reason=${r}`);
             // Executa a fetch enfileirada (NÃO fire-and-forget — quem está esperando receberá via await acima)
             try { await fetchDataWithStamp(r); } catch (e) {}
           }
@@ -2855,9 +2869,12 @@
 
       // --- ACTIONS ---
       window.setDateFilter = async (filter) => {
+        __log('setDateFilter', `filter=${filter}`, `sbClient=${!!sbClient}`, `initReady=${!__initReadyResolve}`);
         // Aguardar init se sbClient ainda não estiver pronto
         if (!sbClient) {
+          __log('setDateFilter', '⏳ Aguardando __initReady...');
           try { await __initReady; } catch (e) {}
+          __log('setDateFilter', '✅ __initReady resolvido, sbClient=', !!sbClient);
         }
         state.dateFilter = filter;
 
@@ -2901,13 +2918,20 @@
         } catch (e) {}
 
         showDashboardLoading();
-        debouncedFetch('dateFilter', 300).finally(() => hideDashboardLoading());
+        __log('setDateFilter', '🔄 Disparando debouncedFetch(dateFilter)');
+        debouncedFetch('dateFilter', 300).finally(() => {
+          __log('setDateFilter', '✅ Fetch completo');
+          hideDashboardLoading();
+        });
       };
 
       window.setAgencyFilter = async (agencyId) => {
+        __log('setAgencyFilter', `agencyId=${agencyId}`, `sbClient=${!!sbClient}`, `initReady=${!__initReadyResolve}`);
         // Aguardar init se sbClient ainda não estiver pronto
         if (!sbClient) {
+          __log('setAgencyFilter', '⏳ Aguardando __initReady...');
           try { await __initReady; } catch (e) {}
+          __log('setAgencyFilter', '✅ __initReady resolvido, sbClient=', !!sbClient);
         }
         const idRaw = (agencyId === null || agencyId === undefined) ? '' : String(agencyId).trim();
         const id = idRaw && extractUuid(idRaw) ? extractUuid(idRaw) : ''; // '' = Todos
@@ -2936,8 +2960,10 @@
           if (root) root.classList.add('agency-loading');
         } catch (e) {}
         showDashboardLoading();
+        __log('setAgencyFilter', `🔄 Disparando fetchDataWithStamp(agency:${id || 'all'})`);
 
         fetchDataWithStamp(`agency:${id || 'all'}`).finally(() => {
+          __log('setAgencyFilter', '✅ Fetch completo');
           try {
             const root = document.getElementById('agency-selector');
             if (root) root.classList.remove('agency-loading');
@@ -3118,14 +3144,15 @@
         setCustomButtonAppliedLabel();
 
         applyBtn.addEventListener('click', () => {
+          __log('customDate', '🖱️ Apply clicado');
           const sYmdRaw = String(startEl.value || '').trim();
           const eYmdRaw = String(endEl.value || '').trim();
-          if (!sYmdRaw || !eYmdRaw) return;
+          if (!sYmdRaw || !eYmdRaw) { __log('customDate', '⚠️ Datas vazias, ignorando'); return; }
 
           // Normaliza caso usuário inverta
           const sProbe = new Date(`${sYmdRaw}T12:00:00.000Z`);
           const eProbe = new Date(`${eYmdRaw}T12:00:00.000Z`);
-          if (isNaN(sProbe.getTime()) || isNaN(eProbe.getTime())) return;
+          if (isNaN(sProbe.getTime()) || isNaN(eProbe.getTime())) { __log('customDate', '⚠️ Datas inválidas'); return; }
 
           let startYmd = sYmdRaw;
           let endYmd = eYmdRaw;
@@ -3136,8 +3163,9 @@
 
           const startIso = __ymdToIsoUtcStart(startYmd);
           const endIso = __ymdToIsoUtcEnd(endYmd);
-          if (!startIso || !endIso) return;
+          if (!startIso || !endIso) { __log('customDate', '⚠️ ISO conversion failed'); return; }
 
+          __log('customDate', `✅ Range: ${startYmd} → ${endYmd}`);
           state.customRange = { start: startIso, end: endIso, startYmd, endYmd };
           setCustomButtonAppliedLabel();
           closeCustomDatePicker();
@@ -6705,12 +6733,16 @@
 
       // INIT
       async function init() {
+        __log('init', '🔵 init() chamado');
         const isSupabaseLoaded = (typeof supabase !== 'undefined' || typeof Supabase !== 'undefined');
         if (typeof lucide === 'undefined' || typeof ApexCharts === 'undefined' || !isSupabaseLoaded) {
+            __log('init', `⏳ Libs não prontas — lucide=${typeof lucide !== 'undefined'} apex=${typeof ApexCharts !== 'undefined'} supa=${isSupabaseLoaded} — retry 500ms`);
             setTimeout(init, 500);
             return;
         }
+        __log('init', '✅ Libs prontas, criando sbClient...');
         initSupabase();
+        __log('init', `✅ sbClient criado: ${!!sbClient}`);
         initRealtime();
         try { lucide.createIcons(); } catch (e) {}
         try { updateStaticUILabels(); } catch (e) {}
@@ -6759,6 +6791,7 @@
         } catch (e) {}
 
         // Sinalizar que sbClient + listeners estão prontos (filtros que chegaram antes podem prosseguir)
+        __log('init', '🟢 __initReady resolvido — filtros desbloqueados');
         if (__initReadyResolve) { __initReadyResolve(); __initReadyResolve = null; }
 
         if (!liveBadgeInterval) {
@@ -10529,6 +10562,7 @@
             while (el && el.id !== 'agency-selector' && el !== document.body) {
               if (el.classList && el.classList.contains('agency-segment-btn')) {
                 const val = el.dataset ? (el.dataset.agency || '') : '';
+                __log('pills-click', `🖱️ Clique detectado (delegation) → agency=${val || 'Todos'}`);
                 window.setAgencyFilter(val);
                 return;
               }
