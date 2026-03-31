@@ -5709,7 +5709,7 @@
           // 3. Fetch sellers for avatars + elegivel_rotacao
           const { data: sellersRaw } = await sbClient
             .from('vendedores')
-            .select('id, nome, perfil_img, cargo, diretorVendas, elegivel_rotacao')
+            .select('id, nome, perfil_img, diretorVendas, elegivel_rotacao')
             .eq('usuarioInterno', false);
           const sellers = (sellersRaw || []).filter(s => s.diretorVendas !== true);
           const sellerLookup = {};
