@@ -61,6 +61,8 @@
       const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3cXR6b2VmdXRuZm1uYm9tdWp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzkyMTYyMTUsImV4cCI6MjA1NDc5MjIxNX0.JMdboXzu7NMTXH8NuKdxzNO3SYOOag4kuQL_SSO0PEY';
       
       let sbClient = null;
+      let __initReadyResolve = null;
+      const __initReady = new Promise(r => { __initReadyResolve = r; });
       let realtimeChannel = null;
       let realtimeCleanupRegistered = false;
       let conversionChart = null;
@@ -2852,12 +2854,16 @@
       };
 
       // --- ACTIONS ---
-      window.setDateFilter = (filter) => {
+      window.setDateFilter = async (filter) => {
+        // Aguardar init se sbClient ainda não estiver pronto
+        if (!sbClient) {
+          try { await __initReady; } catch (e) {}
+        }
         state.dateFilter = filter;
 
         // Subtítulo do topo: manter mês/ano atual (e agência, se houver)
         try { updateDashboardSubtitle(); } catch (e) {}
-        
+
         // Reset manual dos botões do novo header (hardcoded IDs)
         const buttons = ['btn-today', 'btn-week', 'btn-month', 'btn-year', 'btn-semestre', 'btn-custom'];
         buttons.forEach(id => {
@@ -2898,7 +2904,11 @@
         debouncedFetch('dateFilter', 300).finally(() => hideDashboardLoading());
       };
 
-      window.setAgencyFilter = (agencyId) => {
+      window.setAgencyFilter = async (agencyId) => {
+        // Aguardar init se sbClient ainda não estiver pronto
+        if (!sbClient) {
+          try { await __initReady; } catch (e) {}
+        }
         const idRaw = (agencyId === null || agencyId === undefined) ? '' : String(agencyId).trim();
         const id = idRaw && extractUuid(idRaw) ? extractUuid(idRaw) : ''; // '' = Todos
         state.selectedAgencyId = id;
@@ -6748,6 +6758,9 @@
           try { syncAgencySelectorUI(state.selectedAgencyId || ''); } catch (e) {}
         } catch (e) {}
 
+        // Sinalizar que sbClient + listeners estão prontos (filtros que chegaram antes podem prosseguir)
+        if (__initReadyResolve) { __initReadyResolve(); __initReadyResolve = null; }
+
         if (!liveBadgeInterval) {
           liveBadgeInterval = setInterval(updateLiveBadge, 30000);
         }
@@ -10506,6 +10519,24 @@
 
         conversionChart.render();
       }
+
+      // Event delegation: agency pills — funciona mesmo antes de init() completar
+      try {
+        document.addEventListener('click', (e) => {
+          try {
+            let el = e && e.target ? e.target : null;
+            // Sobe até encontrar .agency-segment-btn dentro de #agency-selector
+            while (el && el.id !== 'agency-selector' && el !== document.body) {
+              if (el.classList && el.classList.contains('agency-segment-btn')) {
+                const val = el.dataset ? (el.dataset.agency || '') : '';
+                window.setAgencyFilter(val);
+                return;
+              }
+              el = el.parentElement;
+            }
+          } catch (err) {}
+        });
+      } catch (e) {}
 
       // No framework, o HTML já foi injetado no container antes do init() ser chamado.
       // Mantemos o comportamento, mas não dependemos de DOMContentLoaded.
