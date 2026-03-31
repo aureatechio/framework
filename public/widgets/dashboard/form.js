@@ -10011,10 +10011,13 @@
             categories: axisCategories,
             min: (state && state.revenueChartZoom && Number.isFinite(Number(state.revenueChartZoom.min))) ? Number(state.revenueChartZoom.min) : undefined,
             max: (state && state.revenueChartZoom && Number.isFinite(Number(state.revenueChartZoom.max))) ? Number(state.revenueChartZoom.max) : undefined,
+            tickAmount: isYearly ? Math.max(2, (axisCategories || []).length) : undefined,
+            tickPlacement: isYearly ? 'on' : undefined,
             labels: {
               style: { fontSize: '11px', colors: labelColor },
               hideOverlappingLabels: true,
               offsetY: 2,
+              datetimeUTC: false,
               formatter: function (value) {
                 try {
                   const d = new Date(Number(value));
@@ -10024,9 +10027,9 @@
                   const zoomMax = state?.revenueChartZoom?.max;
                   const fmt = getXAxisFormat(zoomMin, zoomMax, isYearly);
                   if (fmt === 'monthly') {
-                    const mm = String(d.getMonth() + 1).padStart(2, '0');
+                    const monthName = d.toLocaleDateString('pt-BR', { month: 'short' });
                     const yy = String(d.getFullYear()).slice(-2);
-                    return `${mm}/${yy}`;
+                    return `${monthName.charAt(0).toUpperCase() + monthName.slice(1)}/${yy}`;
                   }
                   // daily e weekly usam dd/mm
                   const dd = String(d.getDate()).padStart(2, '0');
