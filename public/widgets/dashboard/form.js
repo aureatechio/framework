@@ -7816,13 +7816,13 @@
 
           // Paginar para contornar max_rows do Supabase (default 1000)
           const PAGE_SIZE = 1000;
-          const grouped = {};
+          const grouped = {}; // agencia -> canal -> { leads, opps }
           let offset = 0;
           let hasMore = true;
 
           while (hasMore) {
             let q = sbClient.from('leads')
-              .select('agencia, canalentrada')
+              .select('agencia, canalentrada, possui_cnpj')
               .eq('novo_crm', true)
               .gte('data_oportunidade', start)
               .lt('data_oportunidade', end)
@@ -7838,14 +7838,15 @@
               const ag = row.agencia || 'outros';
               const canal = row.canalentrada || 'Sem canal';
               if (!grouped[ag]) grouped[ag] = {};
-              grouped[ag][canal] = (grouped[ag][canal] || 0) + 1;
+              if (!grouped[ag][canal]) grouped[ag][canal] = { leads: 0, opps: 0 };
+              grouped[ag][canal].leads++;
+              if (row.possui_cnpj === true) grouped[ag][canal].opps++;
             });
 
             hasMore = (data || []).length === PAGE_SIZE;
             offset += PAGE_SIZE;
           }
 
-          __log('fetchAgencyChannels', `Total rows paginadas: ${offset - PAGE_SIZE + ((grouped && Object.keys(grouped).length) ? 1 : 0)} pages`);
           renderAgencyChannels(grouped);
         } catch (e) {
           console.error('[AgencyChannels] Erro:', e);
@@ -7857,50 +7858,112 @@
         if (!container) return;
         const isDark = state.theme === 'dark';
 
+        // Totais globais para o header
+        let grandLeads = 0, grandOpps = 0;
+        Object.values(grouped).forEach(channels => {
+          Object.values(channels).forEach(v => { grandLeads += v.leads; grandOpps += v.opps; });
+        });
+
         const agencies = [
-          { id: AGENCY_IDS.ACELERAI, name: 'Aceleraí', color: '#3b82f6', bgLight: isDark ? 'rgba(59,130,246,0.12)' : '#eff6ff' },
-          { id: AGENCY_IDS.MGS, name: 'Educação', color: '#f59e0b', bgLight: isDark ? 'rgba(245,158,11,0.12)' : '#fffbeb' }
+          { id: AGENCY_IDS.ACELERAI, name: 'Aceleraí', color: '#1a73e8', colorLight: '#e8f0fe', iconBg: '#1a73e8' },
+          { id: AGENCY_IDS.MGS, name: 'Educação', color: '#e8710a', colorLight: '#fef3e0', iconBg: '#e8710a' }
         ];
 
-        const borderC = isDark ? '#334155' : '#e2e8f0';
-        const bgSubtle = isDark ? '#1e293b' : '#f8fafc';
+        const cardBg = isDark ? '#1e293b' : '#ffffff';
+        const borderC = isDark ? '#334155' : '#e0e0e0';
+        const hoverBg = isDark ? '#253347' : '#f5f5f5';
+        const textMain = isDark ? '#e2e8f0' : '#202124';
+        const textSec = isDark ? '#94a3b8' : '#5f6368';
+        const headerBg = isDark ? '#0f172a' : '#f8f9fa';
 
-        container.innerHTML = agencies.map(ag => {
+        // Header com total geral
+        const headerHtml = `
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:${headerBg};border-bottom:1px solid ${borderC};border-radius:12px 12px 0 0;margin:-20px -20px 16px -20px">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,#1a73e8,#6c4de8);display:flex;align-items:center;justify-content:center">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              </div>
+              <div>
+                <div style="font-size:14px;font-weight:600;color:${textMain}">Total de Leads no Período</div>
+                <div style="font-size:11px;color:${textSec}">Quebra por agência e canal de entrada</div>
+              </div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:28px;font-weight:700;color:${textMain};line-height:1">${grandLeads.toLocaleString('pt-BR')}</div>
+              <div style="font-size:11px;color:${textSec};margin-top:2px">${grandOpps.toLocaleString('pt-BR')} oportunidades</div>
+            </div>
+          </div>
+        `;
+
+        // Cards por agência
+        const cardsHtml = agencies.map(ag => {
           const channels = grouped[ag.id] || {};
-          const sortedChannels = Object.entries(channels).sort((a, b) => b[1] - a[1]);
-          const total = sortedChannels.reduce((sum, [, v]) => sum + v, 0);
+          const sortedChannels = Object.entries(channels).sort((a, b) => b[1].leads - a[1].leads);
+          const totalLeads = sortedChannels.reduce((s, [, v]) => s + v.leads, 0);
+          const totalOpps = sortedChannels.reduce((s, [, v]) => s + v.opps, 0);
+          const agColorLight = isDark ? (ag.color === '#1a73e8' ? 'rgba(26,115,232,0.15)' : 'rgba(232,113,10,0.15)') : ag.colorLight;
 
-          const rows = sortedChannels.map(([canal, qtd]) => `
-            <tr>
-              <td style="padding:6px 10px;font-size:12px;border-bottom:1px solid ${borderC}">${escapeHtmlLite(canal)}</td>
-              <td style="padding:6px 10px;font-size:12px;font-weight:600;text-align:right;border-bottom:1px solid ${borderC}">${qtd.toLocaleString('pt-BR')}</td>
-            </tr>
-          `).join('');
+          const rows = sortedChannels.map(([canal, v]) => {
+            const pct = totalLeads > 0 ? ((v.leads / totalLeads) * 100).toFixed(0) : 0;
+            return `
+              <tr style="transition:background 0.15s">
+                <td style="padding:10px 14px;font-size:13px;color:${textMain};border-bottom:1px solid ${borderC}">
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <div style="width:6px;height:6px;border-radius:50%;background:${ag.color};flex-shrink:0"></div>
+                    ${escapeHtmlLite(canal)}
+                  </div>
+                </td>
+                <td style="padding:10px 14px;font-size:13px;font-weight:600;text-align:right;color:${textMain};border-bottom:1px solid ${borderC}">${v.leads.toLocaleString('pt-BR')}</td>
+                <td style="padding:10px 14px;font-size:13px;font-weight:500;text-align:right;color:${textSec};border-bottom:1px solid ${borderC}">${v.opps.toLocaleString('pt-BR')}</td>
+                <td style="padding:10px 14px;border-bottom:1px solid ${borderC};width:80px">
+                  <div style="height:6px;border-radius:3px;background:${isDark ? '#334155' : '#e8eaed'};overflow:hidden">
+                    <div style="height:100%;width:${pct}%;border-radius:3px;background:${ag.color};transition:width 0.5s ease"></div>
+                  </div>
+                </td>
+              </tr>
+            `;
+          }).join('');
 
           return `
-            <div style="border-radius:8px;overflow:hidden;border:1px solid ${borderC}">
-              <div style="background:${ag.bgLight};padding:12px 16px;text-align:center">
-                <div style="font-size:13px;font-weight:700;color:${ag.color}">${ag.name}</div>
-                <div style="font-size:26px;font-weight:800;color:${ag.color};line-height:1.2">${total.toLocaleString('pt-BR')}</div>
+            <div style="background:${cardBg};border-radius:12px;border:1px solid ${borderC};overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,${isDark ? '0.3' : '0.08'})">
+              <div style="background:${agColorLight};padding:16px 18px;display:flex;align-items:center;justify-content:space-between">
+                <div style="display:flex;align-items:center;gap:10px">
+                  <div style="width:32px;height:32px;border-radius:50%;background:${ag.color};display:flex;align-items:center;justify-content:center">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M3 21h18M9 8h1M9 12h1M9 16h1M14 8h1M14 12h1M14 16h1M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/></svg>
+                  </div>
+                  <div>
+                    <div style="font-size:15px;font-weight:700;color:${ag.color}">${ag.name}</div>
+                  </div>
+                </div>
+                <div style="text-align:right">
+                  <div style="font-size:24px;font-weight:800;color:${ag.color};line-height:1">${totalLeads.toLocaleString('pt-BR')}</div>
+                  <div style="font-size:10px;color:${textSec};margin-top:2px">${totalOpps.toLocaleString('pt-BR')} opps</div>
+                </div>
               </div>
               <table style="width:100%;border-collapse:collapse">
                 <thead>
-                  <tr style="background:${bgSubtle}">
-                    <th style="padding:6px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;text-align:left;color:var(--text-muted)">Canal</th>
-                    <th style="padding:6px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;text-align:right;color:var(--text-muted)">Qtd Lead</th>
+                  <tr style="background:${headerBg}">
+                    <th style="padding:8px 14px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;text-align:left;color:${textSec}">Canal</th>
+                    <th style="padding:8px 14px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;text-align:right;color:${textSec}">Leads</th>
+                    <th style="padding:8px 14px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;text-align:right;color:${textSec}">Opps</th>
+                    <th style="padding:8px 14px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;text-align:right;color:${textSec};width:80px"></th>
                   </tr>
                 </thead>
                 <tbody>${rows}</tbody>
                 <tfoot>
-                  <tr style="background:${bgSubtle}">
-                    <td style="padding:8px 10px;font-size:12px;font-weight:700">Total</td>
-                    <td style="padding:8px 10px;font-size:12px;font-weight:700;text-align:right">${total.toLocaleString('pt-BR')}</td>
+                  <tr style="background:${headerBg}">
+                    <td style="padding:10px 14px;font-size:13px;font-weight:700;color:${textMain}">Total</td>
+                    <td style="padding:10px 14px;font-size:13px;font-weight:700;text-align:right;color:${textMain}">${totalLeads.toLocaleString('pt-BR')}</td>
+                    <td style="padding:10px 14px;font-size:13px;font-weight:700;text-align:right;color:${textSec}">${totalOpps.toLocaleString('pt-BR')}</td>
+                    <td style="padding:10px 14px"></td>
                   </tr>
                 </tfoot>
               </table>
             </div>
           `;
         }).join('');
+
+        container.innerHTML = headerHtml + '<div class="grid grid-cols-1 md-grid-cols-2 gap-4">' + cardsHtml + '</div>';
       }
 
       async function fetchChannelData() {
