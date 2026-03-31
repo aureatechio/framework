@@ -7851,13 +7851,20 @@
             offset += PAGE_SIZE;
           }
 
-          renderAgencyChannels(grouped);
+          // Buscar nomes das agências
+          const agencyNames = {};
+          try {
+            const { data: agRows } = await sbClient.from('agencias').select('id, nome');
+            (agRows || []).forEach(a => { agencyNames[a.id] = a.nome; });
+          } catch (e) {}
+
+          renderAgencyChannels(grouped, agencyNames);
         } catch (e) {
           console.error('[AgencyChannels] Erro:', e);
         }
       }
 
-      function renderAgencyChannels(grouped) {
+      function renderAgencyChannels(grouped, agencyNames) {
         const container = document.getElementById('agency-channels-grid');
         if (!container) return;
         const isDark = state.theme === 'dark';
@@ -7868,10 +7875,35 @@
           Object.values(channels).forEach(v => { grandLeads += v.leads; grandOpps += v.opps; });
         });
 
-        const agencies = [
-          { id: AGENCY_IDS.ACELERAI, name: 'Aceleraí', color: '#1a73e8', colorLight: '#e8f0fe', iconBg: '#1a73e8' },
-          { id: AGENCY_IDS.MGS, name: 'Educação', color: '#e8710a', colorLight: '#fef3e0', iconBg: '#e8710a' }
+        // Paleta de cores para agências dinâmicas
+        const colorPalette = [
+          { color: '#1a73e8', colorLight: '#e8f0fe' },
+          { color: '#e8710a', colorLight: '#fef3e0' },
+          { color: '#0d9488', colorLight: '#f0fdfa' },
+          { color: '#7c3aed', colorLight: '#f5f3ff' },
+          { color: '#db2777', colorLight: '#fdf2f8' },
+          { color: '#059669', colorLight: '#ecfdf5' },
+          { color: '#d97706', colorLight: '#fffbeb' }
         ];
+
+        // Construir lista de agências dinamicamente a partir dos dados
+        const agencyIds = Object.keys(grouped).filter(id => id !== 'outros');
+        // Ordenar: Aceleraí primeiro, MGS segundo, resto por total desc
+        agencyIds.sort((a, b) => {
+          if (a === AGENCY_IDS.ACELERAI) return -1;
+          if (b === AGENCY_IDS.ACELERAI) return 1;
+          if (a === AGENCY_IDS.MGS) return -1;
+          if (b === AGENCY_IDS.MGS) return 1;
+          const totalA = Object.values(grouped[a] || {}).reduce((s, v) => s + v.leads, 0);
+          const totalB = Object.values(grouped[b] || {}).reduce((s, v) => s + v.leads, 0);
+          return totalB - totalA;
+        });
+
+        const agencies = agencyIds.map((id, idx) => ({
+          id,
+          name: (agencyNames && agencyNames[id]) || id.substring(0, 8),
+          ...colorPalette[idx % colorPalette.length]
+        }));
 
         const cardBg = isDark ? '#1e293b' : '#ffffff';
         const borderC = isDark ? '#334155' : '#e0e0e0';
@@ -7905,7 +7937,9 @@
           const sortedChannels = Object.entries(channels).sort((a, b) => b[1].leads - a[1].leads);
           const totalLeads = sortedChannels.reduce((s, [, v]) => s + v.leads, 0);
           const totalOpps = sortedChannels.reduce((s, [, v]) => s + v.opps, 0);
-          const agColorLight = isDark ? (ag.color === '#1a73e8' ? 'rgba(26,115,232,0.15)' : 'rgba(232,113,10,0.15)') : ag.colorLight;
+          // Gerar versão dark do colorLight a partir da cor principal
+          const hexToRgba = (hex, a) => { const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16); return `rgba(${r},${g},${b},${a})`; };
+          const agColorLight = isDark ? hexToRgba(ag.color, 0.15) : ag.colorLight;
 
           const rows = sortedChannels.map(([canal, v]) => {
             const pct = totalLeads > 0 ? ((v.leads / totalLeads) * 100).toFixed(0) : 0;
@@ -7967,7 +8001,8 @@
           `;
         }).join('');
 
-        container.innerHTML = headerHtml + '<div class="grid grid-cols-1 md-grid-cols-2 gap-4">' + cardsHtml + '</div>';
+        const gridCols = agencies.length >= 3 ? 'md-grid-cols-3' : 'md-grid-cols-2';
+        container.innerHTML = headerHtml + `<div class="grid grid-cols-1 ${gridCols} gap-4">` + cardsHtml + '</div>';
       }
 
       async function fetchChannelData() {
