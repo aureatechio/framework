@@ -3787,7 +3787,14 @@
           // 2) Meta (mês = steps por ciclos; semestre/ano = linear (meta mensal × meses))
           const monthlyMeta = await getGaugeTargetRevenueFromCrm();
           let metaOverride = monthlyMeta;
-          if (mode === 'month') {
+          if (state.dateFilter === 'custom' && state.customRange && state.customRange.start && state.customRange.end) {
+            // Custom: meta proporcional ao range (meta mensal × meses no range)
+            const csMs = new Date(state.customRange.start).getTime();
+            const ceMs = new Date(state.customRange.end).getTime();
+            const rangeDays = Math.max(1, Math.ceil((ceMs - csMs) / (1000 * 60 * 60 * 24)));
+            const rangeMonths = Math.max(1, rangeDays / 30.44); // média dias/mês
+            metaOverride = (Number(monthlyMeta) || 0) * rangeMonths;
+          } else if (mode === 'month') {
             const ciclos = await getCiclosForCurrentContext();
             metaOverride = (Array.isArray(ciclos) && ciclos.length > 0)
               ? { mode: 'monthly_steps', metaTotal: monthlyMeta, ciclos }
