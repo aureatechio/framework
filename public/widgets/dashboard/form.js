@@ -7826,6 +7826,7 @@
               .eq('novo_crm', true)
               .gte('data_oportunidade', start)
               .lt('data_oportunidade', end)
+              .order('lead_id')
               .range(offset, offset + PAGE_SIZE - 1);
             q = applyCutoffTimestamp(q, 'data_oportunidade');
             if (state.selectedSeller) q = q.eq('vendedorResponsavel', state.selectedSeller);
