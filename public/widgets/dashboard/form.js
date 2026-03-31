@@ -7142,10 +7142,10 @@
         [KPI_IDS.FATURAMENTO]: 'Soma de todas as vendas aprovadas no período.\n\nCritérios:\n• Venda marcada como aprovada\n• Contrato assinado (ClickSign)\n• Checkout pago',
         [KPI_IDS.CONVERSAO]: 'De cada 100 leads captados, quantos viraram venda?\n\nCritérios:\n• Fórmula: Vendas ÷ Leads Captados × 100\n• Considera apenas vendas aprovadas',
         [KPI_IDS.CONV_OPORTUNIDADES]: 'Das vendas realizadas, quantas vieram de leads qualificados?\n\nCritérios:\n• Fórmula: Vendas de leads prioridade ÷ Total de vendas × 100\n• Lead precisa ter passou_prioridade = true',
-        [KPI_IDS.OPORTUNIDADES]: 'Leads marcados como prioridade no período.\n\nCritérios:\n• Lead passou pela qualificação\n• Marcado como prioridade\n• Exclui leads importados\n• Considera leads importados externamente',
+        [KPI_IDS.OPORTUNIDADES]: 'Leads marcados como prioridade no período.\n\nCritérios:\n• Lead passou pela qualificação\n• Marcado como prioridade\n• Inclui todos os leads (importados e tráfego pago)',
         [KPI_IDS.PROPOSTAS]: 'Propostas comerciais enviadas no período.\n\nCritérios:\n• Conta 1 proposta por lead (sem duplicar)\n• Qualquer proposta gerada no período',
         [KPI_IDS.REUNIOES]: 'Reuniões válidas no período.\n\nCritérios:\n• Reuniões agendadas com score IA preenchido\n• Ligações realizadas\n\nNão conta:\n• Reuniões canceladas\n• Reuniões sem score e sem ligação',
-        [KPI_IDS.CAPTADOS]: 'Novos leads que entraram no CRM no período.\n\nCritérios:\n• Apenas leads do novo CRM\n• Data de entrada dentro do período selecionado\n• Considera leads importados externamente',
+        [KPI_IDS.CAPTADOS]: 'Novos leads que entraram no CRM no período.\n\nCritérios:\n• Apenas leads do novo CRM\n• Data de entrada dentro do período selecionado\n• Inclui todos os leads (importados e tráfego pago)',
         [KPI_IDS.QTD_VENDAS]: 'Número de vendas aprovadas no período.\n\nCritérios:\n• Venda marcada como aprovada\n• Contrato assinado (ClickSign)\n• Checkout pago',
         [KPI_IDS.TICKET]: 'Valor médio de cada venda.\n\nCritérios:\n• Fórmula: Faturamento ÷ Quantidade de vendas\n• Considera apenas vendas aprovadas',
         [KPI_IDS.INVEST]: 'Total gasto em anúncios no período.\n\nCritérios:\n• Dados direto da API do Meta Ads\n• Filtrado pelas campanhas ativas da agência',
@@ -7444,9 +7444,9 @@
         const FUNNEL_TOOLTIPS = {
           'Leads Captados': 'Topo do funil — todo lead novo começa aqui.\n\nCritérios:\n• Leads que entraram no CRM no período\n• Apenas do novo CRM',
           'Oportunidades': 'Leads identificados como oportunidade real.\n\nCritérios:\n• Possui CNPJ válido\n• Inclui leads importados\n• % em relação ao total de leads captados',
-          'Prioridade': 'Leads priorizados para atendimento comercial.\n\nCritérios:\n• Passou pela qualificação\n• Marcado como prioridade\n• Considera leads importados externamente\n• % em relação ao total de leads captados',
+          'Prioridade': 'Leads priorizados para atendimento comercial.\n\nCritérios:\n• Passou pela qualificação\n• Marcado como prioridade\n• Inclui todos os leads (importados e tráfego pago)\n• % em relação ao total de leads captados',
           'Propostas': 'Leads que receberam proposta comercial.\n\nCritérios:\n• Conta 1 por lead (sem duplicar)\n• % em relação ao total de leads captados',
-          'Reuniões': 'Reuniões realizadas no período.\n\nCritérios:\n• Apenas reuniões realizadas\n• Considera leads importados externamente\n• % em relação ao total de leads captados',
+          'Reuniões': 'Reuniões realizadas no período.\n\nCritérios:\n• Apenas reuniões realizadas\n• Inclui todos os leads (importados e tráfego pago)\n• % em relação ao total de leads captados',
           'Vendas': 'Leads que fecharam a compra.\n\nCritérios:\n• Venda aprovada\n• Contrato assinado\n• Checkout pago\n• % em relação ao total de leads captados',
         };
 
@@ -7944,18 +7944,20 @@
 
           const rows = sortedChannels.map(([canal, v]) => {
             const pct = totalLeads > 0 ? ((v.leads / totalLeads) * 100).toFixed(0) : 0;
-            const importBadge = v.imported > 0
-              ? ` <span style="font-size:9px;font-weight:600;padding:1px 5px;border-radius:3px;background:${isDark ? 'rgba(245,158,11,0.2)' : '#fef3c7'};color:${isDark ? '#fbbf24' : '#92400e'};white-space:nowrap">import ${v.imported.toLocaleString('pt-BR')}</span>`
+            const importDot = v.imported > 0
+              ? `<span title="${v.imported.toLocaleString('pt-BR')} leads importados (csv_import)" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#f59e0b;cursor:help;flex-shrink:0"></span>`
               : '';
             return `
               <tr style="transition:background 0.15s">
                 <td style="padding:10px 14px;font-size:13px;color:${textMain};border-bottom:1px solid ${borderC}">
-                  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                  <div style="display:flex;align-items:center;gap:8px">
                     <div style="width:6px;height:6px;border-radius:50%;background:${ag.color};flex-shrink:0"></div>
-                    ${escapeHtmlLite(canal)}${importBadge}
+                    ${escapeHtmlLite(canal)}
                   </div>
                 </td>
-                <td style="padding:10px 14px;font-size:13px;font-weight:600;text-align:right;color:${textMain};border-bottom:1px solid ${borderC}">${v.leads.toLocaleString('pt-BR')}</td>
+                <td style="padding:10px 14px;font-size:13px;font-weight:600;text-align:right;color:${textMain};border-bottom:1px solid ${borderC}">
+                  <div style="display:flex;align-items:center;justify-content:flex-end;gap:5px">${v.leads.toLocaleString('pt-BR')}${importDot}</div>
+                </td>
                 <td style="padding:10px 14px;font-size:13px;font-weight:500;text-align:right;color:${textSec};border-bottom:1px solid ${borderC}">${v.opps.toLocaleString('pt-BR')}</td>
                 <td style="padding:10px 14px;border-bottom:1px solid ${borderC};width:80px">
                   <div style="height:6px;border-radius:3px;background:${isDark ? '#334155' : '#e8eaed'};overflow:hidden">
