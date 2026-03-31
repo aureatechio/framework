@@ -4091,6 +4091,33 @@
           lastYearTicket = lastYearSales > 0 ? (lastYearRevenue / lastYearSales) : 0;
         } catch (e) {}
 
+        // --- Pace (média diária de faturamento vs ano passado) ---
+        try {
+          const { start: rangeStart, end: rangeEnd } = getDateRange(state.dateFilter);
+          const rangeStartDate = new Date(rangeStart);
+          const rangeEndDate = new Date(rangeEnd);
+          const today = new Date();
+          const effectiveEnd = rangeEndDate > today ? today : rangeEndDate;
+          const daysSoFarPace = Math.max(1, Math.ceil((effectiveEnd - rangeStartDate) / (1000 * 60 * 60 * 24)));
+          const dailyPace = daysSoFarPace > 0 ? currentRevenue / daysSoFarPace : 0;
+
+          const paceEl = document.getElementById('eff-pace-value');
+          if (paceEl) paceEl.textContent = formatCurrencyCompact(dailyPace);
+
+          const paceBadge = document.getElementById('eff-pace-badge');
+          if (paceBadge) {
+            const delta = currentRevenue - lastYearRevenue;
+            const sign = delta >= 0 ? '+ ' : '';
+            paceBadge.textContent = `${sign}${formatCurrencyCompact(Math.abs(delta))} vs ${lastYearLabel}`;
+            paceBadge.style.display = '';
+            paceBadge.style.background = delta >= 0 ? '#dcfce7' : '#fee2e2';
+            paceBadge.style.color = delta >= 0 ? '#16a34a' : '#dc2626';
+          }
+
+          const paceLabel = document.getElementById('eff-pace-label');
+          if (paceLabel) paceLabel.textContent = `Pace (Faturamento vs ${lastYearLabel})`;
+        } catch (e) {}
+
         // --- Conversão global (no período): leads fechados / leads captados ---
         // leads captados = leads.data_oportunidade no range (respeita seller e cutoff)
         let queryCaptados = sbClient
@@ -5015,17 +5042,24 @@
             updateCard(3, avgFech, 'd', '7d', 7);
         }
 
-        // --- Eficiência (Dias de ciclo + SLA % agregado) ---
+        // --- Eficiência (Dias de ciclo + FRT) ---
         try {
-          const totalCount = frtCount + cicloCount + propCount + fechCount;
-          const totalWithin = frtWithin + cicloWithin + propWithin + fechWithin;
-          const slaOverall = totalCount > 0 ? Math.round((totalWithin / totalCount) * 100) : 0;
-
           const cycleEl = document.getElementById('eff-cycle-days');
           if (cycleEl) cycleEl.textContent = `${avgCiclo}`;
 
-          const slaEl = document.getElementById('eff-sla-overall');
-          if (slaEl) slaEl.textContent = `${slaOverall}%`;
+          // FRT formatado como "Xm Ys" ou "Xh Ym"
+          const frtEl = document.getElementById('eff-frt-value');
+          if (frtEl) {
+            if (avgFRT >= 60) {
+              const h = Math.floor(avgFRT / 60);
+              const m = Math.round(avgFRT % 60);
+              frtEl.textContent = `${h}h ${m}m`;
+            } else {
+              const m = Math.floor(avgFRT);
+              const s = Math.round((avgFRT - m) * 60);
+              frtEl.textContent = `${m}m ${s}s`;
+            }
+          }
         } catch (e) {}
       }
 

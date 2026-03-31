@@ -285,11 +285,6 @@
     #dashboard-acelerai-v2 .rev-dot--proj { background: #0ea5e9; }
     #dashboard-acelerai-v2 .rev-dot--pipe { background: #f59e0b; }
 
-    /* Eficiência - NPS (placeholder discreto) */
-    .eff-nps-muted {
-      opacity: 0.45;
-      filter: grayscale(0.35);
-    }
 
     /* Custom Dropdown */
     .select-wrapper {

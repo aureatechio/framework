@@ -367,16 +367,32 @@
   <!-- 5a. MÉTRICAS DE EFICIÊNCIA -->
   <section class="card mb-12">
     <div class="section-title">Métricas de Eficiência</div>
-    <div class="grid grid-cols-2 md-grid-cols-4 gap-4 text-center">
-      <div class="p-4 bg-gray-50 rounded-xl" style="background:var(--bg-subtle)"><div class="text-3xl font-bold text-primary" id="eff-cycle-days">--</div><div class="text-xs text-muted">Dias de ciclo (vida)</div></div>
-      <div class="p-4 bg-gray-50 rounded-xl" style="background:var(--bg-subtle)"><div class="text-3xl font-bold text-success" id="eff-sla-overall">--%</div><div class="text-xs text-muted">SLA</div></div>
-      <div class="p-4 bg-gray-50 rounded-xl eff-nps-muted" style="background:var(--bg-subtle)"><div class="text-3xl font-bold text-primary" id="eff-nps-score">4.2</div><div class="text-xs text-muted">NPS Score</div></div>
-      <div class="p-4 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-center gap-3 text-left" style="background:var(--col-primary-light); border-color:var(--col-primary-light)">
+    <div class="grid grid-cols-2 md-grid-cols-4 gap-3">
+      <!-- Ciclo de Vida -->
+      <div class="p-4 rounded-lg" style="background:var(--bg-subtle)">
+        <div class="text-3xl font-bold text-primary" id="eff-cycle-days">--</div>
+        <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-top:4px" class="text-muted">Ciclo de vida (dias)</div>
+      </div>
+      <!-- FRT Pré-Venda -->
+      <div class="p-4 rounded-lg" style="background:var(--bg-subtle)">
+        <div class="text-3xl font-bold" style="color:#f59e0b" id="eff-frt-value">--</div>
+        <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-top:4px" class="text-muted">FRT Pré-venda</div>
+      </div>
+      <!-- Pace vs Last Year -->
+      <div class="p-4 rounded-lg" style="background:var(--bg-subtle)">
+        <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
+          <span class="text-3xl font-bold text-success" id="eff-pace-value">--</span>
+          <span id="eff-pace-badge" style="display:none;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px"></span>
+        </div>
+        <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-top:4px" class="text-muted" id="eff-pace-label">Pace (Faturamento vs 2025)</div>
+      </div>
+      <!-- Projeção -->
+      <div class="p-4 rounded-lg" style="background:var(--col-primary-light);border:1px solid var(--col-primary-light);display:flex;align-items:center;gap:12px;text-align:left">
         <i data-lucide="target" class="text-primary" size="24"></i>
         <div>
-          <div class="text-xs font-bold" style="color:var(--text-main)">Projeção</div>
-          <div class="text-lg font-bold text-primary" id="eff-projection-val">--</div>
-          <div class="text-xs text-muted" id="eff-projection-sub" style="margin-top: 2px;">--</div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.02em;color:var(--text-main)">Projeção</div>
+          <div class="text-xl font-bold text-primary" id="eff-projection-val">--</div>
+          <div class="text-muted" id="eff-projection-sub" style="font-size:10px;margin-top:2px">--</div>
         </div>
       </div>
     </div>
