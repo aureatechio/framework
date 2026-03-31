@@ -7822,7 +7822,7 @@
 
           while (hasMore) {
             let q = sbClient.from('leads')
-              .select('agencia, canalentrada, possui_cnpj, tag_lead')
+              .select('agencia, canalentrada, possui_cnpj, tag_lead, csv_import')
               .eq('novo_crm', true)
               .gte('data_oportunidade', start)
               .lt('data_oportunidade', end)
@@ -7842,9 +7842,10 @@
                 canal = String(row.tag_lead).trim() || 'Manual';
               }
               if (!grouped[ag]) grouped[ag] = {};
-              if (!grouped[ag][canal]) grouped[ag][canal] = { leads: 0, opps: 0 };
+              if (!grouped[ag][canal]) grouped[ag][canal] = { leads: 0, opps: 0, imported: 0 };
               grouped[ag][canal].leads++;
               if (row.possui_cnpj === true) grouped[ag][canal].opps++;
+              if (row.csv_import === true) grouped[ag][canal].imported++;
             });
 
             hasMore = (data || []).length === PAGE_SIZE;
@@ -7943,12 +7944,15 @@
 
           const rows = sortedChannels.map(([canal, v]) => {
             const pct = totalLeads > 0 ? ((v.leads / totalLeads) * 100).toFixed(0) : 0;
+            const importBadge = v.imported > 0
+              ? ` <span style="font-size:9px;font-weight:600;padding:1px 5px;border-radius:3px;background:${isDark ? 'rgba(245,158,11,0.2)' : '#fef3c7'};color:${isDark ? '#fbbf24' : '#92400e'};white-space:nowrap">import ${v.imported.toLocaleString('pt-BR')}</span>`
+              : '';
             return `
               <tr style="transition:background 0.15s">
                 <td style="padding:10px 14px;font-size:13px;color:${textMain};border-bottom:1px solid ${borderC}">
-                  <div style="display:flex;align-items:center;gap:8px">
+                  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
                     <div style="width:6px;height:6px;border-radius:50%;background:${ag.color};flex-shrink:0"></div>
-                    ${escapeHtmlLite(canal)}
+                    ${escapeHtmlLite(canal)}${importBadge}
                   </div>
                 </td>
                 <td style="padding:10px 14px;font-size:13px;font-weight:600;text-align:right;color:${textMain};border-bottom:1px solid ${borderC}">${v.leads.toLocaleString('pt-BR')}</td>
