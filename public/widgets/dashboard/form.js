@@ -3255,6 +3255,11 @@
       }
 
       function getRevenueChartRangeByMode(mode) {
+        // Quando dateFilter é custom, o gráfico deve usar o range personalizado
+        if (state.dateFilter === 'custom' && state.customRange && state.customRange.start && state.customRange.end) {
+          return { start: state.customRange.start, end: state.customRange.end };
+        }
+
         const m = String(mode || 'month');
         const now = new Date();
         const y = now.getFullYear();
@@ -7466,7 +7471,6 @@
           .select('lead_id', { count: 'exact', head: true })
           .eq('passou_prioridade', true);
         queryPrioridade = applyAgencyFilterToLeadQuery(queryPrioridade);
-        queryPrioridade = applyNotImportedLeadFilter(queryPrioridade);
         queryPrioridade = applyCutoffTimestamp(queryPrioridade, 'data_oportunidade')
           .gte('data_oportunidade', start)
           .lte('data_oportunidade', end);
