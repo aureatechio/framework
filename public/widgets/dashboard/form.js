@@ -7944,8 +7944,8 @@
 
           const rows = sortedChannels.map(([canal, v]) => {
             const pct = totalLeads > 0 ? ((v.leads / totalLeads) * 100).toFixed(0) : 0;
-            const importDot = v.imported > 0
-              ? `<span title="${v.imported.toLocaleString('pt-BR')} leads importados (csv_import)" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#f59e0b;cursor:help;flex-shrink:0"></span>`
+            const importBadge = v.imported > 0
+              ? ` <span title="${v.imported.toLocaleString('pt-BR')} leads importados (csv_import)" style="font-size:9px;font-weight:600;padding:1px 4px;border-radius:3px;background:${isDark ? 'rgba(245,158,11,0.2)' : '#fef3c7'};color:${isDark ? '#fbbf24' : '#92400e'};cursor:help;white-space:nowrap;vertical-align:middle">${v.imported.toLocaleString('pt-BR')}</span>`
               : '';
             return `
               <tr style="transition:background 0.15s">
@@ -7956,7 +7956,7 @@
                   </div>
                 </td>
                 <td style="padding:10px 14px;font-size:13px;font-weight:600;text-align:right;color:${textMain};border-bottom:1px solid ${borderC}">
-                  <div style="display:flex;align-items:center;justify-content:flex-end;gap:5px">${v.leads.toLocaleString('pt-BR')}${importDot}</div>
+                  <div style="display:flex;align-items:center;justify-content:flex-end;gap:5px">${v.leads.toLocaleString('pt-BR')}${importBadge}</div>
                 </td>
                 <td style="padding:10px 14px;font-size:13px;font-weight:500;text-align:right;color:${textSec};border-bottom:1px solid ${borderC}">${v.opps.toLocaleString('pt-BR')}</td>
                 <td style="padding:10px 14px;border-bottom:1px solid ${borderC};width:80px">
