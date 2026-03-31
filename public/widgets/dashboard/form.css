@@ -349,7 +349,6 @@
     }
     #dashboard-acelerai-v2 .agency-segment.agency-loading {
       opacity: 0.55;
-      pointer-events: none;
     }
     #dashboard-acelerai-v2 .agency-segment.agency-loading::after {
       content: '';
