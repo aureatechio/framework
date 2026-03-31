@@ -1925,6 +1925,11 @@
           ov.style.opacity = '0';
           setTimeout(() => { ov.style.display = 'none'; }, 250);
         } catch (e) {}
+        // Safety net: liberar seletor de agência sempre que o loading geral esconde
+        try {
+          const agRoot = document.getElementById('agency-selector');
+          if (agRoot) agRoot.classList.remove('agency-loading');
+        } catch (e) {}
       }
 
       // EXPOSED FUNCTIONS
@@ -6858,6 +6863,12 @@
           return;
         }
 
+        // Bloquear seletor de agência durante init (será liberado quando dados carregarem)
+        try {
+          const agRoot = document.getElementById('agency-selector');
+          if (agRoot) agRoot.classList.add('agency-loading');
+        } catch (e) {}
+
         // --- BUBBLE VISIBILITY GUARD ---
         // Quando o widget nasce dentro de um container oculto no Bubble (display:none),
         // TODO o elemento renderiza com dimensões zero e não recupera ao ficar visível.
@@ -6928,6 +6939,8 @@
           // Init ainda rodando — espera terminar antes de liberar
           Promise.resolve(__fetchInFlight).finally(() => unlockAgencySelector());
         }
+        // Failsafe: desbloquear incondicionalmente após 12s (evita lock permanente)
+        setTimeout(unlockAgencySelector, 12000);
 
         // Renderiza os charts APÓS exibir (evita width/height 0 no primeiro paint)
         setTimeout(() => {
