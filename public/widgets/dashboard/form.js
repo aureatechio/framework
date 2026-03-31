@@ -7890,7 +7890,7 @@
             </div>
             <div style="text-align:right">
               <div style="font-size:28px;font-weight:700;color:${textMain};line-height:1">${grandLeads.toLocaleString('pt-BR')}</div>
-              <div style="font-size:11px;color:${textSec};margin-top:2px">${grandOpps.toLocaleString('pt-BR')} oportunidades</div>
+              <div style="font-size:11px;color:${textSec};margin-top:2px">${grandOpps.toLocaleString('pt-BR')} Oportunidades</div>
             </div>
           </div>
         `;
@@ -7937,7 +7937,7 @@
                 </div>
                 <div style="text-align:right">
                   <div style="font-size:24px;font-weight:800;color:${ag.color};line-height:1">${totalLeads.toLocaleString('pt-BR')}</div>
-                  <div style="font-size:10px;color:${textSec};margin-top:2px">${totalOpps.toLocaleString('pt-BR')} opps</div>
+                  <div style="font-size:10px;color:${textSec};margin-top:2px">${totalOpps.toLocaleString('pt-BR')} Oportunidades</div>
                 </div>
               </div>
               <table style="width:100%;border-collapse:collapse">
@@ -7945,7 +7945,7 @@
                   <tr style="background:${headerBg}">
                     <th style="padding:8px 14px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;text-align:left;color:${textSec}">Canal</th>
                     <th style="padding:8px 14px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;text-align:right;color:${textSec}">Leads</th>
-                    <th style="padding:8px 14px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;text-align:right;color:${textSec}">Opps</th>
+                    <th style="padding:8px 14px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;text-align:right;color:${textSec}">Oportunidades</th>
                     <th style="padding:8px 14px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;text-align:right;color:${textSec};width:80px"></th>
                   </tr>
                 </thead>
