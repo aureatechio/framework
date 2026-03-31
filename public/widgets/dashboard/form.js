@@ -7944,19 +7944,21 @@
 
           const rows = sortedChannels.map(([canal, v]) => {
             const pct = totalLeads > 0 ? ((v.leads / totalLeads) * 100).toFixed(0) : 0;
-            const importSup = v.imported > 0
-              ? `<sup title="${v.imported.toLocaleString('pt-BR')} leads importados (csv_import)" style="font-size:8px;font-weight:600;padding:0 3px;border-radius:2px;background:${isDark ? 'rgba(245,158,11,0.2)' : '#fef3c7'};color:${isDark ? '#fbbf24' : '#92400e'};cursor:help;margin-left:2px;position:relative;top:-4px">${v.imported.toLocaleString('pt-BR')}</sup>`
+            const importLine = v.imported > 0
+              ? `<div title="${v.imported.toLocaleString('pt-BR')} leads importados (csv_import)" style="font-size:9px;font-weight:600;color:${isDark ? '#fbbf24' : '#92400e'};cursor:help;line-height:1">${v.imported.toLocaleString('pt-BR')} imp</div>`
               : '';
             return `
               <tr style="transition:background 0.15s">
-                <td style="padding:10px 14px;font-size:13px;color:${textMain};border-bottom:1px solid ${borderC}">
+                <td style="padding:10px 14px;font-size:13px;color:${textMain};border-bottom:1px solid ${borderC};vertical-align:middle">
                   <div style="display:flex;align-items:center;gap:8px">
                     <div style="width:6px;height:6px;border-radius:50%;background:${ag.color};flex-shrink:0"></div>
                     ${escapeHtmlLite(canal)}
                   </div>
                 </td>
-                <td style="padding:10px 14px;font-size:13px;font-weight:600;text-align:right;color:${textMain};border-bottom:1px solid ${borderC};white-space:nowrap">${v.leads.toLocaleString('pt-BR')}${importSup}</td>
-                <td style="padding:10px 14px;font-size:13px;font-weight:500;text-align:right;color:${textSec};border-bottom:1px solid ${borderC}">${v.opps.toLocaleString('pt-BR')}</td>
+                <td style="padding:8px 14px;font-size:13px;font-weight:600;text-align:right;color:${textMain};border-bottom:1px solid ${borderC};vertical-align:middle">
+                  <div style="text-align:right">${v.leads.toLocaleString('pt-BR')}${importLine ? '<br>' + importLine : ''}</div>
+                </td>
+                <td style="padding:10px 14px;font-size:13px;font-weight:500;text-align:right;color:${textSec};border-bottom:1px solid ${borderC};vertical-align:middle">${v.opps.toLocaleString('pt-BR')}</td>
                 <td style="padding:10px 14px;border-bottom:1px solid ${borderC};width:80px">
                   <div style="height:6px;border-radius:3px;background:${isDark ? '#334155' : '#e8eaed'};overflow:hidden">
                     <div style="height:100%;width:${pct}%;border-radius:3px;background:${ag.color};transition:width 0.5s ease"></div>
