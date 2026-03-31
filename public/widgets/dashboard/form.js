@@ -4156,7 +4156,6 @@
             .from('leads')
             .select('lead_id', { count: 'exact', head: true })
             .eq('passou_prioridade', true);
-          q = applyNotImportedLeadFilter(q);
           q = applyCutoffTimestamp(q, 'data_oportunidade')
             .gte('data_oportunidade', start)
             .lte('data_oportunidade', end);
@@ -4172,7 +4171,6 @@
             .from('leads')
             .select('lead_id', { count: 'exact', head: true })
             .eq('passou_prioridade', true);
-          q = applyNotImportedLeadFilter(q);
           q = applyCutoffTimestamp(q, 'data_oportunidade')
             .gte('data_oportunidade', prevRange.start)
             .lte('data_oportunidade', prevRange.end);
@@ -4191,7 +4189,6 @@
             .select('lead_id', { count: 'exact', head: true })
             .in('lead_id', chunk)
             .eq('passou_prioridade', true);
-          qVP = applyNotImportedLeadFilter(qVP);
           qVP = applyAgencyFilterToLeadQuery(qVP);
           const { count } = await qVP;
           countVendasPrioridade += (count || 0);
@@ -4208,7 +4205,6 @@
             .select('lead_id', { count: 'exact', head: true })
             .in('lead_id', chunk)
             .eq('passou_prioridade', true);
-          qVPP = applyNotImportedLeadFilter(qVPP);
           qVPP = applyAgencyFilterToLeadQuery(qVPP);
           const { count } = await qVPP;
           countVendasPrioridadePrev += (count || 0);
@@ -5912,7 +5908,6 @@
               .not('empresa', 'eq', '');
             qLeads = applyAgencyFilterToLeadQuery(qLeads);
             qLeads = applyCutoffTimestamp(qLeads, 'data_oportunidade').gte('data_oportunidade', start).lte('data_oportunidade', end);
-            qLeads = applyNotImportedLeadFilter(qLeads);
             const { data: leadsOport } = await qLeads;
             (leadsOport || []).forEach(l => {
               if (!l || !l.vendedorResponsavel) return;
@@ -7705,7 +7700,6 @@
           .from('leads')
           .select('lead_id', { count: 'exact', head: true });
         qTotal = applyAgencyFilterToLeadQuery(qTotal);
-        qTotal = applyNotImportedLeadFilter(qTotal);
         qTotal = applyCutoffTimestamp(qTotal, 'data_oportunidade').gte('data_oportunidade', start).lte('data_oportunidade', end);
         if (state.selectedSeller) qTotal = qTotal.eq('vendedorResponsavel', state.selectedSeller);
         const { count: totalLeads } = await qTotal;
@@ -7717,7 +7711,6 @@
           .select('lead_id', { count: 'exact', head: true })
           .not('vendedorResponsavel', 'is', null);
         qWithSeller = applyAgencyFilterToLeadQuery(qWithSeller);
-        qWithSeller = applyNotImportedLeadFilter(qWithSeller);
         qWithSeller = applyCutoffTimestamp(qWithSeller, 'data_oportunidade').gte('data_oportunidade', start).lte('data_oportunidade', end);
         if (state.selectedSeller) qWithSeller = qWithSeller.eq('vendedorResponsavel', state.selectedSeller);
         const { count: leadsWithSeller } = await qWithSeller;
@@ -7731,7 +7724,6 @@
               .select('lead_id, data_oportunidade, vendedorResponsavel')
               .in('lead_id', chunk);
             q = applyAgencyFilterToLeadQuery(q);
-            q = applyNotImportedLeadFilter(q);
             q = applyCutoffTimestamp(q, 'data_oportunidade').gte('data_oportunidade', start).lte('data_oportunidade', end);
             if (state.selectedSeller) q = q.eq('vendedorResponsavel', state.selectedSeller);
             const { data } = await q;
@@ -7821,25 +7813,38 @@
         if (!sbClient) return;
         try {
           const { start, end } = getDateRange(state.dateFilter);
-          let q = sbClient.from('leads')
-            .select('agencia, canalentrada')
-            .eq('novo_crm', true)
-            .gte('data_oportunidade', start)
-            .lt('data_oportunidade', end)
-            .limit(50000);
-          q = applyCutoffTimestamp(q, 'data_oportunidade');
-          if (state.selectedSeller) q = q.eq('vendedorResponsavel', state.selectedSeller);
 
-          const { data, error } = await q;
-          if (error) throw error;
-
+          // Paginar para contornar max_rows do Supabase (default 1000)
+          const PAGE_SIZE = 1000;
           const grouped = {};
-          (data || []).forEach(row => {
-            const ag = row.agencia || 'outros';
-            const canal = row.canalentrada || 'Sem canal';
-            if (!grouped[ag]) grouped[ag] = {};
-            grouped[ag][canal] = (grouped[ag][canal] || 0) + 1;
-          });
+          let offset = 0;
+          let hasMore = true;
+
+          while (hasMore) {
+            let q = sbClient.from('leads')
+              .select('agencia, canalentrada')
+              .eq('novo_crm', true)
+              .gte('data_oportunidade', start)
+              .lt('data_oportunidade', end)
+              .range(offset, offset + PAGE_SIZE - 1);
+            q = applyCutoffTimestamp(q, 'data_oportunidade');
+            if (state.selectedSeller) q = q.eq('vendedorResponsavel', state.selectedSeller);
+
+            const { data, error } = await q;
+            if (error) throw error;
+
+            (data || []).forEach(row => {
+              const ag = row.agencia || 'outros';
+              const canal = row.canalentrada || 'Sem canal';
+              if (!grouped[ag]) grouped[ag] = {};
+              grouped[ag][canal] = (grouped[ag][canal] || 0) + 1;
+            });
+
+            hasMore = (data || []).length === PAGE_SIZE;
+            offset += PAGE_SIZE;
+          }
+
+          __log('fetchAgencyChannels', `Total rows paginadas: ${offset - PAGE_SIZE + ((grouped && Object.keys(grouped).length) ? 1 : 0)} pages`);
           renderAgencyChannels(grouped);
         } catch (e) {
           console.error('[AgencyChannels] Erro:', e);
@@ -7953,7 +7958,6 @@
             .select('lead_id', { count: 'exact', head: true })
             .eq('canalentrada', canal);
           q = applyAgencyFilterToLeadQuery(q);
-          q = applyNotImportedLeadFilter(q);
           q = applyCutoffTimestamp(q, 'data_oportunidade').gte('data_oportunidade', start).lte('data_oportunidade', end);
           if (state.selectedSeller) q = q.eq('vendedorResponsavel', state.selectedSeller);
           const { count } = await q;
@@ -8214,7 +8218,6 @@
           for (const chunk of chunkArray(leadIds, 500)) {
             let q = sbClient.from('leads').select('lead_id, vendedorResponsavel').in('lead_id', chunk);
             q = applyAgencyFilterToLeadQuery(q);
-            q = applyNotImportedLeadFilter(q);
             if (state.selectedSeller) q = q.eq('vendedorResponsavel', state.selectedSeller);
             const { data } = await q;
             (data || []).forEach(l => {
@@ -8515,7 +8518,6 @@
                 .select('lead_id, created_at')
                 .in('lead_id', chunk);
               q = applyAgencyFilterToLeadQuery(q);
-              q = applyNotImportedLeadFilter(q);
               q = applyCutoffTimestamp(q, 'created_at');
               const { data, error } = await q;
               if (error) console.error('[pipeline] erro leads(created_at):', error);
