@@ -6743,7 +6743,7 @@
              { fn: fetchSLAs, label: 'SLAs' },
              { fn: fetchRankingData, label: 'Ranking' },
              { fn: fetchFunnelData, label: 'Funil + Conversão' },
-             { fn: fetchChannelData, label: 'Canais' },
+             { fn: fetchAgencyChannels, label: 'Canais' },
              { fn: fetchStageDwellTimes, label: 'Tempos Etapa' },
              { fn: fetchMetasData, label: 'Metas' },
              { fn: fetchTeamBattleData, label: 'Team Battle' },
@@ -7816,7 +7816,88 @@
         renderConversion();
       }
 
+      // --- LEADS POR AGÊNCIA (substitui Performance por Canal) ---
+      async function fetchAgencyChannels() {
+        if (!sbClient) return;
+        try {
+          const { start, end } = getDateRange(state.dateFilter);
+          let q = sbClient.from('leads')
+            .select('agencia, canalentrada')
+            .eq('novo_crm', true)
+            .gte('data_oportunidade', start)
+            .lt('data_oportunidade', end);
+          q = applyCutoffTimestamp(q, 'data_oportunidade');
+          if (state.selectedSeller) q = q.eq('vendedorResponsavel', state.selectedSeller);
+
+          const { data, error } = await q;
+          if (error) throw error;
+
+          const grouped = {};
+          (data || []).forEach(row => {
+            const ag = row.agencia || 'outros';
+            const canal = row.canalentrada || 'Sem canal';
+            if (!grouped[ag]) grouped[ag] = {};
+            grouped[ag][canal] = (grouped[ag][canal] || 0) + 1;
+          });
+          renderAgencyChannels(grouped);
+        } catch (e) {
+          console.error('[AgencyChannels] Erro:', e);
+        }
+      }
+
+      function renderAgencyChannels(grouped) {
+        const container = document.getElementById('agency-channels-grid');
+        if (!container) return;
+        const isDark = state.theme === 'dark';
+
+        const agencies = [
+          { id: AGENCY_IDS.ACELERAI, name: 'Aceleraí', color: '#3b82f6', bgLight: isDark ? 'rgba(59,130,246,0.12)' : '#eff6ff' },
+          { id: AGENCY_IDS.MGS, name: 'Educação', color: '#f59e0b', bgLight: isDark ? 'rgba(245,158,11,0.12)' : '#fffbeb' }
+        ];
+
+        const borderC = isDark ? '#334155' : '#e2e8f0';
+        const bgSubtle = isDark ? '#1e293b' : '#f8fafc';
+
+        container.innerHTML = agencies.map(ag => {
+          const channels = grouped[ag.id] || {};
+          const sortedChannels = Object.entries(channels).sort((a, b) => b[1] - a[1]);
+          const total = sortedChannels.reduce((sum, [, v]) => sum + v, 0);
+
+          const rows = sortedChannels.map(([canal, qtd]) => `
+            <tr>
+              <td style="padding:6px 10px;font-size:12px;border-bottom:1px solid ${borderC}">${escapeHtmlLite(canal)}</td>
+              <td style="padding:6px 10px;font-size:12px;font-weight:600;text-align:right;border-bottom:1px solid ${borderC}">${qtd.toLocaleString('pt-BR')}</td>
+            </tr>
+          `).join('');
+
+          return `
+            <div style="border-radius:8px;overflow:hidden;border:1px solid ${borderC}">
+              <div style="background:${ag.bgLight};padding:12px 16px;text-align:center">
+                <div style="font-size:13px;font-weight:700;color:${ag.color}">${ag.name}</div>
+                <div style="font-size:26px;font-weight:800;color:${ag.color};line-height:1.2">${total.toLocaleString('pt-BR')}</div>
+              </div>
+              <table style="width:100%;border-collapse:collapse">
+                <thead>
+                  <tr style="background:${bgSubtle}">
+                    <th style="padding:6px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;text-align:left;color:var(--text-muted)">Canal</th>
+                    <th style="padding:6px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;text-align:right;color:var(--text-muted)">Qtd Lead</th>
+                  </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+                <tfoot>
+                  <tr style="background:${bgSubtle}">
+                    <td style="padding:8px 10px;font-size:12px;font-weight:700">Total</td>
+                    <td style="padding:8px 10px;font-size:12px;font-weight:700;text-align:right">${total.toLocaleString('pt-BR')}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          `;
+        }).join('');
+      }
+
       async function fetchChannelData() {
+        // LEGACY: mantido para referência, não mais chamado no pipeline
         if (!sbClient) return;
         const { start, end } = getDateRange(state.dateFilter);
 

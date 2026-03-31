@@ -510,9 +510,11 @@
 
   <!-- 7. CHANNELS + TEMPOS POR ETAPA -->
   <section class="grid grid-cols-1 xl-grid-cols-2 gap-6 mb-12">
-    <div class="card flex-col">
-      <div class="section-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">Performance por Canal <span class="channel-period-badge">Mês Atual</span></div>
-      <div class="grid grid-cols-1 md-grid-cols-2 gap-4" id="channel-grid"></div>
+    <div class="card flex-col" id="agency-channels-card">
+      <div class="section-title">Leads por Agência</div>
+      <div class="grid grid-cols-1 md-grid-cols-2 gap-4" id="agency-channels-grid">
+        <div class="text-xs text-muted text-center p-4">Carregando...</div>
+      </div>
     </div>
     <div class="card flex-col stage-dwell-card" style="min-width:0;">
       <div class="section-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">Tempos por Etapa do Funil <span class="stage-dwell-subtitle" id="stage-dwell-subtitle"></span></div>
