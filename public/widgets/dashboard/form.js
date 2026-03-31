@@ -7822,7 +7822,7 @@
 
           while (hasMore) {
             let q = sbClient.from('leads')
-              .select('agencia, canalentrada, possui_cnpj')
+              .select('agencia, canalentrada, possui_cnpj, tag_lead')
               .eq('novo_crm', true)
               .gte('data_oportunidade', start)
               .lt('data_oportunidade', end)
@@ -7836,7 +7836,11 @@
 
             (data || []).forEach(row => {
               const ag = row.agencia || 'outros';
-              const canal = row.canalentrada || 'Sem canal';
+              // Quando canalentrada = Manual, usar tag_lead como nome do canal
+              let canal = row.canalentrada || 'Sem canal';
+              if (canal === 'Manual' && row.tag_lead) {
+                canal = String(row.tag_lead).trim() || 'Manual';
+              }
               if (!grouped[ag]) grouped[ag] = {};
               if (!grouped[ag][canal]) grouped[ag][canal] = { leads: 0, opps: 0 };
               grouped[ag][canal].leads++;
