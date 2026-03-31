@@ -3438,38 +3438,42 @@
       function processRevenueData(leads, startDate, endDate, metaTotalOverride) {
         // Cria mapa de dias no range
         const dataMap = {};
-        
+
         let currentDate = new Date(startDate);
         const end = new Date(endDate);
-        
+
         // Ajustar para garantir que o loop funcione com ISO dates
         currentDate.setHours(0,0,0,0);
         end.setHours(23,59,59,999);
 
         // Detectar se é filtro ANUAL (range > 40 dias)
         const diffTime = Math.abs(end - currentDate);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-        const isYearly = diffDays > 40; 
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        const isYearly = diffDays > 40;
 
         if (isYearly) {
-            // Lógica MENSAL
-            // Resetar para dia 1 do mês inicial para evitar pular meses
-            currentDate.setDate(1);
+            // Lógica MENSAL (usar UTC para evitar shift de timezone BRT→UTC)
+            const startUtcY = new Date(startDate).getUTCFullYear();
+            const startUtcM = new Date(startDate).getUTCMonth();
+            const endUtcY = new Date(endDate).getUTCFullYear();
+            const endUtcM = new Date(endDate).getUTCMonth();
 
-            while (currentDate <= end) {
-                const year = currentDate.getFullYear();
-                const month = String(currentDate.getMonth() + 1).padStart(2, '0');
-                const key = `${year}-${month}`; // YYYY-MM
-                
-                const monthName = currentDate.toLocaleDateString('pt-BR', { month: 'short' });
+            let curY = startUtcY, curM = startUtcM;
+            while (curY < endUtcY || (curY === endUtcY && curM <= endUtcM)) {
+                const month = String(curM + 1).padStart(2, '0');
+                const key = `${curY}-${month}`; // YYYY-MM
+
+                const tempD = new Date(Date.UTC(curY, curM, 15)); // meio do mês para toLocaleDateString
+                const monthName = tempD.toLocaleDateString('pt-BR', { month: 'short', timeZone: 'UTC' });
                 const display = monthName.charAt(0).toUpperCase() + monthName.slice(1);
 
                 if (!dataMap[key]) {
-                    dataMap[key] = { val: 0, display: display, rawDate: key, order: currentDate.getTime() };
+                    dataMap[key] = { val: 0, display: display, rawDate: key, order: Date.UTC(curY, curM, 1) };
                 }
-                
+
                 // Avança para o próximo mês
-                currentDate.setMonth(currentDate.getMonth() + 1);
+                curM++;
+                if (curM > 11) { curM = 0; curY++; }
             }
         } else {
             // Lógica DIÁRIA (padrão)
