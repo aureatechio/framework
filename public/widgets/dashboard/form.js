@@ -3917,16 +3917,16 @@
           // 3) Série "Ano passado" (alinhada ao período do gráfico)
           try {
             const refStart = new Date(String(chartStart));
-            const currentYear = (refStart && !Number.isNaN(refStart.getTime())) ? refStart.getFullYear() : getCurrentYear();
+            const currentYear = (refStart && !Number.isNaN(refStart.getTime())) ? refStart.getUTCFullYear() : getCurrentYear();
             const isYearly = !!chartData.isYearly;
 
             const lyStart = (() => {
               const d = new Date(String(chartStart));
-              return new Date(Date.UTC(d.getFullYear() - 1, d.getMonth(), d.getDate(), 0, 0, 0, 0)).toISOString();
+              return new Date(Date.UTC(d.getUTCFullYear() - 1, d.getUTCMonth(), d.getUTCDate(), 0, 0, 0, 0)).toISOString();
             })();
             const lyEnd = (() => {
               const d = new Date(String(chartEnd));
-              return new Date(Date.UTC(d.getFullYear() - 1, d.getMonth(), d.getDate(), 23, 59, 59, 999)).toISOString();
+              return new Date(Date.UTC(d.getUTCFullYear() - 1, d.getUTCMonth(), d.getUTCDate(), 23, 59, 59, 999)).toISOString();
             })();
 
             let qLY = sbClient
@@ -3961,7 +3961,7 @@
             } else {
               // keys: YYYY-MM-DD (mapeia dia do mês do ano passado para o mês atual no ano atual)
               const refMonthStart = new Date(String(chartStart));
-              const currentMonth = (refMonthStart && !Number.isNaN(refMonthStart.getTime())) ? refMonthStart.getMonth() : (new Date().getMonth());
+              const currentMonth = (refMonthStart && !Number.isNaN(refMonthStart.getTime())) ? refMonthStart.getUTCMonth() : (new Date().getMonth());
               (rowsLY || []).forEach(r => {
                 if (!r || !r.data_compra) return;
                 try {
