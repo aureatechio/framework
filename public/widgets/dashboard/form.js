@@ -5036,7 +5036,18 @@
                 el.querySelector('.sla-bar-fill').style.width = pct + '%';
             };
 
-            updateCard(0, avgFRT, 'min', '20min', 20);
+            // FRT: formatar em horas se >= 60min
+            const frtDisplay = avgFRT >= 60 ? `${Math.floor(avgFRT / 60)}h ${Math.round(avgFRT % 60)}m` : `${avgFRT}min`;
+            const frtMeta = '20min';
+            const frtEl0 = cards[0];
+            if (frtEl0) {
+              let statusClass = 'on-track';
+              if (avgFRT > 20) statusClass = avgFRT <= 40 ? 'at-risk' : 'breached';
+              frtEl0.className = `sla-card ${statusClass}`;
+              frtEl0.querySelector('.text-2xl').innerHTML = `${frtDisplay} <span class="text-sm opacity-70">/ ${frtMeta}</span>`;
+              const pct = Math.min(100, (avgFRT / 20) * 100);
+              frtEl0.querySelector('.sla-bar-fill').style.width = pct + '%';
+            }
             updateCard(1, avgCiclo, 'd', '5d', 5);
             updateCard(2, avgProp, 'h', '6h', 6);
             updateCard(3, avgFech, 'd', '7d', 7);
