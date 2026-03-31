@@ -7328,7 +7328,7 @@
         // Tooltips explicativos para cada etapa do funil
         const FUNNEL_TOOLTIPS = {
           'Leads Captados': 'Topo do funil — todo lead novo começa aqui.\n\nCritérios:\n• Leads que entraram no CRM no período\n• Apenas do novo CRM',
-          'Oportunidades': 'Leads identificados como oportunidade real.\n\nCritérios:\n• Possui CNPJ válido\n• Considera leads importados externamente\n• % em relação ao total de leads captados',
+          'Oportunidades': 'Leads identificados como oportunidade real.\n\nCritérios:\n• Possui CNPJ válido\n• Inclui leads importados\n• % em relação ao total de leads captados',
           'Prioridade': 'Leads priorizados para atendimento comercial.\n\nCritérios:\n• Passou pela qualificação\n• Marcado como prioridade\n• Considera leads importados externamente\n• % em relação ao total de leads captados',
           'Propostas': 'Leads que receberam proposta comercial.\n\nCritérios:\n• Conta 1 por lead (sem duplicar)\n• % em relação ao total de leads captados',
           'Reuniões': 'Reuniões realizadas no período.\n\nCritérios:\n• Apenas reuniões realizadas\n• Considera leads importados externamente\n• % em relação ao total de leads captados',
@@ -7431,7 +7431,7 @@
         if (state.selectedSeller) queryCaptados = queryCaptados.eq('vendedorResponsavel', state.selectedSeller);
         const { count: countCaptados } = await queryCaptados;
 
-        // 2. Oportunidades (leads com empresa preenchida)
+        // 2. Oportunidades (leads com empresa preenchida, inclui importados)
         let countOportunidades = 0;
         try {
           let queryOportunidades = sbClient
@@ -7439,7 +7439,6 @@
             .select('lead_id', { count: 'exact', head: true })
             .eq('possui_cnpj', true);
           queryOportunidades = applyAgencyFilterToLeadQuery(queryOportunidades);
-          queryOportunidades = applyNotImportedLeadFilter(queryOportunidades);
           queryOportunidades = applyCutoffTimestamp(queryOportunidades, 'data_oportunidade')
             .gte('data_oportunidade', start)
             .lte('data_oportunidade', end);
