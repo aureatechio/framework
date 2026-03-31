@@ -7825,7 +7825,8 @@
             .select('agencia, canalentrada')
             .eq('novo_crm', true)
             .gte('data_oportunidade', start)
-            .lt('data_oportunidade', end);
+            .lt('data_oportunidade', end)
+            .limit(50000);
           q = applyCutoffTimestamp(q, 'data_oportunidade');
           if (state.selectedSeller) q = q.eq('vendedorResponsavel', state.selectedSeller);
 
