@@ -3061,11 +3061,12 @@
       }
 
       window.openCustomDatePicker = () => {
+        __log('customDate', '🖱️ openCustomDatePicker chamado');
         const pop = document.getElementById('custom-date-popover');
         const startEl = document.getElementById('custom-date-start');
         const endEl = document.getElementById('custom-date-end');
         const btn = document.getElementById('btn-custom');
-        if (!pop) return;
+        if (!pop) { __log('customDate', '❌ popover element não encontrado!'); return; }
 
         const isOpen = pop.style.display !== 'none' && pop.getAttribute('aria-hidden') === 'false';
         if (isOpen) {
@@ -3179,12 +3180,14 @@
           closeCustomDatePicker();
         });
 
-        // fecha ao clicar fora
+        // fecha ao clicar fora (usar getElementById para evitar referências stale após re-render Bubble)
         document.addEventListener('click', (e) => {
           const target = e && e.target ? e.target : null;
           if (!target) return;
-          if (target === btn || btn.contains(target)) return;
-          if (target === pop || pop.contains(target)) return;
+          const btnNow = document.getElementById('btn-custom');
+          const popNow = document.getElementById('custom-date-popover');
+          if (btnNow && (target === btnNow || btnNow.contains(target))) return;
+          if (popNow && (target === popNow || popNow.contains(target))) return;
           closeCustomDatePicker();
         });
 
