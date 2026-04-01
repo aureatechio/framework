@@ -7829,13 +7829,14 @@
 
           // Paginar para contornar max_rows do Supabase (default 1000)
           const PAGE_SIZE = 1000;
-          const grouped = {}; // agencia -> canal -> { leads, opps }
+          const grouped = {}; // agencia -> canal -> { leads, opps, imported, today }
+          const todayYmd = formatYmdLocal(new Date());
           let offset = 0;
           let hasMore = true;
 
           while (hasMore) {
             let q = sbClient.from('leads')
-              .select('agencia, canalentrada, possui_cnpj, tag_lead, csv_import')
+              .select('agencia, canalentrada, possui_cnpj, tag_lead, csv_import, data_oportunidade')
               .eq('novo_crm', true)
               .gte('data_oportunidade', start)
               .lt('data_oportunidade', end)
@@ -7855,10 +7856,15 @@
                 canal = String(row.tag_lead).trim() || 'Manual';
               }
               if (!grouped[ag]) grouped[ag] = {};
-              if (!grouped[ag][canal]) grouped[ag][canal] = { leads: 0, opps: 0, imported: 0 };
+              if (!grouped[ag][canal]) grouped[ag][canal] = { leads: 0, opps: 0, imported: 0, today: 0 };
               grouped[ag][canal].leads++;
               if (row.possui_cnpj === true) grouped[ag][canal].opps++;
               if (row.csv_import === true) grouped[ag][canal].imported++;
+              // Contar leads de hoje
+              if (row.data_oportunidade) {
+                const rowYmd = String(row.data_oportunidade).substring(0, 10);
+                if (rowYmd === todayYmd) grouped[ag][canal].today++;
+              }
             });
 
             hasMore = (data || []).length === PAGE_SIZE;
@@ -7960,12 +7966,15 @@
             const importLine = v.imported > 0
               ? `<div title="${v.imported.toLocaleString('pt-BR')} leads importados (csv_import)" style="font-size:9px;font-weight:600;color:${isDark ? '#fbbf24' : '#92400e'};cursor:help;line-height:1">${v.imported.toLocaleString('pt-BR')} imp</div>`
               : '';
+            const newBadge = v.today > 0
+              ? ` <span title="${v.today} leads novos hoje" style="font-size:8px;font-weight:700;padding:1px 5px;border-radius:8px;background:${isDark ? 'rgba(34,197,94,0.2)' : '#dcfce7'};color:${isDark ? '#4ade80' : '#15803d'};cursor:help;white-space:nowrap;vertical-align:middle">new +${v.today}</span>`
+              : '';
             return `
               <tr style="transition:background 0.15s">
                 <td style="padding:10px 14px;font-size:13px;color:${textMain};border-bottom:1px solid ${borderC};vertical-align:middle">
-                  <div style="display:flex;align-items:center;gap:8px">
+                  <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
                     <div style="width:6px;height:6px;border-radius:50%;background:${ag.color};flex-shrink:0"></div>
-                    ${escapeHtmlLite(canal)}
+                    ${escapeHtmlLite(canal)}${newBadge}
                   </div>
                 </td>
                 <td style="padding:8px 14px;font-size:13px;font-weight:600;text-align:right;color:${textMain};border-bottom:1px solid ${borderC};vertical-align:middle">
