@@ -3741,7 +3741,7 @@
         // Mesmo range do ano anterior (para "vs ano passado" via compras)
         const lastYearRange = __shiftRangeByYears({ start, end }, -1);
         const lastYearLabel = (() => {
-          try { return new Date(String(lastYearRange.end || lastYearRange.start)).getFullYear(); } catch (e) { return getPrevYear(); }
+          try { return new Date(String(lastYearRange.end || lastYearRange.start)).getUTCFullYear(); } catch (e) { return getPrevYear(); }
         })();
         // Cutoff ajustado para o ano passado (evita zerar a série quando o cutoff é recente)
         const cutoffLastYearIso = (cutoff && cutoff.enabled && cutoff.cutoffInstantIso)
