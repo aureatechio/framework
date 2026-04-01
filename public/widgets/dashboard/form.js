@@ -10414,8 +10414,9 @@
 
                 // Tooltip rows: [label, color, val2025, val2026]
                 const rows = [
-                  { label: 'Realizado',      color: colors[nameIdx['Realizado']]     || '#3b82f6', v25: lyRealizado,   v26: getVal('Realizado') },
+                  { label: 'Realizado',      color: colors[nameIdx['Realizado']]     || '#3b82f6', v25: null,          v26: getVal('Realizado') },
                   { label: 'Pipeline',       color: colors[nameIdx['Pipeline']]      || '#f59e0b', v25: null,          v26: getVal('Pipeline') },
+                  { label: lyName,           color: colors[lyIdx]                    || '#ef4444', v25: lyRealizado,   v26: null },
                   { label: 'Meta',           color: colors[nameIdx['Meta']]          || '#10b981', v25: null,          v26: getVal('Meta') },
                   { label: 'Projeção',       color: colors[nameIdx['Projeção']]      || '#0ea5e9', v25: null,          v26: getVal('Projeção'), projOnly: true },
                   { label: 'Proj. Pipeline', color: colors[nameIdx['Proj. Pipeline']]|| '#d97706', v25: null,          v26: getVal('Proj. Pipeline'), projOnly: true },
