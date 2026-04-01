@@ -3062,6 +3062,8 @@
 
       window.openCustomDatePicker = () => {
         __log('customDate', '🖱️ openCustomDatePicker chamado');
+        // Garantir que listeners estão bindados (pode não ter rodado se init() ainda não completou)
+        try { initCustomDatePickerUI(); } catch (e) {}
         const pop = document.getElementById('custom-date-popover');
         const startEl = document.getElementById('custom-date-start');
         const endEl = document.getElementById('custom-date-end');
@@ -3146,8 +3148,11 @@
 
         applyBtn.addEventListener('click', () => {
           __log('customDate', '🖱️ Apply clicado');
-          const sYmdRaw = String(startEl.value || '').trim();
-          const eYmdRaw = String(endEl.value || '').trim();
+          // Usar getElementById para evitar referências stale
+          const sEl = document.getElementById('custom-date-start');
+          const eEl = document.getElementById('custom-date-end');
+          const sYmdRaw = String((sEl && sEl.value) || '').trim();
+          const eYmdRaw = String((eEl && eEl.value) || '').trim();
           if (!sYmdRaw || !eYmdRaw) { __log('customDate', '⚠️ Datas vazias, ignorando'); return; }
 
           // Normaliza caso usuário inverta
@@ -3175,7 +3180,12 @@
 
         clearBtn.addEventListener('click', () => {
           state.customRange = null;
-          try { startEl.value = ''; endEl.value = ''; } catch (e) {}
+          try {
+            const sEl = document.getElementById('custom-date-start');
+            const eEl = document.getElementById('custom-date-end');
+            if (sEl) sEl.value = '';
+            if (eEl) eEl.value = '';
+          } catch (e) {}
           setCustomButtonAppliedLabel();
           closeCustomDatePicker();
         });
