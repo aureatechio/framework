@@ -1985,23 +1985,17 @@
             return out;
           };
 
-          // Com `filtering` por campaign.id, o Meta pode retornar múltiplas linhas/páginas (por campanha/ad/etc).
-          // Então é obrigatório paginar e somar o `spend`.
-          const fetchSpendByCampaignIds = async (campaignIds, startYmd, endYmd, errLabel) => {
-            const ids = normalizeIds(campaignIds);
-            if (!ids.length) return 0;
+          // fetchSpendTotal: sem filtro de campanha — retorna gasto total da conta (visão global)
+          const fetchSpendTotal = async (startYmd, endYmd) => {
             let total = 0;
-
             const buildUrl = () => {
               const url = new URL(`https://graph.facebook.com/${META_GRAPH_VERSION}/${META_AD_ACCOUNT_ID}/insights`);
               url.searchParams.set('fields', 'spend');
               url.searchParams.set('limit', '500');
               url.searchParams.set('time_range', JSON.stringify({ since: startYmd, until: endYmd }));
-              url.searchParams.set('filtering', JSON.stringify([{ field: 'campaign.id', operator: 'IN', value: ids }]));
               url.searchParams.set('access_token', META_ACCESS_TOKEN);
               return url;
             };
-
             let nextUrl = buildUrl().toString();
             while (nextUrl) {
               const res = await callMetaWithRetry(nextUrl);
@@ -2013,7 +2007,34 @@
               });
               nextUrl = (json && json.paging && json.paging.next) ? json.paging.next : '';
             }
+            return total;
+          };
 
+          // fetchSpendByCampaignIds: filtra por IDs (usado quando agência está selecionada)
+          const fetchSpendByCampaignIds = async (campaignIds, startYmd, endYmd) => {
+            const ids = normalizeIds(campaignIds);
+            if (!ids.length) return 0;
+            let total = 0;
+            const buildUrl = () => {
+              const url = new URL(`https://graph.facebook.com/${META_GRAPH_VERSION}/${META_AD_ACCOUNT_ID}/insights`);
+              url.searchParams.set('fields', 'spend');
+              url.searchParams.set('limit', '500');
+              url.searchParams.set('time_range', JSON.stringify({ since: startYmd, until: endYmd }));
+              url.searchParams.set('filtering', JSON.stringify([{ field: 'campaign.id', operator: 'IN', value: ids }]));
+              url.searchParams.set('access_token', META_ACCESS_TOKEN);
+              return url;
+            };
+            let nextUrl = buildUrl().toString();
+            while (nextUrl) {
+              const res = await callMetaWithRetry(nextUrl);
+              const json = await res.json();
+              const data = (json && Array.isArray(json.data)) ? json.data : [];
+              data.forEach(row => {
+                const spend = row && row.spend != null ? Number(String(row.spend).replace(',', '.')) : 0;
+                if (Number.isFinite(spend) && spend >= 0) total += spend;
+              });
+              nextUrl = (json && json.paging && json.paging.next) ? json.paging.next : '';
+            }
             return total;
           };
 
@@ -2028,7 +2049,6 @@
           startYmd = eff.startYmd;
           endYmd = eff.endYmd;
 
-          // Se o cutoff “empurrou” o início além do fim, não há período válido => gasto 0
           if (startYmd && endYmd && startYmd > endYmd) {
             state.marketingInvestment = 0;
             state.__metaLoadState = 'loaded';
@@ -2040,19 +2060,24 @@
             return;
           }
 
-          // Merge landing + whatsapp (alinhado ao dashboard principal)
-          const { landing: idsLanding, whatsapp: idsWhatsapp } = await fetchTimelineFilteredCampaignIds(state.selectedAgencyId);
-          const idsInvest = normalizeIds([...idsLanding, ...idsWhatsapp]);
-          if (!idsInvest.length) {
-            state.marketingInvestment = 0;
-            state.marketingInvestmentPrev = 0;
-            state.__metaLoadState = 'loaded';
-            state.__metaSpendCache = {
-              key: `empty|${startYmd}|${endYmd}|${state.selectedSeller || 'all'}|cut:${cutoff?.cutoffYmdLocal || 'none'}|agency:${state.selectedAgencyId || 'all'}`,
-              value: 0,
-              fetchedAt: Date.now()
-            };
-            return;
+          // Sem agência selecionada: busca total da conta (sem filtro de campanha)
+          // Com agência selecionada: filtra pelas campanhas da agência via timeline_campanhas
+          const hasAgency = !!(state.selectedAgencyId);
+          let idsInvest = [];
+          if (hasAgency) {
+            const { landing: idsLanding, whatsapp: idsWhatsapp } = await fetchTimelineFilteredCampaignIds(state.selectedAgencyId);
+            idsInvest = normalizeIds([...idsLanding, ...idsWhatsapp]);
+            if (!idsInvest.length) {
+              state.marketingInvestment = 0;
+              state.marketingInvestmentPrev = 0;
+              state.__metaLoadState = 'loaded';
+              state.__metaSpendCache = {
+                key: `empty|${startYmd}|${endYmd}|${state.selectedSeller || 'all'}|cut:${cutoff?.cutoffYmdLocal || 'none'}|agency:${state.selectedAgencyId || 'all'}`,
+                value: 0,
+                fetchedAt: Date.now()
+              };
+              return;
+            }
           }
 
           const cacheKey = `${startYmd}|${endYmd}|${state.selectedSeller || 'all'}|cut:${cutoff?.cutoffYmdLocal || 'none'}|agency:${state.selectedAgencyId || 'all'}`;
@@ -2062,12 +2087,14 @@
               state.marketingInvestment = cache.value;
             }
           } else {
-            const spendVal = await fetchSpendByCampaignIds(idsInvest, startYmd, endYmd, 'invest');
+            const spendVal = hasAgency
+              ? await fetchSpendByCampaignIds(idsInvest, startYmd, endYmd)
+              : await fetchSpendTotal(startYmd, endYmd);
             state.marketingInvestment = spendVal;
             state.__metaSpendCache = { key: cacheKey, value: spendVal, fetchedAt: Date.now() };
           }
 
-          // --- período anterior (para vs mês anterior) ---
+          // --- período anterior ---
           let prevStartYmd = toYmdLocal(new Date(prevRange.start));
           let prevEndYmd = toYmdLocal(new Date(prevRange.end));
           if (!prevStartYmd || !prevEndYmd) return;
@@ -2095,7 +2122,9 @@
             return;
           }
 
-          const spendPrevVal = await fetchSpendByCampaignIds(idsInvest, prevStartYmd, prevEndYmd, 'investPrev');
+          const spendPrevVal = hasAgency
+            ? await fetchSpendByCampaignIds(idsInvest, prevStartYmd, prevEndYmd)
+            : await fetchSpendTotal(prevStartYmd, prevEndYmd);
           state.marketingInvestmentPrev = spendPrevVal;
           state.__metaSpendCachePrev = { key: prevKey, value: spendPrevVal, fetchedAt: Date.now() };
           state.__metaLoadState = 'loaded';
