@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Teste Widget — dashboard_tv</title>
+    <style>
+      body { margin: 0; background: #000; }
+    </style>
+  </head>
+  <body>
+    <div id="slot-wish-board"></div>
+
+    <script>
+      // Simula "sem id_vendedor" (visão global)
+      window.BUBBLE_LOGGED_SELLER_ID = "";
+
+      // Config do loader (mesmo formato do Bubble)
+      window.CDN_WIDGETS = [
+        {
+          widgetKey: "wish-board",
+          rootId: "slot-wish-board",
+          htmlUrl: "public/widgets/dashboard_tv/form.html",
+          cssUrl:  "public/widgets/dashboard_tv/form.css",
+          jsUrl:   "public/widgets/dashboard_tv/form.js",
+          params: {}
+        }
+      ];
+    </script>
+    <script src="public/script.js"></script>
+  </body>
+</html>
+

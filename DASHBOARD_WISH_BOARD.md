@@ -1,6 +1,17 @@
-Este documento foi movido para:
+## Dashboard `wish-board` — Documentação (fonte de verdade)
 
-`public/widgets/dashboard/DASHBOARD_WISH_BOARD.md`
+Este arquivo é um **índice/ponte** para a documentação oficial do elemento `wish-board`.
+
+### Fonte de verdade (docs)
+
+- `public/widgets/dashboard/PROJECT_DOC.md` — contexto completo do repo + arquitetura + SOP de deploy/pull
+- `public/widgets/dashboard/CHANGELOG.md` — histórico versão a versão (inclui manifesto/URLs por deploy)
+
+### Fonte de verdade (código)
+
+- `public/widgets/dashboard/form.html`
+- `public/widgets/dashboard/form.css`
+- `public/widgets/dashboard/form.js`
 
 ## Dashboard `wish-board` — Regras, parâmetros (Bubble) e cálculos
 

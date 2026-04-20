@@ -1,0 +1,216 @@
+<div id="tabela-dados-root">
+    <div data-cdn-widget="tabela_dados">
+      <div class="td-app">
+        <aside class="td-sidebar" aria-label="Navegação">
+          <div class="td-sideInner">
+            <div class="td-brand" aria-label="Aceleraí">
+              <div class="td-brandLogo">
+                <img
+                  class="td-brandImg"
+                  src="https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/materiais/Acelerai_preto_magenta.png"
+                  alt="Aceleraí"
+                  loading="lazy"
+                  decoding="async"
+                  referrerpolicy="no-referrer"
+                />
+              </div>
+            </div>
+            <nav class="td-nav">
+              <a class="td-navItem td-navItem--active" href="javascript:void(0)" data-role="nav-leads">
+                <span class="td-navIcon" aria-hidden="true">👤+</span>
+                <span class="td-navLabel">Leads</span>
+              </a>
+              <a class="td-navItem" href="javascript:void(0)" data-role="nav-opps">
+                <span class="td-navIcon" aria-hidden="true">💡</span>
+                <span class="td-navLabel">Oportunidades</span>
+              </a>
+              <a class="td-navItem" href="javascript:void(0)" data-role="nav-meetings">
+                <span class="td-navIcon" aria-hidden="true">👥</span>
+                <span class="td-navLabel">Reuniões</span>
+              </a>
+            </nav>
+          </div>
+        </aside>
+  
+        <main class="td-main">
+          <div class="td-mainCard">
+            <header class="td-topbar">
+              <div class="td-titleRow">
+                <h1 class="td-title" data-role="title">Leads</h1>
+  
+                <div class="td-headerRight">
+                  <div class="td-search">
+                    <span class="td-searchIcon" aria-hidden="true">🔎</span>
+                    <input class="td-searchInput" type="search" placeholder="Pesquisar..." data-role="search" />
+                  </div>
+  
+                  <div class="td-actions">
+                    <button class="td-iconBtn" type="button" data-role="help" aria-label="Ajuda">
+                      <span class="td-icon" aria-hidden="true">?</span>
+                    </button>
+                    <button class="td-iconBtn" type="button" data-role="settings" aria-label="Configurações">
+                      <span class="td-icon" aria-hidden="true">⚙</span>
+                    </button>
+                    <div class="td-avatar" aria-hidden="true"></div>
+                  </div>
+                </div>
+              </div>
+  
+              <div class="td-controls">
+                <div class="td-filters">
+                  <div class="td-dateFilters" role="group" aria-label="Filtros de data">
+                    <label class="td-dateField">
+                      <span class="td-dateLabel">De</span>
+                      <input class="td-dateInput" type="date" data-role="date-from" />
+                    </label>
+                    <label class="td-dateField">
+                      <span class="td-dateLabel">Até</span>
+                      <input class="td-dateInput" type="date" data-role="date-to" />
+                    </label>
+                    <button class="td-pill td-pill--ghost" type="button" data-role="date-clear">Limpar</button>
+                  </div>
+                  <div class="td-spacer"></div>
+  
+                  <button class="td-export" type="button" data-role="export">
+                    <span class="td-pillIcon" aria-hidden="true">⬇</span>
+                    <span>Exportar</span>
+                  </button>
+                </div>
+              </div>
+            </header>
+  
+            <section class="td-card">
+              <div class="td-tableWrap" role="region" aria-label="Tabela de dados">
+                <table class="td-table">
+                  <thead>
+                    <tr>
+                      <th class="td-colCheck" scope="col">
+                        <input class="td-check" type="checkbox" data-role="check-all" aria-label="Selecionar todos" />
+                      </th>
+                      <th class="td-colId" scope="col">Id</th>
+                      <th scope="col">Data</th>
+                      <th scope="col">Nome do Cliente</th>
+                      <th scope="col">Segmento</th>
+                      <th scope="col">E-mail</th>
+                      <th scope="col">Telefone</th>
+                      <th scope="col">UTM Campaign</th>
+                      <th scope="col">UTM Medium</th>
+                      <th scope="col">UTM Source</th>
+                      <th scope="col">UTM Term</th>
+                      <th scope="col">UTM Content</th>
+                      <th scope="col">Vendedor</th>
+                      <th class="td-colBool" scope="col">Agência</th>
+                      <th scope="col">Nome da Agência</th>
+                      <th class="td-colMore" scope="col"></th>
+                    </tr>
+                  </thead>
+                  <tbody data-role="tbody">
+                    <!-- rows injected by JS -->
+                  </tbody>
+                </table>
+              </div>
+  
+              <footer class="td-footer">
+                <div class="td-footerLeft">
+                  <span class="td-footerLabel">Linhas por página:</span>
+                  <button class="td-footerSelect" type="button" data-role="page-size" aria-label="Alterar linhas por página">
+                    <span data-role="page-size-label">10</span>
+                    <span class="td-caret" aria-hidden="true">▾</span>
+                  </button>
+                </div>
+  
+                <div class="td-footerRight">
+                  <span class="td-footerRange" data-role="range">—</span>
+                  <div class="td-footerNav">
+                    <button class="td-navBtn" type="button" data-role="prev" aria-label="Página anterior">‹</button>
+                    <button class="td-navBtn" type="button" data-role="next" aria-label="Próxima página">›</button>
+                  </div>
+                </div>
+              </footer>
+            </section>
+          </div>
+        </main>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+  (function () {
+    var ROOT_ID = "tabela-dados-root";
+    // Para testar localmente este repo, use os assets locais:
+    var CSS_URL = "public/widgets/tabela_dados/form.css";
+    var JS_URL  = "public/widgets/tabela_dados/form.js";
+    // Produção (CDN Supabase):
+    // var CSS_URL = "https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/tabela_dados/v5/form.css";
+    // var JS_URL  = "https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/tabela_dados/v5/form.js";
+  
+    // Params (pode trocar por valores dinâmicos do Bubble)
+    var PARAMS = {
+      debug: true,
+      supabaseUrl: "https://awqtzoefutnfmnbomujt.supabase.co",
+      supabaseAnonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3cXR6b2VmdXRuZm1uYm9tdWp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzkyMTYyMTUsImV4cCI6MjA1NDc5MjIxNX0.JMdboXzu7NMTXH8NuKdxzNO3SYOOag4kuQL_SSO0PEY",
+      // quantidade por página (pageSize)
+      limit: 100
+  
+      // opcionais:
+      // vendedorResponsavelId: "uuid...",
+      // funilVendedorId: "uuid..."
+    };
+  
+    function ensureCss(url) {
+      if (!url) return;
+      window.__TD_CSS__ = window.__TD_CSS__ || {};
+      if (window.__TD_CSS__[url]) return;
+      window.__TD_CSS__[url] = true;
+  
+      var link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = url;
+      document.head.appendChild(link);
+    }
+  
+    function ensureScript(url) {
+      window.__TD_JS__ = window.__TD_JS__ || {};
+      if (window.__TD_JS__[url]) return window.__TD_JS__[url];
+  
+      window.__TD_JS__[url] = new Promise(function (resolve, reject) {
+        var s = document.createElement("script");
+        s.src = url;
+        s.defer = true;
+        s.onload = function () { resolve(); };
+        s.onerror = function (e) { reject(e); };
+        document.head.appendChild(s);
+      });
+  
+      return window.__TD_JS__[url];
+    }
+  
+    function boot() {
+      var root = document.getElementById(ROOT_ID);
+      if (!root) return;
+  
+      // evita init duplicado
+      if (root.getAttribute("data-td-mounted") === "1") return;
+      root.setAttribute("data-td-mounted", "1");
+  
+      ensureCss(CSS_URL);
+  
+      ensureScript(JS_URL).then(function () {
+        var api = window.CDN_WIDGET_REGISTRY && window.CDN_WIDGET_REGISTRY["tabela_dados"];
+        if (!api || typeof api.init !== "function") {
+          console.error("[tabela_dados] JS carregou mas não registrou init()");
+          return;
+        }
+        api.init(root, PARAMS);
+      }).catch(function (e) {
+        console.error("[tabela_dados] falha ao carregar JS", e);
+      });
+    }
+  
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", boot);
+    } else {
+      boot();
+    }
+  })();
+  </script>

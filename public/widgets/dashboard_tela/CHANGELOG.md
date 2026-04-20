@@ -1,5 +1,61 @@
 # Changelog — `dashboard_tela`
 
+## `dashboard_tela` v251 — 2026-03-19
+
+- **Nome (Bubble)**: `dashboard_tela`
+- **widget_slug (repo)**: `dashboard_tela`
+- **Code version**: `git-35b5222`
+- **Manifesto**: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/_deploy_manifests/dashboard_tela/v251/git-35b5222.json`
+- **URLs**:
+  - HTML: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/dashboard_tela/v251/form.html`
+  - CSS: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/dashboard_tela/v251/form.css`
+  - JS: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/dashboard_tela/v251/form.js`
+
+### Mudanças
+
+- `public/widgets/dashboard_tela/form.js`
+  - **`applyNotImportedLeadFilter`** (L1896): Alinhado com dashboard principal — agora usa `.or()` para incluir leads importados com tags Meta (`import leads meta`, `Meta Leads Fev/2026`) em vez de excluir todos os CSV imports
+  - **`countLeadsByCanal`** (L6054): Adicionado `applyAgencyFilterToLeadQuery(q)` para respeitar filtro de agência na contagem de leads por canal, igualando ao dashboard principal
+
+---
+
+## `dashboard_tela` v250 — 2026-03-12
+
+- **Nome (Bubble)**: `dashboard_tela`
+- **widget_slug (repo)**: `dashboard_tela`
+- **Code version**: `git-8f1fab0`
+- **Manifesto**: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/_deploy_manifests/dashboard_tela/v250/git-8f1fab0.json`
+- **URLs**:
+  - HTML: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/dashboard_tela/v250/form.html`
+  - CSS: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/dashboard_tela/v250/form.css`
+  - JS: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/dashboard_tela/v250/form.js`
+
+### Mudanças (linha a linha)
+
+- `public/widgets/dashboard_tela/form.html`
+  - **L455**: Título "Performance por Canal" agora flex com badge `channel-period-badge` "Mês Atual"
+  - **L456**: Grid de canais alterado de `md-grid-cols-4` → `md-grid-cols-2` (layout 2x2)
+  - **L460-464**: Seção pipeline: título agora flex com `stage-dwell-subtitle` span; container trocado de `pipeline-diagram-scroll` → `stage-dwell-table-scroll`
+
+- `public/widgets/dashboard_tela/form.css`
+  - Adicionado `.channel-period-badge` (pill azul light/dark)
+  - Adicionado bloco completo `.stage-dwell-*`: table-scroll, table, th/td, sticky-col, seller, avatar, seller-name, time-pill (5 cores light/dark), pill--empty
+  - CSS antigo do pipeline mantido (dead code, limpeza futura)
+
+- `public/widgets/dashboard_tela/form.js`
+  - **State**: Adicionado `dwellStageColumns: []`
+  - **Constantes**: `STAGE_DWELL_MAX_HOURS`, `KNOWN_STAGE_ORDER`, `AVATAR_PALETTE`
+  - **Helpers**: `formatDwellTime(hours)`, `getSellerInitials(name)`, `sortStageColumns(stageNames)`
+  - **`fetchStageDwellTimes()`**: Nova função — busca `loogsLeads`, calcula tempos por (vendedor, etapa), atualiza caches globais `state.sellerNameById`/`state.sellerImgById`
+  - **`renderStageDwellTable()`**: Nova função — tabela HTML com sticky col, pills color-coded, avatares com iniciais
+  - **Wiring**: `fetchPipelineData()` substituído por `fetchStageDwellTimes()` em ambos call sites
+  - Funções antigas mantidas como dead code
+
+### Resumo
+Mesmas mudanças do wish-board v250: Performance por Canal 4→2 cols + badge, Tempos por Etapa reescrito como tabela de tempos reais do kanban CRM.
+
+---
+
 ## `dashboard_tela` v129 — 2026-02-02
 
 - **Nome (Bubble)**: `dashboard_tela`

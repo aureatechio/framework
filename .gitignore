@@ -28,6 +28,17 @@ Thumbs.db
 .vscode/
 .idea/
 
+# Cursor / MCP / Claude (não commitar tokens)
+.cursor/
+.claude/
+.mcp.json
+
+# Arquivos grandes / dados brutos
+*.csv
+*.xlsx
+*.xls
+response/
+
 # Logs
 *.log
 
@@ -38,3 +49,4 @@ Thumbs.db
 
 
 
+.agents/

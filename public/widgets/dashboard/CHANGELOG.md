@@ -36,6 +36,88 @@ Este arquivo registra **versão a versão** o que foi alterado no elemento publi
 
 ---
 
+## `wish-board` v250 — 2026-03-12
+
+- **Nome (Bubble)**: `wish-board`
+- **widget_slug (repo)**: `dashboard`
+- **Code version**: `git-8f1fab0`
+- **Manifesto**: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/_deploy_manifests/wish-board/v250/git-8f1fab0.json`
+- **URLs**:
+  - HTML: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/wish-board/v250/form.html`
+  - CSS: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/wish-board/v250/form.css`
+  - JS: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/wish-board/v250/form.js`
+
+### Mudanças (linha a linha)
+
+- `public/widgets/dashboard/form.html`
+  - **L491**: Título "Performance por Canal" agora flex com badge `channel-period-badge` "Mês Atual"
+  - **L492**: Grid de canais alterado de `md-grid-cols-4` → `md-grid-cols-2` (layout 2x2)
+  - **L496-500**: Seção pipeline: título agora flex com `stage-dwell-subtitle` span; container trocado de `pipeline-diagram-scroll` → `stage-dwell-table-scroll`
+
+- `public/widgets/dashboard/form.css`
+  - Adicionado `.channel-period-badge` (pill azul light/dark)
+  - Adicionado bloco completo `.stage-dwell-*`: table-scroll, table, th/td, sticky-col, seller (flex avatar+nome), avatar (circle 32px com iniciais), seller-name, time-pill (5 cores light/dark), pill--empty
+  - CSS antigo do pipeline mantido (dead code, limpeza futura)
+
+- `public/widgets/dashboard/form.js`
+  - **State**: Adicionado `dwellStageColumns: []`
+  - **Constantes**: `STAGE_DWELL_MAX_HOURS`, `KNOWN_STAGE_ORDER`, `AVATAR_PALETTE`
+  - **Helpers**: `formatDwellTime(hours)`, `getSellerInitials(name)`, `sortStageColumns(stageNames)`
+  - **`fetchStageDwellTimes()`**: Nova função — busca `loogsLeads` no período, agrupa por lead, calcula tempo médio por (vendedor, etapa) usando transições consecutivas, resolve nomes via `fetchEtapaNamesByIds`
+  - **`renderStageDwellTable()`**: Nova função — renderiza tabela HTML com header EXECUTIVO + etapas, coluna sticky, pills color-coded, avatares com iniciais
+  - **Wiring**: `fetchPipelineData()` substituído por `fetchStageDwellTimes()` em ambos call sites (debounced refresh + initial load)
+  - Funções antigas (`fetchPipelineData`, `renderPipeline`, `formatPipelineValue`) mantidas como dead code
+
+### Resumo
+Refatoração de dois componentes: "Performance por Canal" muda layout de 4→2 colunas com badge "Mês Atual". "Tempos por Etapa do Funil" reescrito de pipeline diagram (3 estágios computados) para tabela scrollável com tempos reais do kanban CRM por vendedor, usando dados de `loogsLeads`.
+
+---
+
+## `wish-board` v203 — 2026-02-15
+
+- **Nome (Bubble)**: `wish-board`
+- **widget_slug (repo)**: `dashboard`
+- **Code version**: `git-17a4ebc`
+- **Manifesto**: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/_deploy_manifests/wish-board/v203/git-17a4ebc.json`
+- **URLs**:
+  - HTML: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/wish-board/v203/form.html`
+  - CSS: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/wish-board/v203/form.css`
+  - JS: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/wish-board/v203/form.js`
+
+### Mudanças (linha a linha)
+- `public/widgets/dashboard/form.js`
+  - **Bubble Visibility Guard ampliado** (linhas ~5283-5323) — agora re-renderiza o **elemento inteiro**, não apenas os charts
+  - Quando container transiciona hidden→visible, executa re-render completo:
+    - `lucide.createIcons()` — ícones
+    - `renderKPIs()`, `renderRanking()`, `renderMeetingsTab()`, `renderFunnel()`, `renderConversion()`, `renderChannels()`, `renderPipeline()`, `renderMetasSection()` — todos os componentes UI
+    - `renderGauge()`, `renderRevenue()` — charts ApexCharts
+    - `fetchDataWithStamp('visibility')` — re-fetch completo de dados
+    - `window.dispatchEvent(new Event('resize'))` + `scheduleChartsResize('visibility')` — recálculo de layout
+
+---
+
+## `wish-board` v202 — 2026-02-15
+
+- **Nome (Bubble)**: `wish-board`
+- **widget_slug (repo)**: `dashboard`
+- **Code version**: `git-17a4ebc`
+- **Manifesto**: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/_deploy_manifests/wish-board/v202/git-17a4ebc.json`
+- **URLs**:
+  - HTML: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/wish-board/v202/form.html`
+  - CSS: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/wish-board/v202/form.css`
+  - JS: `https://awqtzoefutnfmnbomujt.supabase.co/storage/v1/object/public/cdn-assets/wish-board/v202/form.js`
+
+### Mudanças (linha a linha)
+- `public/widgets/dashboard/form.js`
+  - Adicionado **Bubble Visibility Guard** (linhas ~5283-5313) dentro de `init()`
+  - `IntersectionObserver` no `#dashboard-acelerai-v2` detecta transição hidden→visible do container pai do Bubble
+  - Quando container fica oculto (`!isIntersecting`), marca flag `__visWasHidden = true`
+  - Quando container fica visível com flag ativa, re-renderiza `renderGauge()` + `renderRevenue(state.revenueChartData)` + dispatch `resize` + `scheduleChartsResize('visibility')` com 150ms de delay
+  - Corrige bug: dashboard não renderizava charts quando elemento HTML do Bubble nascia oculto e era exibido depois (redirect/navegação)
+  - Zero impacto no fluxo normal (flag `__visWasHidden` inicia como `false`)
+
+---
+
 ## `wish-board` v200 — 2026-02-02
 
 - **Nome (Bubble)**: `wish-board`

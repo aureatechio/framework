@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Test Dashboard Tela</title>
+  <style>body { margin: 0; background: #000; }</style>
+</head>
+<body>
+  <div id="slot-dashboard-tela"></div>
+  <script>
+    window.BUBBLE_LOGGED_SELLER_ID = "";
+    window.CDN_WIDGETS = [
+      {
+        widgetKey: "dashboard_tela",
+        rootId: "slot-dashboard-tela",
+        htmlUrl: "public/widgets/dashboard_tela/form.html",
+        cssUrl:  "public/widgets/dashboard_tela/form.css",
+        jsUrl:   "public/widgets/dashboard_tela/form.js",
+        params: {}
+      }
+    ];
+  </script>
+  <script src="public/script.js"></script>
+</body>
+</html>

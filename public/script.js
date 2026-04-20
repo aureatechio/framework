@@ -1,7 +1,7 @@
 ;(function () {
-  // idempotência: o Bubble pode incluir o mesmo script mais de uma vez
+  // idempotÃªncia: o Bubble pode incluir o mesmo script mais de uma vez
   if (window.__CDN_LOADER_INITED__) {
-    console.log("[cdn] loader já inicializado (skip)");
+    console.log("[cdn] loader jÃ¡ inicializado (skip)");
     return;
   }
   window.__CDN_LOADER_INITED__ = true;
@@ -48,7 +48,7 @@ async function __cdnFetchFragment(htmlUrl) {
   const res = await fetch(htmlUrl, { cache: "no-store" });
   const text = await res.text();
 
-  // Se vier um HTML completo, extraímos o <body> e usamos só ele.
+  // Se vier um HTML completo, extraÃ­mos o <body> e usamos sÃ³ ele.
   const parser = new DOMParser();
   const doc = parser.parseFromString(text, "text/html");
   const bodyHtml = doc && doc.body ? (doc.body.innerHTML || "").trim() : "";
@@ -64,7 +64,7 @@ async function __cdnMountWidget(widget) {
     return false;
   }
 
-  // idempotência: evita montar 2x no mesmo container
+  // idempotÃªncia: evita montar 2x no mesmo container
   if (root.getAttribute("data-cdn-mounted") === "1") return true;
 
   if (params) window.__CDN_PARAMS__[rootId] = params;
@@ -82,7 +82,7 @@ async function __cdnMountWidget(widget) {
       if (api && typeof api.init === "function") {
         api.init(root, params || {});
       } else {
-        console.warn(`[cdn] widget '${widgetKey}' não registrou init().`);
+        console.warn(`[cdn] widget '${widgetKey}' nÃ£o registrou init().`);
       }
     }
 
@@ -132,15 +132,39 @@ function __cdnWaitAndMount(widgets) {
         clearInterval(timer);
         obs.disconnect();
         if (!done && pending.size) {
-          console.warn("[cdn] não consegui montar alguns widgets (containers não encontrados):", Array.from(pending.keys()));
+          console.warn("[cdn] nÃ£o consegui montar alguns widgets (containers nÃ£o encontrados):", Array.from(pending.keys()));
         }
       }
     });
   }, 500);
 }
 
+// API pública (útil para ambiente de testes local / simular Bubble)
+// Permite montar widgets dinamicamente sem precisar recarregar a página.
+window.CDN_LOADER = window.CDN_LOADER || {};
+window.CDN_LOADER.mount = (widgets) => {
+  const arr = Array.isArray(widgets) ? widgets : (widgets ? [widgets] : []);
+  if (!arr.length) return;
+  __cdnWaitAndMount(arr);
+};
+window.CDN_LOADER.mountOne = (widget) => {
+  if (!widget) return;
+  __cdnWaitAndMount([widget]);
+};
+window.CDN_LOADER.resetRoot = (rootId) => {
+  try {
+    const el = rootId ? document.getElementById(rootId) : null;
+    if (!el) return false;
+    el.removeAttribute("data-cdn-mounted");
+    el.innerHTML = "";
+    return true;
+  } catch (e) {
+    return false;
+  }
+};
+
 async function __cdnBoot() {
-  // Modo novo: múltiplos widgets
+  // Modo novo: mÃºltiplos widgets
   if (Array.isArray(window.CDN_WIDGETS) && window.CDN_WIDGETS.length) {
     __cdnWaitAndMount(window.CDN_WIDGETS);
     return;
@@ -160,4 +184,5 @@ if (document.readyState === "loading") {
 }
 
 })();
+
 
