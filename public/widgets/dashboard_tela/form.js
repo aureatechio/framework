@@ -47,7 +47,7 @@
       // ATENÇÃO: token exposto no frontend conforme solicitado.
       const META_GRAPH_VERSION = 'v20.0';
       const META_AD_ACCOUNT_ID = 'act_843937229337573';
-      const META_ACCESS_TOKEN = 'EAASGBRlEgBwBQgYbX6rZBeMyxdZCBZAOvRB0poLTjLyLcwD8O7sCql3vLRRg1ZB63yfrcVg3aWdEZBRyZCCqVjF9e6KgQYwyvZB9RHNTrZCTlHJESMTZAn0JGCSfpucCv458GSnJ62jUiSlBEJvOMxZCtGmnzrxeZCd46s6fWdkW6Ojk5ueEhlBYBI8zqtZBQ9V7';
+      const META_ACCESS_TOKEN = 'EAAejMIGf8uMBRM9fjHkC83iPseMmz0xOoocg5t8ByObtmUFgrRjA5yvlxwjPwvLvgJd8BZBWXgfoerDmkPEPZBrTmIrf8rizAfpZAYIS7XwKeA3rdFG4ZAtMLaeBqnSoDLRtpIBvuzKRf1BOa3Vgj3TubXMFJ7NxZC9Lv9MIsAVZAckYs78Dms22cSsR5Lqskm';
       const META_SPEND_CACHE_MS = 5 * 60 * 1000; // 5 min
 
       const AGENCY_IDS = {
